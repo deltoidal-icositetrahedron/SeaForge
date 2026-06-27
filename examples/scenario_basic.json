@@ -1,0 +1,171 @@
+{
+  "name": "demo_procedural_passage",
+  "description": "10-day low->high latitude passage; procedural conditions, a few config overrides.",
+  "schema_version": "2.0",
+  "simulation": {
+    "dt_hours": 6.0,
+    "backend": "python",
+    "fallback_nearest": false
+  },
+  "ship": {
+    "name": "PV Sentinel",
+    "length_m": 72.0,
+    "beam_m": 12.5,
+    "draft_m": 4.2,
+    "displacement_mass_kg": 2400000.0,
+    "center_of_gravity_height_m": 5.1,
+    "metacentric_height_m": 0.85,
+    "waterplane_area_m2": 620.0,
+    "projected_lateral_area_m2": 540.0,
+    "roll_natural_period_s": 9.5,
+    "components": [
+      {
+        "name": "bottom_plating",
+        "material": {
+          "name": "EH36 high-strength hull steel",
+          "density_kg_m3": 7850.0,
+          "yield_strength_pa": 355000000.0,
+          "ultimate_strength_pa": 490000000.0,
+          "elastic_modulus_pa": 210000000000.0,
+          "base_corrosion_rate_m_per_year": 0.00012,
+          "corrosion_resistance_factor": 1.0,
+          "galvanic_potential_v": -0.61,
+          "coating_breakdown_factor": 1.0,
+          "fatigue_strength_pa": 160000000.0,
+          "notes": ""
+        },
+        "thickness_m": 0.014,
+        "area_m2": 520.0,
+        "exposed_fraction": 1.0,
+        "structural_importance": 1.0,
+        "location_on_ship": "bottom_shell",
+        "vertical_position_m": 0.2,
+        "original_thickness_m": 0.014,
+        "corrosion_allowance_m": 0.003,
+        "safety_factor_required": 1.6
+      },
+      {
+        "name": "side_shell_waterline",
+        "material": {
+          "name": "EH36 high-strength hull steel",
+          "density_kg_m3": 7850.0,
+          "yield_strength_pa": 355000000.0,
+          "ultimate_strength_pa": 490000000.0,
+          "elastic_modulus_pa": 210000000000.0,
+          "base_corrosion_rate_m_per_year": 0.00012,
+          "corrosion_resistance_factor": 1.0,
+          "galvanic_potential_v": -0.61,
+          "coating_breakdown_factor": 1.0,
+          "fatigue_strength_pa": 160000000.0,
+          "notes": ""
+        },
+        "thickness_m": 0.012,
+        "area_m2": 380.0,
+        "exposed_fraction": 1.0,
+        "structural_importance": 0.9,
+        "location_on_ship": "side_shell",
+        "vertical_position_m": 4.5,
+        "original_thickness_m": 0.012,
+        "corrosion_allowance_m": 0.0025,
+        "safety_factor_required": 1.5
+      },
+      {
+        "name": "main_deck",
+        "material": {
+          "name": "EH36 high-strength hull steel",
+          "density_kg_m3": 7850.0,
+          "yield_strength_pa": 355000000.0,
+          "ultimate_strength_pa": 490000000.0,
+          "elastic_modulus_pa": 210000000000.0,
+          "base_corrosion_rate_m_per_year": 0.00012,
+          "corrosion_resistance_factor": 1.0,
+          "galvanic_potential_v": -0.61,
+          "coating_breakdown_factor": 1.0,
+          "fatigue_strength_pa": 160000000.0,
+          "notes": ""
+        },
+        "thickness_m": 0.01,
+        "area_m2": 300.0,
+        "exposed_fraction": 0.6,
+        "structural_importance": 0.8,
+        "location_on_ship": "strength_deck",
+        "vertical_position_m": 8.5,
+        "original_thickness_m": 0.01,
+        "corrosion_allowance_m": 0.002,
+        "safety_factor_required": 1.5
+      },
+      {
+        "name": "superstructure_front",
+        "material": {
+          "name": "5083 marine aluminium",
+          "density_kg_m3": 2660.0,
+          "yield_strength_pa": 215000000.0,
+          "ultimate_strength_pa": 305000000.0,
+          "elastic_modulus_pa": 70000000000.0,
+          "base_corrosion_rate_m_per_year": 2e-05,
+          "corrosion_resistance_factor": 3.0,
+          "galvanic_potential_v": -0.94,
+          "coating_breakdown_factor": 0.8,
+          "fatigue_strength_pa": null,
+          "notes": ""
+        },
+        "thickness_m": 0.006,
+        "area_m2": 90.0,
+        "exposed_fraction": 0.5,
+        "structural_importance": 0.3,
+        "location_on_ship": "superstructure",
+        "vertical_position_m": 12.0,
+        "original_thickness_m": 0.006,
+        "corrosion_allowance_m": 0.001,
+        "safety_factor_required": 1.4
+      }
+    ]
+  },
+  "trajectory": {
+    "waypoints": [
+      {
+        "latitude_deg": 12.0,
+        "longitude_deg": -40.0,
+        "time_s": 0.0,
+        "target_speed_m_s": 4.630000000000001,
+        "heading_deg": 20.0
+      },
+      {
+        "latitude_deg": 28.0,
+        "longitude_deg": -30.0,
+        "time_s": 302400.0,
+        "target_speed_m_s": 7.202222222222223,
+        "heading_deg": 25.0
+      },
+      {
+        "latitude_deg": 44.0,
+        "longitude_deg": -18.0,
+        "time_s": 648000.0,
+        "target_speed_m_s": 7.202222222222223,
+        "heading_deg": 35.0
+      },
+      {
+        "latitude_deg": 54.0,
+        "longitude_deg": -8.0,
+        "time_s": 864000.0,
+        "target_speed_m_s": 4.630000000000001,
+        "heading_deg": 45.0
+      }
+    ]
+  },
+  "procedural": {
+    "seed": 2026,
+    "ranges": {
+      "salinity_mean_ppt": 35.0,
+      "pollution_max": 0.25
+    }
+  },
+  "config": {
+    "corrosion": {
+      "splash_zone_multiplier": 2.5
+    },
+    "stability": {
+      "capsize_time_at_max_risk_s": 1800.0
+    }
+  }
+}

@@ -1,0 +1,4527 @@
+{
+  "timeline": [
+    {
+      "current_time_s": 0.0,
+      "current_position": {
+        "latitude_deg": 12.0,
+        "longitude_deg": -40.0
+      },
+      "speed_m_s": 4.630000000000001,
+      "environment": {
+        "salinity_ppt": 35.45499924384964,
+        "water_temperature_c": 21.561928394815716,
+        "pH": 8.028439479402858,
+        "dissolved_oxygen_mg_l": 7.958150387613978,
+        "pollution_factor_0_1": 0.14050083792064805,
+        "biofouling_factor_0_1": 0.3836633181707585
+      },
+      "weather": {
+        "wind_speed_m_s": 22.768157496582297,
+        "wind_direction_deg": 170.73899886694605,
+        "air_temperature_c": 18.82577590990426,
+        "relative_humidity_0_1": 0.7723800698198072,
+        "precipitation_rate_mm_hr": 3.1182069156423444,
+        "storm_intensity_0_1": 0.6840519933973512,
+        "atmospheric_pressure_pa": 98507.23376561707
+      },
+      "waves": {
+        "significant_wave_height_m": 10.358209498109176,
+        "peak_period_s": 16.558501044613415,
+        "mean_wave_direction_deg": 345.5112146765512,
+        "current_speed_m_s": 0.26634344017882317,
+        "current_direction_deg": 85.43092059178366,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 4.174047094650532e-8,
+        "side_shell_waterline": 4.174047094650532e-8,
+        "main_deck": 2.504428256790319e-8,
+        "superstructure_front": 9.275660210334514e-10
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999958259529054,
+        "side_shell_waterline": 0.011999958259529054,
+        "main_deck": 0.009999974955717432,
+        "superstructure_front": 0.005999999072433979
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00006098282805284427,
+        "side_shell_waterline": 0.00006098282805284427,
+        "main_deck": 0.00003658969683170656,
+        "superstructure_front": 1.3551739567298725e-6
+      },
+      "stability_risk_score_0_1": 0.6335807009160268,
+      "capsize_probability_timestep": 0.9025779984366359,
+      "intermediate_physics_values": {
+        "heading_deg": 20.0,
+        "structural_weakening_factor": 2.7206394793033437e-6,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.5081902337737022,
+          "side_shell_waterline": 0.5081902337737022,
+          "main_deck": 0.3049141402642213,
+          "superstructure_front": 0.06775869783649362
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 490267.043846599,
+          "wind_to_restoring_ratio": 0.14112749326671786,
+          "relative_heading_deg": 325.5112146765512,
+          "encounter_period_s": 19.427173074720375,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 2.0449655868126713,
+          "beam_excitation": 0.5662449173596473,
+          "wave_steepness": 0.024204819239815392,
+          "Hs_over_beam": 0.8286567598487341,
+          "Hs_over_freeboard_proxy": 2.0716418996218353,
+          "froude_number": 0.1742426249275647,
+          "following_weight": 0.8242370372437567,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.05401789071010074,
+            "wave_risk_factor": 0.22226124007273612,
+            "resonance_risk_factor": 2.584240106274414e-8,
+            "roll_term(beam-weighted)": 1.4633128254148418e-8,
+            "speed_in_sea_state_factor": 0.25830569523618774,
+            "structural_weakening_factor": 2.7206394793033437e-6,
+            "storm_factor": 0.6840519933973512,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.20718048010414702
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.05401789071010074,
+            "wave": 0.1778089920581889,
+            "resonance": 4.389938476244525e-9,
+            "speed": 0.15498341714171263,
+            "structural": 1.6323836875820061e-6,
+            "storm": 0.4104311960384107,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.041436096020829406
+          },
+          "hazard_sum": 1.003976975396876,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.63)."
+      ]
+    },
+    {
+      "current_time_s": 21600.0,
+      "current_position": {
+        "latitude_deg": 13.142857142857142,
+        "longitude_deg": -39.285714285714285
+      },
+      "speed_m_s": 4.813730158730159,
+      "environment": {
+        "salinity_ppt": 35.32652074458603,
+        "water_temperature_c": 22.358146837905792,
+        "pH": 8.126184683971882,
+        "dissolved_oxygen_mg_l": 7.800520065502618,
+        "pollution_factor_0_1": 0.18150431857032953,
+        "biofouling_factor_0_1": 0.35962027893611703
+      },
+      "weather": {
+        "wind_speed_m_s": 26.73452533747963,
+        "wind_direction_deg": 227.95106881348042,
+        "air_temperature_c": 21.764761268984458,
+        "relative_humidity_0_1": 0.8012864140751983,
+        "precipitation_rate_mm_hr": 8.196111424798703,
+        "storm_intensity_0_1": 0.7612941577684211,
+        "atmospheric_pressure_pa": 98218.87222452494
+      },
+      "waves": {
+        "significant_wave_height_m": 14.503659563490894,
+        "peak_period_s": 18.76326692055933,
+        "mean_wave_direction_deg": 47.569115239079906,
+        "current_speed_m_s": 0.6326102100945072,
+        "current_direction_deg": 118.39756036373028,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 8.550572281545648e-8,
+        "side_shell_waterline": 8.550572281545648e-8,
+        "main_deck": 5.130343368927388e-8,
+        "superstructure_front": 1.900127173676811e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999914494277186,
+        "side_shell_waterline": 0.011999914494277186,
+        "main_deck": 0.009999948696566311,
+        "superstructure_front": 0.0059999980998728265
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00006394103298053764,
+        "side_shell_waterline": 0.00006394103298053764,
+        "main_deck": 0.00003836461978832259,
+        "superstructure_front": 1.420911844011948e-6
+      },
+      "stability_risk_score_0_1": 0.6822019204143345,
+      "capsize_probability_timestep": 0.9734557686710722,
+      "intermediate_physics_values": {
+        "heading_deg": 20.357142857142858,
+        "structural_weakening_factor": 5.5732539648449085e-6,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.5328419415044803,
+          "side_shell_waterline": 0.5328419415044803,
+          "main_deck": 0.31970516490268813,
+          "superstructure_front": 0.07104559220059739
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 640576.7612537026,
+          "wind_to_restoring_ratio": 0.18439541000217483,
+          "relative_heading_deg": 27.21197238193705,
+          "encounter_period_s": 21.975696321657065,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 2.3132311917533754,
+          "beam_excitation": 0.45728376728584297,
+          "wave_steepness": 0.026394891221166006,
+          "Hs_over_beam": 1.1602927650792716,
+          "Hs_over_freeboard_proxy": 2.9007319126981788,
+          "froude_number": 0.18115701480564267,
+          "following_weight": 0.8893208398417677,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.061879934996361526,
+            "wave_risk_factor": 0.24759372255215686,
+            "resonance_risk_factor": 1.0385261120510342e-12,
+            "roll_term(beam-weighted)": 4.749011329434164e-13,
+            "speed_in_sea_state_factor": 0.31851298885177615,
+            "structural_weakening_factor": 5.5732539648449085e-6,
+            "storm_factor": 0.7612941577684211,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.36599388060180377
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.061879934996361526,
+            "wave": 0.1980749780417255,
+            "resonance": 1.4247033988302492e-13,
+            "speed": 0.19110779331106567,
+            "structural": 3.343952378906945e-6,
+            "storm": 0.45677649466105263,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.07319877612036076
+          },
+          "hazard_sum": 1.146339067737095,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.68)."
+      ]
+    },
+    {
+      "current_time_s": 43200.0,
+      "current_position": {
+        "latitude_deg": 14.285714285714285,
+        "longitude_deg": -38.57142857142857
+      },
+      "speed_m_s": 4.997460317460318,
+      "environment": {
+        "salinity_ppt": 35.09935995429855,
+        "water_temperature_c": 22.846737953205345,
+        "pH": 8.223731091640332,
+        "dissolved_oxygen_mg_l": 7.547465002128326,
+        "pollution_factor_0_1": 0.20446566985465636,
+        "biofouling_factor_0_1": 0.2554531905346821
+      },
+      "weather": {
+        "wind_speed_m_s": 22.41892266903133,
+        "wind_direction_deg": 270.06534175616014,
+        "air_temperature_c": 24.299575607302607,
+        "relative_humidity_0_1": 0.7676568038878407,
+        "precipitation_rate_mm_hr": 9.576755433175922,
+        "storm_intensity_0_1": 0.6064875865877533,
+        "atmospheric_pressure_pa": 98728.23904011904
+      },
+      "waves": {
+        "significant_wave_height_m": 9.625084904139111,
+        "peak_period_s": 16.33733667546457,
+        "mean_wave_direction_deg": 87.73803019338771,
+        "current_speed_m_s": 1.0960101888003977,
+        "current_direction_deg": 193.0751698785909,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 1.2991761481459385e-7,
+        "side_shell_waterline": 1.2991761481459385e-7,
+        "main_deck": 7.795056888875631e-8,
+        "superstructure_front": 2.887058106990975e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999870082385187,
+        "side_shell_waterline": 0.011999870082385187,
+        "main_deck": 0.009999922049431112,
+        "superstructure_front": 0.005999997112941893
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00006488577421073971,
+        "side_shell_waterline": 0.00006488577421073971,
+        "main_deck": 0.000038931464526443824,
+        "superstructure_front": 1.4419060935719934e-6
+      },
+      "stability_risk_score_0_1": 0.6306943462388322,
+      "capsize_probability_timestep": 0.8962500492450954,
+      "intermediate_physics_values": {
+        "heading_deg": 20.714285714285715,
+        "structural_weakening_factor": 8.468016385672813e-6,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.5407147850894974,
+          "side_shell_waterline": 0.5407147850894974,
+          "main_deck": 0.32442887105369844,
+          "superstructure_front": 0.07209530467859966
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 910016.029469655,
+          "wind_to_restoring_ratio": 0.2619557701940258,
+          "relative_heading_deg": 67.02374447910199,
+          "encounter_period_s": 17.690739357878513,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.8621830903030014,
+          "beam_excitation": 0.9206667009386859,
+          "wave_steepness": 0.02310474842154546,
+          "Hs_over_beam": 0.7700067923311289,
+          "Hs_over_freeboard_proxy": 1.9250169808278224,
+          "froude_number": 0.18807140468372063,
+          "following_weight": 0.3903496199340745,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.07869964675034151,
+            "wave_risk_factor": 0.2155670406581922,
+            "resonance_risk_factor": 6.832944262726789e-6,
+            "roll_term(beam-weighted)": 6.290864252062594e-6,
+            "speed_in_sea_state_factor": 0.1915400026631817,
+            "structural_weakening_factor": 8.468016385672813e-6,
+            "storm_factor": 0.6064875865877533,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.5042805014545974
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.07869964675034151,
+            "wave": 0.17245363252655377,
+            "resonance": 1.887259275618778e-6,
+            "speed": 0.11492400159790901,
+            "structural": 5.080809831403688e-6,
+            "storm": 0.36389255195265197,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.10085610029091947
+          },
+          "hazard_sum": 0.9961306478414903,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.63)."
+      ]
+    },
+    {
+      "current_time_s": 64800.0,
+      "current_position": {
+        "latitude_deg": 15.428571428571429,
+        "longitude_deg": -37.857142857142854
+      },
+      "speed_m_s": 5.181190476190477,
+      "environment": {
+        "salinity_ppt": 34.75541437189583,
+        "water_temperature_c": 22.765897612168423,
+        "pH": 8.288320284355946,
+        "dissolved_oxygen_mg_l": 7.548749286015203,
+        "pollution_factor_0_1": 0.18516199124795807,
+        "biofouling_factor_0_1": 0.13962884430947964
+      },
+      "weather": {
+        "wind_speed_m_s": 16.233137283872413,
+        "wind_direction_deg": 271.6070058790215,
+        "air_temperature_c": 25.385481377615935,
+        "relative_humidity_0_1": 0.7150920481739886,
+        "precipitation_rate_mm_hr": 4.518476089452917,
+        "storm_intensity_0_1": 0.37225746495655115,
+        "atmospheric_pressure_pa": 99471.99703722444
+      },
+      "waves": {
+        "significant_wave_height_m": 4.75154769120566,
+        "peak_period_s": 12.848305484265156,
+        "mean_wave_direction_deg": 87.77373325729366,
+        "current_speed_m_s": 1.3576618272124077,
+        "current_direction_deg": 260.21073077498124,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 1.732096454284805e-7,
+        "side_shell_waterline": 1.732096454284805e-7,
+        "main_deck": 1.0392578725708829e-7,
+        "superstructure_front": 3.849103231744011e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999826790354572,
+        "side_shell_waterline": 0.011999826790354572,
+        "main_deck": 0.009999896074212743,
+        "superstructure_front": 0.005999996150896769
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00006324965672688837,
+        "side_shell_waterline": 0.00006324965672688837,
+        "main_deck": 0.00003794979403613302,
+        "superstructure_front": 1.405547927264186e-6
+      },
+      "stability_risk_score_0_1": 0.4884613651973132,
+      "capsize_probability_timestep": 0.3867433802261375,
+      "intermediate_physics_values": {
+        "heading_deg": 21.071428571428573,
+        "structural_weakening_factor": 0.000011289786359969246,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.5270804727240697,
+          "side_shell_waterline": 0.5270804727240697,
+          "main_deck": 0.3162482836344418,
+          "superstructure_front": 0.07027739636320929
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 480731.5163164632,
+          "wind_to_restoring_ratio": 0.13838261144324185,
+          "relative_heading_deg": 66.70230468586509,
+          "encounter_period_s": 14.31068166288308,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.506387543461377,
+          "beam_excitation": 0.9184622911633951,
+          "wave_steepness": 0.018441768988915214,
+          "Hs_over_beam": 0.38012381529645284,
+          "Hs_over_freeboard_proxy": 0.9503095382411321,
+          "froude_number": 0.1949857945617986,
+          "following_weight": 0.3955085583282453,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.05355224954744289,
+            "wave_risk_factor": 0.15723832092995654,
+            "resonance_risk_factor": 0.016525452567759592,
+            "roll_term(beam-weighted)": 0.015178005027896485,
+            "speed_in_sea_state_factor": 0.1376976357880574,
+            "structural_weakening_factor": 0.000011289786359969246,
+            "storm_factor": 0.37225746495655115,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.07579137654723109
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.05355224954744289,
+            "wave": 0.12579065674396525,
+            "resonance": 0.004553401508368945,
+            "speed": 0.08261858147283445,
+            "structural": 6.773871815981547e-6,
+            "storm": 0.22335447897393068,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.015158275309446217
+          },
+          "hazard_sum": 0.6703321640818121,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 86400.0,
+      "current_position": {
+        "latitude_deg": 16.57142857142857,
+        "longitude_deg": -37.142857142857146
+      },
+      "speed_m_s": 5.364920634920636,
+      "environment": {
+        "salinity_ppt": 34.483137835323376,
+        "water_temperature_c": 22.09328532312665,
+        "pH": 8.302208833697444,
+        "dissolved_oxygen_mg_l": 8.038302490428338,
+        "pollution_factor_0_1": 0.13218998186111633,
+        "biofouling_factor_0_1": 0.0862990418974332
+      },
+      "weather": {
+        "wind_speed_m_s": 13.853958276521222,
+        "wind_direction_deg": 226.3176193258251,
+        "air_temperature_c": 24.78625820854439,
+        "relative_humidity_0_1": 0.7018752611863399,
+        "precipitation_rate_mm_hr": 1.3454511354735372,
+        "storm_intensity_0_1": 0.26666808204096987,
+        "atmospheric_pressure_pa": 99755.78544854665
+      },
+      "waves": {
+        "significant_wave_height_m": 3.311805203662626,
+        "peak_period_s": 11.493933752944846,
+        "mean_wave_direction_deg": 49.15126127648904,
+        "current_speed_m_s": 1.2381172428265457,
+        "current_direction_deg": 282.9416408594534,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 2.1100176011962885e-7,
+        "side_shell_waterline": 2.1100176011962885e-7,
+        "main_deck": 1.266010560717773e-7,
+        "superstructure_front": 4.688928002658419e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.01399978899823988,
+        "side_shell_waterline": 0.01199978899823988,
+        "main_deck": 0.009999873398943928,
+        "superstructure_front": 0.005999995311071997
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000055214279563767735,
+        "side_shell_waterline": 0.000055214279563767735,
+        "main_deck": 0.000033128567738260645,
+        "superstructure_front": 1.22698399030595e-6
+      },
+      "stability_risk_score_0_1": 0.4810448331817322,
+      "capsize_probability_timestep": 0.3598694621931947,
+      "intermediate_physics_values": {
+        "heading_deg": 21.428571428571427,
+        "structural_weakening_factor": 0.000013753072396412623,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.4601189963647311,
+          "side_shell_waterline": 0.4601189963647311,
+          "main_deck": 0.27607139781883866,
+          "superstructure_front": 0.0613491995152975
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 156294.4735044182,
+          "wind_to_restoring_ratio": 0.04499067912878437,
+          "relative_heading_deg": 27.72268984791761,
+          "encounter_period_s": 15.632219849787234,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.6454968262933931,
+          "beam_excitation": 0.4651926362559007,
+          "wave_steepness": 0.016061518327486132,
+          "Hs_over_beam": 0.2649444162930101,
+          "Hs_over_freeboard_proxy": 0.6623610407325252,
+          "froude_number": 0.20190018443987656,
+          "following_weight": 0.8852094730476427,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.03979657144011791,
+            "wave_risk_factor": 0.12833582172620855,
+            "resonance_risk_factor": 0.0012726442657277554,
+            "roll_term(beam-weighted)": 0.0005920247409898496,
+            "speed_in_sea_state_factor": 0.16452941341312158,
+            "structural_weakening_factor": 0.000013753072396412623,
+            "storm_factor": 0.26666808204096987,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.4463522565704546
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.03979657144011791,
+            "wave": 0.10266865738096685,
+            "resonance": 0.00017760742229695487,
+            "speed": 0.09871764804787295,
+            "structural": 8.251843437847574e-6,
+            "storm": 0.1600008492245819,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.08927045131409092
+          },
+          "hazard_sum": 0.6559377833273728,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 108000.0,
+      "current_position": {
+        "latitude_deg": 17.714285714285715,
+        "longitude_deg": -36.42857142857143
+      },
+      "speed_m_s": 5.548650793650794,
+      "environment": {
+        "salinity_ppt": 34.47685057522796,
+        "water_temperature_c": 21.03758092507791,
+        "pH": 8.2710227693063,
+        "dissolved_oxygen_mg_l": 8.77358113959183,
+        "pollution_factor_0_1": 0.08443035587270996,
+        "biofouling_factor_0_1": 0.12406594051966915
+      },
+      "weather": {
+        "wind_speed_m_s": 15.114319723204495,
+        "wind_direction_deg": 150.0103999861896,
+        "air_temperature_c": 23.080938862380158,
+        "relative_humidity_0_1": 0.7393326456226533,
+        "precipitation_rate_mm_hr": 1.406818997567759,
+        "storm_intensity_0_1": 0.3430727969007504,
+        "atmospheric_pressure_pa": 99483.83978862037
+      },
+      "waves": {
+        "significant_wave_height_m": 3.9762690028219705,
+        "peak_period_s": 12.234990634613501,
+        "mean_wave_direction_deg": 345.61918628846735,
+        "current_speed_m_s": 0.7998360019114243,
+        "current_direction_deg": 260.76919820745616,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 2.5041875723779686e-7,
+        "side_shell_waterline": 2.5041875723779686e-7,
+        "main_deck": 1.502512543426781e-7,
+        "superstructure_front": 5.564861271951041e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999749581242763,
+        "side_shell_waterline": 0.011999749581242763,
+        "main_deck": 0.009999849748745657,
+        "superstructure_front": 0.005999994435138728
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00005758823278964345,
+        "side_shell_waterline": 0.00005758823278964345,
+        "main_deck": 0.000034552939673786065,
+        "superstructure_front": 1.279738506436521e-6
+      },
+      "stability_risk_score_0_1": 0.5184722375541473,
+      "capsize_probability_timestep": 0.5030605719825088,
+      "intermediate_physics_values": {
+        "heading_deg": 21.785714285714285,
+        "structural_weakening_factor": 0.00001632226809739068,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.4799019399136953,
+          "side_shell_waterline": 0.4799019399136953,
+          "main_deck": 0.28794116394821717,
+          "superstructure_front": 0.06398692532182604
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 347239.4709924014,
+          "wind_to_restoring_ratio": 0.09995580310666798,
+          "relative_heading_deg": 323.83347200275307,
+          "encounter_period_s": 15.984559895720293,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.6825852521810836,
+          "beam_excitation": 0.5901341433488031,
+          "wave_steepness": 0.017018750361676226,
+          "Hs_over_beam": 0.31810152022575766,
+          "Hs_over_freeboard_proxy": 0.7952538005643941,
+          "froude_number": 0.20881457431795453,
+          "following_weight": 0.8073052042777714,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.0474192180612684,
+            "wave_risk_factor": 0.14238805035137983,
+            "resonance_risk_factor": 0.0005786793555134881,
+            "roll_term(beam-weighted)": 0.0003414984457395898,
+            "speed_in_sea_state_factor": 0.18281349307512829,
+            "structural_weakening_factor": 0.00001632226809739068,
+            "storm_factor": 0.3430727969007504,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.442599846414019
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.0474192180612684,
+            "wave": 0.11391044028110386,
+            "resonance": 0.00010244953372187694,
+            "speed": 0.10968809584507697,
+            "structural": 9.793360858434408e-6,
+            "storm": 0.2058436781404502,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.08851996928280381
+          },
+          "hazard_sum": 0.730791391159291,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 129600.0,
+      "current_position": {
+        "latitude_deg": 18.857142857142858,
+        "longitude_deg": -35.714285714285715
+      },
+      "speed_m_s": 5.732380952380953,
+      "environment": {
+        "salinity_ppt": 34.68315533300576,
+        "water_temperature_c": 19.972308967692953,
+        "pH": 8.219064391878605,
+        "dissolved_oxygen_mg_l": 9.1902326353137,
+        "pollution_factor_0_1": 0.08225724281284102,
+        "biofouling_factor_0_1": 0.2229712783123333
+      },
+      "weather": {
+        "wind_speed_m_s": 17.89066672385316,
+        "wind_direction_deg": 73.09053577853088,
+        "air_temperature_c": 21.286201649338327,
+        "relative_humidity_0_1": 0.7894417606285485,
+        "precipitation_rate_mm_hr": 0.9221588478824685,
+        "storm_intensity_0_1": 0.4866295914527941,
+        "atmospheric_pressure_pa": 99090.1528836802
+      },
+      "waves": {
+        "significant_wave_height_m": 6.017632545413224,
+        "peak_period_s": 13.889691649855202,
+        "mean_wave_direction_deg": 276.3835213156144,
+        "current_speed_m_s": 0.31449470738793556,
+        "current_direction_deg": 220.50356623891244,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 2.8868177939539425e-7,
+        "side_shell_waterline": 2.8868177939539425e-7,
+        "main_deck": 1.7320906763723652e-7,
+        "superstructure_front": 6.415150653230983e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999711318220604,
+        "side_shell_waterline": 0.011999711318220604,
+        "main_deck": 0.009999826790932363,
+        "superstructure_front": 0.005999993584849347
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00005590227537224981,
+        "side_shell_waterline": 0.00005590227537224981,
+        "main_deck": 0.000033541365223349884,
+        "superstructure_front": 1.2422727860499958e-6
+      },
+      "stability_risk_score_0_1": 0.5472481479672895,
+      "capsize_probability_timestep": 0.6197626220549939,
+      "intermediate_physics_values": {
+        "heading_deg": 22.142857142857142,
+        "structural_weakening_factor": 0.000018816247832675884,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.46585229476874834,
+          "side_shell_waterline": 0.46585229476874834,
+          "main_deck": 0.279511376861249,
+          "superstructure_front": 0.06211363930249979
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 480938.9080804674,
+          "wind_to_restoring_ratio": 0.13844231090733072,
+          "relative_heading_deg": 254.24066417275728,
+          "encounter_period_s": 12.959014586464193,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.3641067985751782,
+          "beam_excitation": 0.9624109949197196,
+          "wave_steepness": 0.019984792740000052,
+          "Hs_over_beam": 0.4814106036330579,
+          "Hs_over_freeboard_proxy": 1.2035265090826448,
+          "froude_number": 0.21572896419603246,
+          "following_weight": 0.0,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.05356233654983808,
+            "wave_risk_factor": 0.17685026251605923,
+            "resonance_risk_factor": 0.11989005406607753,
+            "roll_term(beam-weighted)": 0.11538350621471265,
+            "speed_in_sea_state_factor": 0.10975528288260583,
+            "structural_weakening_factor": 0.000018816247832675884,
+            "storm_factor": 0.4866295914527941,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.19806766082991634
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.05356233654983808,
+            "wave": 0.14148021001284738,
+            "resonance": 0.03461505186441379,
+            "speed": 0.0658531697295635,
+            "structural": 0.00001128974869960553,
+            "storm": 0.29197775487167643,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.03961353216598327
+          },
+          "hazard_sum": 0.7924110915970296,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 151200.0,
+      "current_position": {
+        "latitude_deg": 20.0,
+        "longitude_deg": -35.0
+      },
+      "speed_m_s": 5.916111111111112,
+      "environment": {
+        "salinity_ppt": 34.808296952761474,
+        "water_temperature_c": 19.188187855168987,
+        "pH": 8.17447016641715,
+        "dissolved_oxygen_mg_l": 9.01634704710494,
+        "pollution_factor_0_1": 0.1339981559201087,
+        "biofouling_factor_0_1": 0.3232461516928161
+      },
+      "weather": {
+        "wind_speed_m_s": 19.12581188681853,
+        "wind_direction_deg": 26.4922068365013,
+        "air_temperature_c": 20.069125203924767,
+        "relative_humidity_0_1": 0.8148457310119261,
+        "precipitation_rate_mm_hr": 2.1364627392306996,
+        "storm_intensity_0_1": 0.5768538663911366,
+        "atmospheric_pressure_pa": 98887.1018592956
+      },
+      "waves": {
+        "significant_wave_height_m": 7.328954641399555,
+        "peak_period_s": 14.698328912563113,
+        "mean_wave_direction_deg": 223.6889862869122,
+        "current_speed_m_s": 0.09233419558483266,
+        "current_direction_deg": 187.16214663022345,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 3.2620365833380126e-7,
+        "side_shell_waterline": 3.2620365833380126e-7,
+        "main_deck": 1.9572219500028074e-7,
+        "superstructure_front": 7.2489701851955835e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999673796341667,
+        "side_shell_waterline": 0.011999673796341667,
+        "main_deck": 0.009999804277805,
+        "superstructure_front": 0.005999992751029815
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00005481946512901265,
+        "side_shell_waterline": 0.00005481946512901265,
+        "main_deck": 0.000032891679077407595,
+        "superstructure_front": 1.218210336200281e-6
+      },
+      "stability_risk_score_0_1": 0.563465255876474,
+      "capsize_probability_timestep": 0.6840401907206927,
+      "intermediate_physics_values": {
+        "heading_deg": 22.5,
+        "structural_weakening_factor": 0.000021261919931244342,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.45682887607510536,
+          "side_shell_waterline": 0.45682887607510536,
+          "main_deck": 0.27409732564506323,
+          "superstructure_front": 0.060910516810014054
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 49275.882814419405,
+          "wind_to_restoring_ratio": 0.014184477434056257,
+          "relative_heading_deg": 201.1889862869122,
+          "encounter_period_s": 11.849180822952789,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.2472821918897672,
+          "beam_excitation": 0.3614453469407662,
+          "wave_steepness": 0.021735283212469616,
+          "Hs_over_beam": 0.5863163713119645,
+          "Hs_over_freeboard_proxy": 1.465790928279911,
+          "froude_number": 0.22264335407411046,
+          "following_weight": 0.0,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.03605280864731382,
+            "wave_risk_factor": 0.19391557541120874,
+            "resonance_risk_factor": 0.37592120496637127,
+            "roll_term(beam-weighted)": 0.13587497035146093,
+            "speed_in_sea_state_factor": 0.12575729290068058,
+            "structural_weakening_factor": 0.000021261919931244342,
+            "storm_factor": 0.5768538663911366,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.05031175165861316
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.03605280864731382,
+            "wave": 0.155132460328967,
+            "resonance": 0.040762491105438274,
+            "speed": 0.07545437574040835,
+            "structural": 0.000012757151958746605,
+            "storm": 0.34611231983468194,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.010062350331722633
+          },
+          "hazard_sum": 0.8288873097944983,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 172800.0,
+      "current_position": {
+        "latitude_deg": 21.142857142857142,
+        "longitude_deg": -34.285714285714285
+      },
+      "speed_m_s": 6.099841269841271,
+      "environment": {
+        "salinity_ppt": 34.62728052927719,
+        "water_temperature_c": 18.556743973725215,
+        "pH": 8.152996874872098,
+        "dissolved_oxygen_mg_l": 8.65987751174109,
+        "pollution_factor_0_1": 0.2051845797924332,
+        "biofouling_factor_0_1": 0.37754747708698294
+      },
+      "weather": {
+        "wind_speed_m_s": 18.44719008549699,
+        "wind_direction_deg": 27.750029435389646,
+        "air_temperature_c": 18.94993727091628,
+        "relative_humidity_0_1": 0.8153372586652062,
+        "precipitation_rate_mm_hr": 6.311296082895982,
+        "storm_intensity_0_1": 0.608061361262451,
+        "atmospheric_pressure_pa": 98737.82677937044
+      },
+      "waves": {
+        "significant_wave_height_m": 6.921917914454711,
+        "peak_period_s": 14.362383185375261,
+        "mean_wave_direction_deg": 209.1610703244945,
+        "current_speed_m_s": 0.28209244554552404,
+        "current_direction_deg": 163.80489021440042,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 3.630163881726289e-7,
+        "side_shell_waterline": 3.630163881726289e-7,
+        "main_deck": 2.178098329035773e-7,
+        "superstructure_front": 8.067030848280642e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999636983611828,
+        "side_shell_waterline": 0.011999636983611828,
+        "main_deck": 0.009999782190167096,
+        "superstructure_front": 0.005999991932969152
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000053783398294527164,
+        "side_shell_waterline": 0.000053783398294527164,
+        "main_deck": 0.0000322700389767163,
+        "superstructure_front": 1.1951866287672704e-6
+      },
+      "stability_risk_score_0_1": 0.5697007762866073,
+      "capsize_probability_timestep": 0.7079377532442115,
+      "intermediate_physics_values": {
+        "heading_deg": 22.857142857142858,
+        "structural_weakening_factor": 0.000023661369766658782,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.4481949857877263,
+          "side_shell_waterline": 0.4481949857877263,
+          "main_deck": 0.26891699147263576,
+          "superstructure_front": 0.05975933143836351
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 56160.46477127155,
+          "wind_to_restoring_ratio": 0.016166262271431187,
+          "relative_heading_deg": 186.30392746735163,
+          "encounter_period_s": 11.304789712004089,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.1899778644214831,
+          "beam_excitation": 0.10980244410992197,
+          "wave_steepness": 0.021499710829229014,
+          "Hs_over_beam": 0.5537534331563768,
+          "Hs_over_freeboard_proxy": 1.384383582890942,
+          "froude_number": 0.22955774395218842,
+          "following_weight": 0.0,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.03628309016490344,
+            "wave_risk_factor": 0.18936567338996158,
+            "resonance_risk_factor": 0.5613192717309061,
+            "roll_term(beam-weighted)": 0.06163422796205492,
+            "speed_in_sea_state_factor": 0.12591785599745217,
+            "structural_weakening_factor": 0.000023661369766658782,
+            "storm_factor": 0.608061361262451,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.15654536050478793
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.03628309016490344,
+            "wave": 0.15149253871196927,
+            "resonance": 0.018490268388616476,
+            "speed": 0.0755507135984713,
+            "structural": 0.000014196821859995269,
+            "storm": 0.3648368167574706,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.03130907210095759
+          },
+          "hazard_sum": 0.8432744431982562,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 194400.0,
+      "current_position": {
+        "latitude_deg": 22.285714285714285,
+        "longitude_deg": -33.57142857142857
+      },
+      "speed_m_s": 6.283571428571429,
+      "environment": {
+        "salinity_ppt": 34.285145958485565,
+        "water_temperature_c": 17.572723233871436,
+        "pH": 8.149926498685483,
+        "dissolved_oxygen_mg_l": 8.81598233724404,
+        "pollution_factor_0_1": 0.24173230715324617,
+        "biofouling_factor_0_1": 0.3738194198712489
+      },
+      "weather": {
+        "wind_speed_m_s": 17.759650830782995,
+        "wind_direction_deg": 73.64772516765197,
+        "air_temperature_c": 16.598368620229,
+        "relative_humidity_0_1": 0.8104597495850294,
+        "precipitation_rate_mm_hr": 10.849937206004027,
+        "storm_intensity_0_1": 0.6336296309478108,
+        "atmospheric_pressure_pa": 98452.87537879575
+      },
+      "waves": {
+        "significant_wave_height_m": 6.2312635260348,
+        "peak_period_s": 13.885475910226493,
+        "mean_wave_direction_deg": 243.8049529864516,
+        "current_speed_m_s": 0.7715685325412219,
+        "current_direction_deg": 137.85537178961758,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 3.9855069243618433e-7,
+        "side_shell_waterline": 3.9855069243618433e-7,
+        "main_deck": 2.3913041546171053e-7,
+        "superstructure_front": 8.856682054137428e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999601449307564,
+        "side_shell_waterline": 0.011999601449307564,
+        "main_deck": 0.009999760869584538,
+        "superstructure_front": 0.005999991143317946
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00005191561852905446,
+        "side_shell_waterline": 0.00005191561852905446,
+        "main_deck": 0.00003114937111743268,
+        "superstructure_front": 1.1536804117567655e-6
+      },
+      "stability_risk_score_0_1": 0.6337968098078021,
+      "capsize_probability_timestep": 0.903041582106485,
+      "intermediate_physics_values": {
+        "heading_deg": 23.214285714285715,
+        "structural_weakening_factor": 0.00002597749195835849,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.4326301544087871,
+          "side_shell_waterline": 0.4326301544087871,
+          "main_deck": 0.25957809264527226,
+          "superstructure_front": 0.057684020587838274
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 470450.8239125001,
+          "wind_to_restoring_ratio": 0.13542322764164277,
+          "relative_heading_deg": 220.5906672721659,
+          "encounter_period_s": 11.379930869871615,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.1978874599864857,
+          "beam_excitation": 0.6506505333376637,
+          "wave_steepness": 0.02070683736470886,
+          "Hs_over_beam": 0.498501082082784,
+          "Hs_over_freeboard_proxy": 1.24625270520696,
+          "froude_number": 0.23647213383026638,
+          "following_weight": 0.0,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.05305446381460502,
+            "wave_risk_factor": 0.18045685310877865,
+            "resonance_risk_factor": 0.5344318018297023,
+            "roll_term(beam-weighted)": 0.34772833689310434,
+            "speed_in_sea_state_factor": 0.12264152257188901,
+            "structural_weakening_factor": 0.00002597749195835849,
+            "storm_factor": 0.6336296309478108,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.41876231268714526
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.05305446381460502,
+            "wave": 0.14436548248702294,
+            "resonance": 0.1043185010679313,
+            "speed": 0.0735849135431334,
+            "structural": 0.000015586495175015093,
+            "storm": 0.38017777856868645,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.08375246253742906
+          },
+          "hazard_sum": 1.0045669351679907,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.63)."
+      ]
+    },
+    {
+      "current_time_s": 216000.0,
+      "current_position": {
+        "latitude_deg": 23.42857142857143,
+        "longitude_deg": -32.857142857142854
+      },
+      "speed_m_s": 6.467301587301588,
+      "environment": {
+        "salinity_ppt": 34.23626350184079,
+        "water_temperature_c": 15.910525780774353,
+        "pH": 8.144718933917018,
+        "dissolved_oxygen_mg_l": 9.6555789330537,
+        "pollution_factor_0_1": 0.2112973152873039,
+        "biofouling_factor_0_1": 0.32823270510982827
+      },
+      "weather": {
+        "wind_speed_m_s": 16.922684032622435,
+        "wind_direction_deg": 142.5997943406405,
+        "air_temperature_c": 12.360772988971217,
+        "relative_humidity_0_1": 0.8005394535369239,
+        "precipitation_rate_mm_hr": 11.821840650989142,
+        "storm_intensity_0_1": 0.6408503507271853,
+        "atmospheric_pressure_pa": 98294.3466762033
+      },
+      "waves": {
+        "significant_wave_height_m": 5.512943789176428,
+        "peak_period_s": 13.232838572711838,
+        "mean_wave_direction_deg": 316.7317372263407,
+        "current_speed_m_s": 1.2552315187982601,
+        "current_direction_deg": 104.52306992753319,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 4.318357394543547e-7,
+        "side_shell_waterline": 4.318357394543547e-7,
+        "main_deck": 2.5910144367261275e-7,
+        "superstructure_front": 9.596349765652325e-9
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999568164260547,
+        "side_shell_waterline": 0.011999568164260547,
+        "main_deck": 0.009999740898556328,
+        "superstructure_front": 0.005999990403650234
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000048629453693546936,
+        "side_shell_waterline": 0.000048629453693546936,
+        "main_deck": 0.000029177672216128165,
+        "superstructure_front": 1.0806545265232653e-6
+      },
+      "stability_risk_score_0_1": 0.5986352556717742,
+      "capsize_probability_timestep": 0.8092560809259657,
+      "intermediate_physics_values": {
+        "heading_deg": 23.571428571428573,
+        "structural_weakening_factor": 0.00002814700780069401,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.4052454474462244,
+          "side_shell_waterline": 0.4052454474462244,
+          "main_deck": 0.24314726846773466,
+          "superstructure_front": 0.05403272632616326
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 484500.48729547166,
+          "wind_to_restoring_ratio": 0.13946754144850834,
+          "relative_heading_deg": 293.16030865491217,
+          "encounter_period_s": 15.09145597371853,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.5885743130230032,
+          "beam_excitation": 0.9194080198418889,
+          "wave_steepness": 0.020171431882900236,
+          "Hs_over_beam": 0.44103550313411427,
+          "Hs_over_freeboard_proxy": 1.1025887578352855,
+          "froude_number": 0.24338652370834432,
+          "following_weight": 0.3933050890217628,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.053735842543798644,
+            "wave_risk_factor": 0.1706174576189981,
+            "resonance_risk_factor": 0.003915878618043828,
+            "roll_term(beam-weighted)": 0.0036002902061568684,
+            "speed_in_sea_state_factor": 0.1873622259539386,
+            "structural_weakening_factor": 0.00002814700780069401,
+            "storm_factor": 0.6408503507271853,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.29666300838687565
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.053735842543798644,
+            "wave": 0.13649396609519848,
+            "resonance": 0.0010800870618470604,
+            "speed": 0.11241733557236315,
+            "structural": 0.000016888204680416406,
+            "storm": 0.3845102104363112,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.059332601677375134
+          },
+          "hazard_sum": 0.9128846782455815,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 237600.0,
+      "current_position": {
+        "latitude_deg": 24.57142857142857,
+        "longitude_deg": -32.142857142857146
+      },
+      "speed_m_s": 6.651031746031746,
+      "environment": {
+        "salinity_ppt": 34.811818647126906,
+        "water_temperature_c": 13.830994499694441,
+        "pH": 8.115473109168626,
+        "dissolved_oxygen_mg_l": 10.575490856405471,
+        "pollution_factor_0_1": 0.13099103157277509,
+        "biofouling_factor_0_1": 0.263950700671619
+      },
+      "weather": {
+        "wind_speed_m_s": 13.562493432490719,
+        "wind_direction_deg": 205.2707111318482,
+        "air_temperature_c": 7.216312207918069,
+        "relative_humidity_0_1": 0.7646512673326973,
+        "precipitation_rate_mm_hr": 6.77839222959051,
+        "storm_intensity_0_1": 0.549448882363417,
+        "atmospheric_pressure_pa": 98778.58507883764
+      },
+      "waves": {
+        "significant_wave_height_m": 3.651291873534937,
+        "peak_period_s": 11.209597162636328,
+        "mean_wave_direction_deg": 34.919393880494056,
+        "current_speed_m_s": 1.42732157108665,
+        "current_direction_deg": 81.13974013189603,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 4.607326864196502e-7,
+        "side_shell_waterline": 4.607326864196502e-7,
+        "main_deck": 2.7643961185179e-7,
+        "superstructure_front": 1.0238504142658891e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999539267313581,
+        "side_shell_waterline": 0.011999539267313581,
+        "main_deck": 0.009999723560388148,
+        "superstructure_front": 0.0059999897614958575
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00004221843951629671,
+        "side_shell_waterline": 0.00004221843951629671,
+        "main_deck": 0.00002533106370977803,
+        "superstructure_front": 9.381875448065929e-7
+      },
+      "stability_risk_score_0_1": 0.5787274635024164,
+      "capsize_probability_timestep": 0.7414149071622353,
+      "intermediate_physics_values": {
+        "heading_deg": 23.928571428571427,
+        "structural_weakening_factor": 0.000030030507746033517,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.3518203293024726,
+          "side_shell_waterline": 0.3518203293024726,
+          "main_deck": 0.21109219758148354,
+          "superstructure_front": 0.04690937724032965
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 8336.239316497442,
+          "wind_to_restoring_ratio": 0.0023996566213756176,
+          "relative_heading_deg": 10.990822451922629,
+          "encounter_period_s": 17.88327788364286,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.8824503035413538,
+          "beam_excitation": 0.19065175742713367,
+          "wave_steepness": 0.01861768731036794,
+          "Hs_over_beam": 0.29210334988279496,
+          "Hs_over_freeboard_proxy": 0.7302583747069874,
+          "froude_number": 0.2503009135864223,
+          "following_weight": 0.9816577343402054,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.034712220342677305,
+            "wave_risk_factor": 0.13864466782168805,
+            "resonance_risk_factor": 3.880693778104578e-6,
+            "roll_term(beam-weighted)": 7.39861088832181e-7,
+            "speed_in_sea_state_factor": 0.23158461056479857,
+            "structural_weakening_factor": 0.000030030507746033517,
+            "storm_factor": 0.549448882363417,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.4245563118429832
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.034712220342677305,
+            "wave": 0.11091573425735045,
+            "resonance": 2.2195832664965429e-7,
+            "speed": 0.13895076633887912,
+            "structural": 0.000018018304647620108,
+            "storm": 0.3296693294180502,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.08491126236859664
+          },
+          "hazard_sum": 0.8644752996425356,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 259200.0,
+      "current_position": {
+        "latitude_deg": 25.714285714285715,
+        "longitude_deg": -31.42857142857143
+      },
+      "speed_m_s": 6.834761904761905,
+      "environment": {
+        "salinity_ppt": 35.81160661643789,
+        "water_temperature_c": 11.904011449652291,
+        "pH": 8.054438946439344,
+        "dissolved_oxygen_mg_l": 10.87756560010341,
+        "pollution_factor_0_1": 0.05819261495761468,
+        "biofouling_factor_0_1": 0.19843488785888164
+      },
+      "weather": {
+        "wind_speed_m_s": 8.351180488615567,
+        "wind_direction_deg": 238.16084994800303,
+        "air_temperature_c": 2.8977039191715193,
+        "relative_humidity_0_1": 0.7012002872413593,
+        "precipitation_rate_mm_hr": 1.293350562841566,
+        "storm_intensity_0_1": 0.3505772855459397,
+        "atmospheric_pressure_pa": 99898.52107528741
+      },
+      "waves": {
+        "significant_wave_height_m": 1.9254467298682512,
+        "peak_period_s": 8.298617089688632,
+        "mean_wave_direction_deg": 80.06750594186366,
+        "current_speed_m_s": 1.1769732171953329,
+        "current_direction_deg": 95.28120929907466,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 4.809424623187378e-7,
+        "side_shell_waterline": 4.809424623187378e-7,
+        "main_deck": 2.8856547739124256e-7,
+        "superstructure_front": 1.0687610273749727e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999519057537681,
+        "side_shell_waterline": 0.011999519057537681,
+        "main_deck": 0.009999711434522609,
+        "superstructure_front": 0.005999989312389727
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000029526482588566966,
+        "side_shell_waterline": 0.000029526482588566966,
+        "main_deck": 0.000017715889553140176,
+        "superstructure_front": 6.561440575237103e-7
+      },
+      "stability_risk_score_0_1": 0.4946691101725399,
+      "capsize_probability_timestep": 0.40989930561223,
+      "intermediate_physics_values": {
+        "heading_deg": 24.285714285714285,
+        "structural_weakening_factor": 0.00003134777880059447,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.24605402157139133,
+          "side_shell_waterline": 0.24605402157139133,
+          "main_deck": 0.1476324129428348,
+          "superstructure_front": 0.032807202876185514
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 75215.37536020357,
+          "wind_to_restoring_ratio": 0.021651378596482064,
+          "relative_heading_deg": 55.78179165614937,
+          "encounter_period_s": 11.800263854565037,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.2421330373226354,
+          "beam_excitation": 0.8269019049154063,
+          "wave_steepness": 0.017913450517943044,
+          "Hs_over_beam": 0.15403573838946008,
+          "Hs_over_freeboard_proxy": 0.38508934597365024,
+          "froude_number": 0.2572153034645002,
+          "following_weight": 0.5623461919914391,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.03692785892113234,
+            "wave_risk_factor": 0.09757621120180693,
+            "resonance_risk_factor": 0.3913885320739563,
+            "roll_term(beam-weighted)": 0.32363992273399905,
+            "speed_in_sea_state_factor": 0.11070468522936856,
+            "structural_weakening_factor": 0.00003134777880059447,
+            "storm_factor": 0.3505772855459397,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.14187647202078074
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.03692785892113234,
+            "wave": 0.07806096896144554,
+            "resonance": 0.09709197682019971,
+            "speed": 0.06642281113762113,
+            "structural": 0.000018808667280356682,
+            "storm": 0.2103463713275638,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.02837529440415615
+          },
+          "hazard_sum": 0.6825418368934066,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 280800.0,
+      "current_position": {
+        "latitude_deg": 26.857142857142858,
+        "longitude_deg": -30.714285714285715
+      },
+      "speed_m_s": 7.018492063492064,
+      "environment": {
+        "salinity_ppt": 36.558414957355524,
+        "water_temperature_c": 10.487977352311715,
+        "pH": 7.975180876333829,
+        "dissolved_oxygen_mg_l": 10.57363896719447,
+        "pollution_factor_0_1": 0.04900635056446832,
+        "biofouling_factor_0_1": 0.14659024672812443
+      },
+      "weather": {
+        "wind_speed_m_s": 6.032530540552623,
+        "wind_direction_deg": 233.73648154000713,
+        "air_temperature_c": 0.4716861817647662,
+        "relative_humidity_0_1": 0.653718813465632,
+        "precipitation_rate_mm_hr": 0.0,
+        "storm_intensity_0_1": 0.19348084827707462,
+        "atmospheric_pressure_pa": 100777.15954612082
+      },
+      "waves": {
+        "significant_wave_height_m": 1.536688919877377,
+        "peak_period_s": 7.151506461627942,
+        "mean_wave_direction_deg": 72.99723155365075,
+        "current_speed_m_s": 0.6597638017436173,
+        "current_direction_deg": 155.94609682020723,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 4.984872216542062e-7,
+        "side_shell_waterline": 4.984872216542062e-7,
+        "main_deck": 2.990923329925236e-7,
+        "superstructure_front": 1.1077493814537915e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999501512778347,
+        "side_shell_waterline": 0.011999501512778347,
+        "main_deck": 0.009999700907667008,
+        "superstructure_front": 0.0059999889225061855
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000025632893389119442,
+        "side_shell_waterline": 0.000025632893389119442,
+        "main_deck": 0.000015379736033471665,
+        "superstructure_front": 5.69619853091543e-7
+      },
+      "stability_risk_score_0_1": 0.4425437255397342,
+      "capsize_probability_timestep": 0.2369414464221976,
+      "intermediate_physics_values": {
+        "heading_deg": 24.642857142857142,
+        "structural_weakening_factor": 0.000032491344357440015,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.21360744490932868,
+          "side_shell_waterline": 0.21360744490932868,
+          "main_deck": 0.1281644669455972,
+          "superstructure_front": 0.02848099265457715
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 34237.63882462701,
+          "wind_to_restoring_ratio": 0.009855592382429695,
+          "relative_heading_deg": 48.35437441079361,
+          "encounter_period_s": 12.284525690136695,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.29310796738281,
+          "beam_excitation": 0.747269157890323,
+          "wave_steepness": 0.019250857616259505,
+          "Hs_over_beam": 0.12293511359019016,
+          "Hs_over_freeboard_proxy": 0.3073377839754754,
+          "froude_number": 0.26412969334257824,
+          "following_weight": 0.6645214862334307,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.03555467952926897,
+            "wave_risk_factor": 0.0878843951713272,
+            "resonance_risk_factor": 0.25294164002724673,
+            "roll_term(beam-weighted)": 0.1890154863385579,
+            "speed_in_sea_state_factor": 0.10249826275704511,
+            "structural_weakening_factor": 0.000032491344357440015,
+            "storm_factor": 0.19348084827707462,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.3944983026809288
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.03555467952926897,
+            "wave": 0.07030751613706177,
+            "resonance": 0.05670464590156736,
+            "speed": 0.06149895765422707,
+            "structural": 0.000019494806614464007,
+            "storm": 0.11608850896624477,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.07889966053618576
+          },
+          "hazard_sum": 0.5843712101851777,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 302400.0,
+      "current_position": {
+        "latitude_deg": 28.0,
+        "longitude_deg": -30.0
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 36.443299385107615,
+        "water_temperature_c": 9.5605057523807,
+        "pH": 7.906907860480959,
+        "dissolved_oxygen_mg_l": 10.352802738640733,
+        "pollution_factor_0_1": 0.1148299609080105,
+        "biofouling_factor_0_1": 0.12734346913033118
+      },
+      "weather": {
+        "wind_speed_m_s": 9.108336225698412,
+        "wind_direction_deg": 202.5923231113853,
+        "air_temperature_c": -0.10571236879246282,
+        "relative_humidity_0_1": 0.6753757659437051,
+        "precipitation_rate_mm_hr": 0.4336436291450348,
+        "storm_intensity_0_1": 0.2646253085983733,
+        "atmospheric_pressure_pa": 100405.74663651084
+      },
+      "waves": {
+        "significant_wave_height_m": 2.1157650859066295,
+        "peak_period_s": 9.082621793121836,
+        "mean_wave_direction_deg": 26.65683048703403,
+        "current_speed_m_s": 0.19943860882507403,
+        "current_direction_deg": 235.8227966201763,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 5.172628817280022e-7,
+        "side_shell_waterline": 5.172628817280022e-7,
+        "main_deck": 3.103577290368012e-7,
+        "superstructure_front": 1.1494730705066714e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999482737118272,
+        "side_shell_waterline": 0.011999482737118271,
+        "main_deck": 0.009999689642270963,
+        "superstructure_front": 0.005999988505269295
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000027431239367815884,
+        "side_shell_waterline": 0.000027431239367815884,
+        "main_deck": 0.000016458743620689528,
+        "superstructure_front": 6.09583097062575e-7
+      },
+      "stability_risk_score_0_1": 0.4275164841546897,
+      "capsize_probability_timestep": 0.1973174331232057,
+      "intermediate_physics_values": {
+        "heading_deg": 25.0,
+        "structural_weakening_factor": 0.00003371513989425997,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.22859366139846568,
+          "side_shell_waterline": 0.22859366139846568,
+          "main_deck": 0.1371561968390794,
+          "superstructure_front": 0.030479154853128753
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 6743.441198661753,
+          "wind_to_restoring_ratio": 0.0019411562826899288,
+          "relative_heading_deg": 1.6568304870340285,
+          "encounter_period_s": 18.454873699744724,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.942618284183655,
+          "beam_excitation": 0.02891311722151,
+          "wave_steepness": 0.016432520339266662,
+          "Hs_over_beam": 0.16926120687253035,
+          "Hs_over_freeboard_proxy": 0.4231530171813259,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.9995819284343506,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.03466104640923452,
+            "wave_risk_factor": 0.1007492547079997,
+            "resonance_risk_factor": 6.696787783421993e-7,
+            "roll_term(beam-weighted)": 1.936250101896562e-8,
+            "speed_in_sea_state_factor": 0.17035172466377893,
+            "structural_weakening_factor": 0.00003371513989425997,
+            "storm_factor": 0.2646253085983733,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.08103342785978872
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.03466104640923452,
+            "wave": 0.08059940376639976,
+            "resonance": 5.808750305689686e-9,
+            "speed": 0.10221103479826736,
+            "structural": 0.000020229083936555984,
+            "storm": 0.15877518515902397,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.016206685571957744
+          },
+          "hazard_sum": 0.5577713372515777,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 324000.0,
+      "current_position": {
+        "latitude_deg": 29.0,
+        "longitude_deg": -29.25
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 35.50739610194833,
+        "water_temperature_c": 8.9884541064415,
+        "pH": 7.879127803725431,
+        "dissolved_oxygen_mg_l": 10.728185033356123,
+        "pollution_factor_0_1": 0.20945865010048087,
+        "biofouling_factor_0_1": 0.1566618531708512
+      },
+      "weather": {
+        "wind_speed_m_s": 18.824808743635497,
+        "wind_direction_deg": 167.85365711697332,
+        "air_temperature_c": 0.5220338339681025,
+        "relative_humidity_0_1": 0.7617274495107348,
+        "precipitation_rate_mm_hr": 5.969494880158927,
+        "storm_intensity_0_1": 0.5586463737702634,
+        "atmospheric_pressure_pa": 98837.73574520898
+      },
+      "waves": {
+        "significant_wave_height_m": 6.758524930140453,
+        "peak_period_s": 14.635455096213832,
+        "mean_wave_direction_deg": 337.49361672697074,
+        "current_speed_m_s": 0.08255514790487761,
+        "current_direction_deg": 284.97887934948636,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 5.417672070129093e-7,
+        "side_shell_waterline": 5.417672070129093e-7,
+        "main_deck": 3.2506032420774546e-7,
+        "superstructure_front": 1.2039271266953537e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999458232792987,
+        "side_shell_waterline": 0.011999458232792987,
+        "main_deck": 0.009999674939675792,
+        "superstructure_front": 0.005999987960728734
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003580081924124922,
+        "side_shell_waterline": 0.00003580081924124922,
+        "main_deck": 0.00002148049154474953,
+        "superstructure_front": 7.955737609166492e-7
+      },
+      "stability_risk_score_0_1": 0.5886079877885733,
+      "capsize_probability_timestep": 0.7762284566453082,
+      "intermediate_physics_values": {
+        "heading_deg": 25.625,
+        "structural_weakening_factor": 0.00003531232922320641,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.29834016034374344,
+          "side_shell_waterline": 0.29834016034374344,
+          "main_deck": 0.17900409620624605,
+          "superstructure_front": 0.039778688045832455
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 419982.60610149486,
+          "wind_to_restoring_ratio": 0.12089552654751323,
+          "relative_heading_deg": 311.86861672697074,
+          "encounter_period_s": 18.53614258373332,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.9511729035508758,
+          "beam_excitation": 0.7446772341269936,
+          "wave_steepness": 0.020216159237907913,
+          "Hs_over_beam": 0.5406819944112362,
+          "Hs_over_freeboard_proxy": 1.3517049860280905,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.667424765028217,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.050673569727194806,
+            "wave_risk_factor": 0.18578978594578677,
+            "resonance_risk_factor": 5.167646548213363e-7,
+            "roll_term(beam-weighted)": 3.848228738469433e-7,
+            "speed_in_sea_state_factor": 0.2938231788235803,
+            "structural_weakening_factor": 0.00003531232922320641,
+            "storm_factor": 0.5586463737702634,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.06051269262737795
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.050673569727194806,
+            "wave": 0.14863182875662942,
+            "resonance": 1.1544686215408299e-7,
+            "speed": 0.17629390729414815,
+            "structural": 0.000021187397533923845,
+            "storm": 0.33518782426215804,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.01210253852547559
+          },
+          "hazard_sum": 0.8882087180640097,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 345600.0,
+      "current_position": {
+        "latitude_deg": 30.0,
+        "longitude_deg": -28.5
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 34.461552907648446,
+        "water_temperature_c": 8.610621926383324,
+        "pH": 7.902142413215024,
+        "dissolved_oxygen_mg_l": 11.484980627090538,
+        "pollution_factor_0_1": 0.2660518692009415,
+        "biofouling_factor_0_1": 0.23255529399085653
+      },
+      "weather": {
+        "wind_speed_m_s": 30.44991379175646,
+        "wind_direction_deg": 151.184724898542,
+        "air_temperature_c": 1.6283754325225193,
+        "relative_humidity_0_1": 0.8408011998795715,
+        "precipitation_rate_mm_hr": 16.08654598619344,
+        "storm_intensity_0_1": 0.8406147297731341,
+        "atmospheric_pressure_pa": 97316.36256579372
+      },
+      "waves": {
+        "significant_wave_height_m": 16.0,
+        "peak_period_s": 20.0,
+        "mean_wave_direction_deg": 316.52128621225563,
+        "current_speed_m_s": 0.37389312077194636,
+        "current_direction_deg": 272.5886877036173,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 5.662038884673979e-7,
+        "side_shell_waterline": 5.662038884673979e-7,
+        "main_deck": 3.3972233308043856e-7,
+        "superstructure_front": 1.2582308632608838e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999433796111533,
+        "side_shell_waterline": 0.011999433796111533,
+        "main_deck": 0.00999966027766692,
+        "superstructure_front": 0.005999987417691368
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003570199160500775,
+        "side_shell_waterline": 0.00003570199160500775,
+        "main_deck": 0.00002142119496300465,
+        "superstructure_front": 7.933775912223946e-7
+      },
+      "stability_risk_score_0_1": 0.7075295974394095,
+      "capsize_probability_timestep": 0.989069179058717,
+      "intermediate_physics_values": {
+        "heading_deg": 26.25,
+        "structural_weakening_factor": 0.00003690510953454259,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.2975165967083979,
+          "side_shell_waterline": 0.2975165967083979,
+          "main_deck": 0.17850995802503875,
+          "superstructure_front": 0.039668879561119724
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 1470748.4513847542,
+          "wind_to_restoring_ratio": 0.42336731537431793,
+          "relative_heading_deg": 290.27128621225563,
+          "encounter_period_s": 21.73767654154026,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 2.2881764780568696,
+          "beam_excitation": 0.9380626836778018,
+          "wave_steepness": 0.025628263707502916,
+          "Hs_over_beam": 1.28,
+          "Hs_over_freeboard_proxy": 3.2,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.34646558485829493,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.12762657565869473,
+            "wave_risk_factor": 0.25250951992708787,
+            "resonance_risk_factor": 2.946573288406569e-12,
+            "roll_term(beam-weighted)": 2.7640704465759915e-12,
+            "speed_in_sea_state_factor": 0.32050986286204014,
+            "structural_weakening_factor": 0.00003690510953454259,
+            "storm_factor": 0.8406147297731341,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.18881484177536664
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.12762657565869473,
+            "wave": 0.2020076159416703,
+            "resonance": 8.292211339727974e-13,
+            "speed": 0.19230591771722408,
+            "structural": 0.00002214306572072555,
+            "storm": 0.5043688378638804,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.03776296835507333
+          },
+          "hazard_sum": 1.2293918052571002,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.71)."
+      ]
+    },
+    {
+      "current_time_s": 367200.0,
+      "current_position": {
+        "latitude_deg": 31.0,
+        "longitude_deg": -27.75
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 34.10363134374244,
+        "water_temperature_c": 8.67196151685234,
+        "pH": 7.967649568203674,
+        "dissolved_oxygen_mg_l": 11.880559489314884,
+        "pollution_factor_0_1": 0.24200418405902602,
+        "biofouling_factor_0_1": 0.3239643032933633
+      },
+      "weather": {
+        "wind_speed_m_s": 32.05130408423576,
+        "wind_direction_deg": 163.5293527881482,
+        "air_temperature_c": 3.248852631390279,
+        "relative_humidity_0_1": 0.8342350856312496,
+        "precipitation_rate_mm_hr": 16.693915782926968,
+        "storm_intensity_0_1": 0.8476648169291474,
+        "atmospheric_pressure_pa": 97206.08829912302
+      },
+      "waves": {
+        "significant_wave_height_m": 16.0,
+        "peak_period_s": 20.0,
+        "mean_wave_direction_deg": 333.471894163303,
+        "current_speed_m_s": 0.8888495454310608,
+        "current_direction_deg": 208.5077746407136,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 5.904580253111958e-7,
+        "side_shell_waterline": 5.904580253111958e-7,
+        "main_deck": 3.542748151867173e-7,
+        "superstructure_front": 1.3121289451359902e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.01399940954197469,
+        "side_shell_waterline": 0.01199940954197469,
+        "main_deck": 0.009999645725184813,
+        "superstructure_front": 0.0059999868787105485
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003543529392878871,
+        "side_shell_waterline": 0.00003543529392878871,
+        "main_deck": 0.00002126117635727323,
+        "superstructure_front": 7.874509761953046e-7
+      },
+      "stability_risk_score_0_1": 0.730030342051019,
+      "capsize_probability_timestep": 0.9957010778670634,
+      "intermediate_physics_values": {
+        "heading_deg": 26.875,
+        "structural_weakening_factor": 0.000038485991607462024,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.29529411607323924,
+          "side_shell_waterline": 0.29529411607323924,
+          "main_deck": 0.17717646964394354,
+          "superstructure_front": 0.039372548809765234
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 1364341.5460704488,
+          "wind_to_restoring_ratio": 0.3927371924611906,
+          "relative_heading_deg": 306.596894163303,
+          "encounter_period_s": 23.18986518405586,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 2.441038440426933,
+          "beam_excitation": 0.8028497936189405,
+          "wave_steepness": 0.025628263707502916,
+          "Hs_over_beam": 1.28,
+          "Hs_over_freeboard_proxy": 3.2,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.5961813557014548,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.11668443524055597,
+            "wave_risk_factor": 0.25250951992708787,
+            "resonance_risk_factor": 3.71845331504642e-15,
+            "roll_term(beam-weighted)": 2.9853594765666834e-15,
+            "speed_in_sea_state_factor": 0.3995087964632156,
+            "structural_weakening_factor": 0.000038485991607462024,
+            "storm_factor": 0.8476648169291474,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.3856432339937981
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.11668443524055597,
+            "wave": 0.2020076159416703,
+            "resonance": 8.95607842970005e-16,
+            "speed": 0.23970527787792933,
+            "structural": 0.000023091594964477214,
+            "storm": 0.5085988901574884,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.07712864679875962
+          },
+          "hazard_sum": 1.3094457042653762,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.73)."
+      ]
+    },
+    {
+      "current_time_s": 388800.0,
+      "current_position": {
+        "latitude_deg": 32.0,
+        "longitude_deg": -27.0
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 34.63560687482364,
+        "water_temperature_c": 9.502624929362225,
+        "pH": 8.05059513651453,
+        "dissolved_oxygen_mg_l": 11.450065019618624,
+        "pollution_factor_0_1": 0.15163424597500066,
+        "biofouling_factor_0_1": 0.3812743440941455
+      },
+      "weather": {
+        "wind_speed_m_s": 22.595582480690094,
+        "wind_direction_deg": 200.9296357174359,
+        "air_temperature_c": 5.827928950314915,
+        "relative_humidity_0_1": 0.7382863601563631,
+        "precipitation_rate_mm_hr": 6.597467657412972,
+        "storm_intensity_0_1": 0.559142363692629,
+        "atmospheric_pressure_pa": 98622.68426365696
+      },
+      "waves": {
+        "significant_wave_height_m": 9.472772393085243,
+        "peak_period_s": 16.41623361797522,
+        "mean_wave_direction_deg": 15.333071048146905,
+        "current_speed_m_s": 1.3086036924153497,
+        "current_direction_deg": 141.62127085247624,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 6.149072219250023e-7,
+        "side_shell_waterline": 6.149072219250023e-7,
+        "main_deck": 3.689443331550012e-7,
+        "superstructure_front": 1.3664604931666714e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999385092778075,
+        "side_shell_waterline": 0.011999385092778075,
+        "main_deck": 0.009999631055666845,
+        "superstructure_front": 0.005999986335395068
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003572027625277131,
+        "side_shell_waterline": 0.00003572027625277131,
+        "main_deck": 0.000021432165751662786,
+        "superstructure_front": 7.937839167282511e-7
+      },
+      "stability_risk_score_0_1": 0.6525560551224334,
+      "capsize_probability_timestep": 0.9379474526676331,
+      "intermediate_physics_values": {
+        "heading_deg": 27.5,
+        "structural_weakening_factor": 0.00004007958765559483,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.29766896877309423,
+          "side_shell_waterline": 0.29766896877309423,
+          "main_deck": 0.17860138126385652,
+          "superstructure_front": 0.039689195836412554
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 113036.14931675495,
+          "wind_to_restoring_ratio": 0.03253840657212822,
+          "relative_heading_deg": 347.8330710481469,
+          "encounter_period_s": 22.63622350487264,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 2.382760368933962,
+          "beam_excitation": 0.21076059812310488,
+          "wave_steepness": 0.022521081770406275,
+          "Hs_over_beam": 0.7578217914468195,
+          "Hs_over_freeboard_proxy": 1.8945544786170487,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.9775377078551963,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.0382403998865082,
+            "wave_risk_factor": 0.2136157565627499,
+            "resonance_risk_factor": 5.1746489215641056e-14,
+            "roll_term(beam-weighted)": 1.0906121017859305e-14,
+            "speed_in_sea_state_factor": 0.426386309410565,
+            "structural_weakening_factor": 0.00004007958765559483,
+            "storm_factor": 0.559142363692629,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.4568996664435787
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.0382403998865082,
+            "wave": 0.17089260525019992,
+            "resonance": 3.2718363053577912e-15,
+            "speed": 0.25583178564633896,
+            "structural": 0.000024047752593356895,
+            "storm": 0.3354854182155774,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.09137993328871574
+          },
+          "hazard_sum": 1.0571519366939444,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.65)."
+      ]
+    },
+    {
+      "current_time_s": 410400.0,
+      "current_position": {
+        "latitude_deg": 33.0,
+        "longitude_deg": -26.25
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 35.46472347524889,
+        "water_temperature_c": 10.96087420060739,
+        "pH": 8.121781903984463,
+        "dissolved_oxygen_mg_l": 10.555337790980314,
+        "pollution_factor_0_1": 0.05764613774448352,
+        "biofouling_factor_0_1": 0.3676795146076484
+      },
+      "weather": {
+        "wind_speed_m_s": 14.09814170380848,
+        "wind_direction_deg": 247.3048993036485,
+        "air_temperature_c": 9.157273334783827,
+        "relative_humidity_0_1": 0.6357136776383825,
+        "precipitation_rate_mm_hr": 0.34347873488374797,
+        "storm_intensity_0_1": 0.23919768835457933,
+        "atmospheric_pressure_pa": 100239.86449125317
+      },
+      "waves": {
+        "significant_wave_height_m": 3.456043728639003,
+        "peak_period_s": 11.499511276117069,
+        "mean_wave_direction_deg": 59.604248064383285,
+        "current_speed_m_s": 1.3801681712659961,
+        "current_direction_deg": 123.90092191179559,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 6.38392894959414e-7,
+        "side_shell_waterline": 6.38392894959414e-7,
+        "main_deck": 3.830357369756482e-7,
+        "superstructure_front": 1.418650877687586e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999361607105042,
+        "side_shell_waterline": 0.011999361607105042,
+        "main_deck": 0.009999616964263025,
+        "superstructure_front": 0.005999985813491223
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003431256830327536,
+        "side_shell_waterline": 0.00003431256830327536,
+        "main_deck": 0.000020587540981965213,
+        "superstructure_front": 7.625015178505636e-7
+      },
+      "stability_risk_score_0_1": 0.5013412774865162,
+      "capsize_probability_timestep": 0.4353868980687867,
+      "intermediate_physics_values": {
+        "heading_deg": 28.125,
+        "structural_weakening_factor": 0.000041610381338611875,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.2859380691939613,
+          "side_shell_waterline": 0.2859380691939613,
+          "main_deck": 0.17156284151637677,
+          "superstructure_front": 0.03812507589252818
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 242957.21250353652,
+          "wind_to_restoring_ratio": 0.06993727765723906,
+          "relative_heading_deg": 31.479248064383285,
+          "encounter_period_s": 17.482370533139708,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.8402495298041799,
+          "beam_excitation": 0.5221897130493275,
+          "wave_steepness": 0.01674478805176754,
+          "Hs_over_beam": 0.27648349829112023,
+          "Hs_over_freeboard_proxy": 0.6912087457278007,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.8528293519722812,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.04309863164771955,
+            "wave_risk_factor": 0.13220719774465195,
+            "resonance_risk_factor": 0.00001241868509069109,
+            "roll_term(beam-weighted)": 6.4849096039579415e-6,
+            "speed_in_sea_state_factor": 0.2227143372548707,
+            "structural_weakening_factor": 0.000041610381338611875,
+            "storm_factor": 0.23919768835457933,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.5224853823319298
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.04309863164771955,
+            "wave": 0.10576575819572157,
+            "resonance": 1.9454728811873824e-6,
+            "speed": 0.1336286023529224,
+            "structural": 0.000024966228803167125,
+            "storm": 0.1435186130127476,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.10449707646638595
+          },
+          "hazard_sum": 0.6958333400311889,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 432000.0,
+      "current_position": {
+        "latitude_deg": 34.0,
+        "longitude_deg": -25.5
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 35.709070110604245,
+        "water_temperature_c": 12.259300840288594,
+        "pH": 8.162220472359312,
+        "dissolved_oxygen_mg_l": 10.055858467399629,
+        "pollution_factor_0_1": 0.026896555043323743,
+        "biofouling_factor_0_1": 0.2889944703383434
+      },
+      "weather": {
+        "wind_speed_m_s": 12.194447562862683,
+        "wind_direction_deg": 282.60531763160463,
+        "air_temperature_c": 11.953854353854839,
+        "relative_humidity_0_1": 0.6179244466446157,
+        "precipitation_rate_mm_hr": 0.0,
+        "storm_intensity_0_1": 0.1818951760525857,
+        "atmospheric_pressure_pa": 100576.47875916572
+      },
+      "waves": {
+        "significant_wave_height_m": 2.6158649481591754,
+        "peak_period_s": 10.343489521495217,
+        "mean_wave_direction_deg": 89.20983978703595,
+        "current_speed_m_s": 1.0706452902392312,
+        "current_direction_deg": 168.98122639125447,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 6.601417477086302e-7,
+        "side_shell_waterline": 6.601417477086302e-7,
+        "main_deck": 3.960850486251779e-7,
+        "superstructure_front": 1.4669816615747331e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999339858252292,
+        "side_shell_waterline": 0.011999339858252292,
+        "main_deck": 0.009999603914951374,
+        "superstructure_front": 0.005999985330183384
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003177507386660487,
+        "side_shell_waterline": 0.00003177507386660487,
+        "main_deck": 0.00001906504431996292,
+        "superstructure_front": 7.061127525912195e-7
+      },
+      "stability_risk_score_0_1": 0.45960669391026143,
+      "capsize_probability_timestep": 0.2877516939248512,
+      "intermediate_physics_values": {
+        "heading_deg": 28.75,
+        "structural_weakening_factor": 0.000043027969259420066,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.2647922822217072,
+          "side_shell_waterline": 0.2647922822217072,
+          "main_deck": 0.15887536933302432,
+          "superstructure_front": 0.03530563762956097
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 276379.38861734426,
+          "wind_to_restoring_ratio": 0.07955813223774053,
+          "relative_heading_deg": 60.459839787035946,
+          "encounter_period_s": 13.260129479946999,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.3958031031523157,
+          "beam_excitation": 0.8700103287314823,
+          "wave_steepness": 0.01566535905926144,
+          "Hs_over_beam": 0.20926919585273404,
+          "Hs_over_freeboard_proxy": 0.5231729896318351,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.4930334957186359,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.04444076574005722,
+            "wave_risk_factor": 0.11237379983444754,
+            "resonance_risk_factor": 0.08154815751885622,
+            "roll_term(beam-weighted)": 0.07094773933042679,
+            "speed_in_sea_state_factor": 0.1393417148733562,
+            "structural_weakening_factor": 0.000043027969259420066,
+            "storm_factor": 0.1818951760525857,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.5088411726476623
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.04444076574005722,
+            "wave": 0.08989903986755804,
+            "resonance": 0.021284321799128036,
+            "speed": 0.08360502892401371,
+            "structural": 0.00002581678155565204,
+            "storm": 0.10913710563155142,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.10176823452953246
+          },
+          "hazard_sum": 0.615458059927404,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 453600.0,
+      "current_position": {
+        "latitude_deg": 35.0,
+        "longitude_deg": -24.75
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 34.989770004267626,
+        "water_temperature_c": 12.550421498332435,
+        "pH": 8.171504039204615,
+        "dissolved_oxygen_mg_l": 10.432508298677357,
+        "pollution_factor_0_1": 0.08216951054218366,
+        "biofouling_factor_0_1": 0.19565936033389322
+      },
+      "weather": {
+        "wind_speed_m_s": 16.11252317123435,
+        "wind_direction_deg": 292.13686286897484,
+        "air_temperature_c": 12.908407329964565,
+        "relative_humidity_0_1": 0.6946219392434977,
+        "precipitation_rate_mm_hr": 1.7388881804491025,
+        "storm_intensity_0_1": 0.4144590055437221,
+        "atmospheric_pressure_pa": 99474.67918898966
+      },
+      "waves": {
+        "significant_wave_height_m": 4.7876776764108975,
+        "peak_period_s": 12.58255163444311,
+        "mean_wave_direction_deg": 97.92688024352617,
+        "current_speed_m_s": 0.5805849844060771,
+        "current_direction_deg": 238.91474953129682,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 6.872947769226771e-7,
+        "side_shell_waterline": 6.872947769226771e-7,
+        "main_deck": 4.123768661536061e-7,
+        "superstructure_front": 1.5273217264948376e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999312705223078,
+        "side_shell_waterline": 0.011999312705223078,
+        "main_deck": 0.009999587623133847,
+        "superstructure_front": 0.005999984726782735
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003967057568172262,
+        "side_shell_waterline": 0.00003967057568172262,
+        "main_deck": 0.000023802345409033573,
+        "superstructure_front": 8.815683484827249e-7
+      },
+      "stability_risk_score_0_1": 0.53103226024209,
+      "capsize_probability_timestep": 0.5539333733157821,
+      "intermediate_physics_values": {
+        "heading_deg": 29.375,
+        "structural_weakening_factor": 0.000044797800830194874,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.33058813068102183,
+          "side_shell_waterline": 0.33058813068102183,
+          "main_deck": 0.1983528784086131,
+          "superstructure_front": 0.04407841742413624
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 498319.7472124403,
+          "wind_to_restoring_ratio": 0.14344553167926358,
+          "relative_heading_deg": 68.55188024352617,
+          "encounter_period_s": 14.53120406711554,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.5296004281174254,
+          "beam_excitation": 0.9307490464354619,
+          "wave_steepness": 0.019375220544835554,
+          "Hs_over_beam": 0.3830142141128718,
+          "Hs_over_freeboard_proxy": 0.9575355352821795,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.36565860110146253,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.05441409294318756,
+            "wave_risk_factor": 0.15910694563454778,
+            "resonance_risk_factor": 0.011247315338423077,
+            "roll_term(beam-weighted)": 0.010468428026196222,
+            "speed_in_sea_state_factor": 0.18689375447871615,
+            "structural_weakening_factor": 0.000044797800830194874,
+            "storm_factor": 0.4144590055437221,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.23122419429691732
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.05441409294318756,
+            "wave": 0.12728555650763823,
+            "resonance": 0.0031405284078588665,
+            "speed": 0.11213625268722968,
+            "structural": 0.000026878680498116924,
+            "storm": 0.24867540332623325,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.046244838859383464
+          },
+          "hazard_sum": 0.7572212980660368,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 475200.0,
+      "current_position": {
+        "latitude_deg": 36.0,
+        "longitude_deg": -24.0
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 33.810025036758354,
+        "water_temperature_c": 11.616185804752941,
+        "pH": 8.16581214328064,
+        "dissolved_oxygen_mg_l": 11.341826684577203,
+        "pollution_factor_0_1": 0.18520034047906342,
+        "biofouling_factor_0_1": 0.14993137188158412
+      },
+      "weather": {
+        "wind_speed_m_s": 22.472283108364707,
+        "wind_direction_deg": 272.6367911829575,
+        "air_temperature_c": 11.809874574818151,
+        "relative_humidity_0_1": 0.7864712487773899,
+        "precipitation_rate_mm_hr": 8.019860327527287,
+        "storm_intensity_0_1": 0.6752801204041543,
+        "atmospheric_pressure_pa": 98213.53192122349
+      },
+      "waves": {
+        "significant_wave_height_m": 10.226888421331774,
+        "peak_period_s": 16.309913718097285,
+        "mean_wave_direction_deg": 86.32064468065619,
+        "current_speed_m_s": 0.21256710463040063,
+        "current_direction_deg": 271.7276212876869,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 7.140737189242049e-7,
+        "side_shell_waterline": 7.140737189242049e-7,
+        "main_deck": 4.2844423135452277e-7,
+        "superstructure_front": 1.5868304864982328e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999285926281076,
+        "side_shell_waterline": 0.011999285926281076,
+        "main_deck": 0.009999571555768645,
+        "superstructure_front": 0.005999984131695136
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003912403426423207,
+        "side_shell_waterline": 0.00003912403426423207,
+        "main_deck": 0.000023474420558539243,
+        "superstructure_front": 8.694229836496016e-7
+      },
+      "stability_risk_score_0_1": 0.6407027361561755,
+      "capsize_probability_timestep": 0.9171102944639261,
+      "intermediate_physics_values": {
+        "heading_deg": 30.0,
+        "structural_weakening_factor": 0.000046543249436118805,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.32603361886860055,
+          "side_shell_waterline": 0.32603361886860055,
+          "main_deck": 0.19562017132116033,
+          "superstructure_front": 0.04347114918248007
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 867795.154498762,
+          "wind_to_restoring_ratio": 0.24980213612264407,
+          "relative_heading_deg": 56.32064468065619,
+          "encounter_period_s": 19.345068285209074,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 2.036322977390429,
+          "beam_excitation": 0.8321539883608269,
+          "wave_steepness": 0.024631983406821222,
+          "Hs_over_beam": 0.8181510737065419,
+          "Hs_over_freeboard_proxy": 2.045377684266355,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.5545446236825029,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.07581195630968449,
+            "wave_risk_factor": 0.2219750456742202,
+            "resonance_risk_factor": 3.446074401214111e-8,
+            "roll_term(beam-weighted)": 2.8676645571584707e-8,
+            "speed_in_sea_state_factor": 0.3273595044700024,
+            "structural_weakening_factor": 0.000046543249436118805,
+            "storm_factor": 0.6752801204041543,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.01651875576338382
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.07581195630968449,
+            "wave": 0.17758003653937615,
+            "resonance": 8.602993671475412e-9,
+            "speed": 0.19641570268200143,
+            "structural": 0.000027925949661671283,
+            "storm": 0.40516807224249257,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.003303751152676764
+          },
+          "hazard_sum": 1.0236052001328941,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.64)."
+      ]
+    },
+    {
+      "current_time_s": 496800.0,
+      "current_position": {
+        "latitude_deg": 37.0,
+        "longitude_deg": -23.25
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 33.16181108053527,
+        "water_temperature_c": 9.950994938419539,
+        "pH": 8.166868134961334,
+        "dissolved_oxygen_mg_l": 12.054259619295083,
+        "pollution_factor_0_1": 0.26367039204874726,
+        "biofouling_factor_0_1": 0.17998327293221156
+      },
+      "weather": {
+        "wind_speed_m_s": 21.471040923526232,
+        "wind_direction_deg": 232.57666787062476,
+        "air_temperature_c": 9.474885684158647,
+        "relative_humidity_0_1": 0.8099226804572124,
+        "precipitation_rate_mm_hr": 11.726296048130887,
+        "storm_intensity_0_1": 0.6961339429786779,
+        "atmospheric_pressure_pa": 98124.38121593535
+      },
+      "waves": {
+        "significant_wave_height_m": 9.736110414059413,
+        "peak_period_s": 16.006881330147934,
+        "mean_wave_direction_deg": 56.725660405243445,
+        "current_speed_m_s": 0.1819535334619529,
+        "current_direction_deg": 229.81858934889635,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 7.392085906218341e-7,
+        "side_shell_waterline": 7.392085906218341e-7,
+        "main_deck": 4.435251543731003e-7,
+        "superstructure_front": 1.6426857569374088e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999260791409378,
+        "side_shell_waterline": 0.011999260791409378,
+        "main_deck": 0.009999556474845628,
+        "superstructure_front": 0.005999983573142431
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000036722047550236276,
+        "side_shell_waterline": 0.000036722047550236276,
+        "main_deck": 0.000022033228530141768,
+        "superstructure_front": 8.160455011163617e-7
+      },
+      "stability_risk_score_0_1": 0.6516122934448023,
+      "capsize_probability_timestep": 0.9364379835141747,
+      "intermediate_physics_values": {
+        "heading_deg": 30.625,
+        "structural_weakening_factor": 0.000048181537713550456,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.3060170629186356,
+          "side_shell_waterline": 0.3060170629186356,
+          "main_deck": 0.18361023775118138,
+          "superstructure_front": 0.04080227505581808
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 333449.04793110414,
+          "wind_to_restoring_ratio": 0.09598611380742686,
+          "relative_heading_deg": 26.100660405243445,
+          "encounter_period_s": 21.59836535771149,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 2.273512142916999,
+          "beam_excitation": 0.4399495207133502,
+          "wave_steepness": 0.02434620265740924,
+          "Hs_over_beam": 0.778888833124753,
+          "Hs_over_freeboard_proxy": 1.9472220828118825,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.8980225048539114,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.04682507357499961,
+            "wave_risk_factor": 0.21812509592172943,
+            "resonance_risk_factor": 5.374632853825928e-12,
+            "roll_term(beam-weighted)": 2.3645671480509426e-12,
+            "speed_in_sea_state_factor": 0.41067421649975405,
+            "structural_weakening_factor": 0.000048181537713550456,
+            "storm_factor": 0.6961339429786779,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.018513092411950094
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.04682507357499961,
+            "wave": 0.17450007673738355,
+            "resonance": 7.093701444152827e-13,
+            "speed": 0.24640452989985243,
+            "structural": 0.000028908922628130273,
+            "storm": 0.41768036578720674,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.003702618482390019
+          },
+          "hazard_sum": 1.0544393200591773,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.65)."
+      ]
+    },
+    {
+      "current_time_s": 518400.0,
+      "current_position": {
+        "latitude_deg": 38.0,
+        "longitude_deg": -22.5
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 33.6794776266663,
+        "water_temperature_c": 8.357718065122341,
+        "pH": 8.188142669515425,
+        "dissolved_oxygen_mg_l": 12.198021161815303,
+        "pollution_factor_0_1": 0.26278581673220813,
+        "biofouling_factor_0_1": 0.25667786460174485
+      },
+      "weather": {
+        "wind_speed_m_s": 13.286784480835319,
+        "wind_direction_deg": 187.1230079506248,
+        "air_temperature_c": 7.101411928463747,
+        "relative_humidity_0_1": 0.7637548264008902,
+        "precipitation_rate_mm_hr": 6.708039697585261,
+        "storm_intensity_0_1": 0.4873010931654099,
+        "atmospheric_pressure_pa": 99183.35716245256
+      },
+      "waves": {
+        "significant_wave_height_m": 4.113807702594444,
+        "peak_period_s": 11.63710780704059,
+        "mean_wave_direction_deg": 13.802249501422295,
+        "current_speed_m_s": 0.48959414986177885,
+        "current_direction_deg": 131.5594487302417,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 7.625132561438588e-7,
+        "side_shell_waterline": 7.625132561438588e-7,
+        "main_deck": 4.5750795368631513e-7,
+        "superstructure_front": 1.694473902541908e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999237486743856,
+        "side_shell_waterline": 0.011999237486743856,
+        "main_deck": 0.009999542492046314,
+        "superstructure_front": 0.005999983055260975
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000034048116327678105,
+        "side_shell_waterline": 0.000034048116327678105,
+        "main_deck": 0.00002042886979660686,
+        "superstructure_front": 7.566248072817356e-7
+      },
+      "stability_risk_score_0_1": 0.5655670547085029,
+      "capsize_probability_timestep": 0.6921577244134884,
+      "intermediate_physics_values": {
+        "heading_deg": 31.25,
+        "structural_weakening_factor": 0.00004970053334621601,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.2837343027306508,
+          "side_shell_waterline": 0.2837343027306508,
+          "main_deck": 0.17024058163839048,
+          "superstructure_front": 0.03783124036408678
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 139625.3806444669,
+          "wind_to_restoring_ratio": 0.040192340509288785,
+          "relative_heading_deg": 342.5522495014223,
+          "encounter_period_s": 18.717902663899647,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.9703055435683838,
+          "beam_excitation": 0.29983595546591085,
+          "wave_steepness": 0.019463147074722617,
+          "Hs_over_beam": 0.32910461620755554,
+          "Hs_over_freeboard_proxy": 0.8227615405188888,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.9539907755370826,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.03918985697190247,
+            "wave_risk_factor": 0.148252710561508,
+            "resonance_risk_factor": 2.869707433090861e-7,
+            "roll_term(beam-weighted)": 8.604414701084247e-8,
+            "speed_in_sea_state_factor": 0.2667372818919688,
+            "structural_weakening_factor": 0.00004970053334621601,
+            "storm_factor": 0.4873010931654099,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.2908551454247387
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.03918985697190247,
+            "wave": 0.1186021684492064,
+            "resonance": 2.5813244103252743e-8,
+            "speed": 0.1600423691351813,
+            "structural": 0.000029820320007729604,
+            "storm": 0.29238065589924594,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.05817102908494775
+          },
+          "hazard_sum": 0.8337136723277433,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 540000.0,
+      "current_position": {
+        "latitude_deg": 39.0,
+        "longitude_deg": -21.75
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 35.0733612282784,
+        "water_temperature_c": 7.471561372587859,
+        "pH": 8.226078555555034,
+        "dissolved_oxygen_mg_l": 11.996194767508872,
+        "pollution_factor_0_1": 0.18409673324671216,
+        "biofouling_factor_0_1": 0.3141502333436723
+      },
+      "weather": {
+        "wind_speed_m_s": 7.810189614959359,
+        "wind_direction_deg": 150.68880615138556,
+        "air_temperature_c": 5.790102038075401,
+        "relative_humidity_0_1": 0.7240998395141149,
+        "precipitation_rate_mm_hr": 1.9392024470448823,
+        "storm_intensity_0_1": 0.31606039994746404,
+        "atmospheric_pressure_pa": 100092.05961942689
+      },
+      "waves": {
+        "significant_wave_height_m": 1.9980299262946386,
+        "peak_period_s": 8.574778386060274,
+        "mean_wave_direction_deg": 328.20801414932885,
+        "current_speed_m_s": 0.9324689998462474,
+        "current_direction_deg": 40.60307484664088,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 7.79101576568092e-7,
+        "side_shell_waterline": 7.79101576568092e-7,
+        "main_deck": 4.67460945940855e-7,
+        "superstructure_front": 1.7313368368179817e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999220898423433,
+        "side_shell_waterline": 0.011999220898423433,
+        "main_deck": 0.009999532539054059,
+        "superstructure_front": 0.005999982686631632
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000024235536139804618,
+        "side_shell_waterline": 0.000024235536139804618,
+        "main_deck": 0.000014541321683882772,
+        "superstructure_front": 5.385674697734358e-7
+      },
+      "stability_risk_score_0_1": 0.5434218975025291,
+      "capsize_probability_timestep": 0.6042993480138494,
+      "intermediate_physics_values": {
+        "heading_deg": 31.875,
+        "structural_weakening_factor": 0.00005078175831612816,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.20196280116503845,
+          "side_shell_waterline": 0.20196280116503845,
+          "main_deck": 0.12117768069902307,
+          "superstructure_front": 0.026928373488671793
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 103413.55053715706,
+          "wind_to_restoring_ratio": 0.02976846055695013,
+          "relative_heading_deg": 296.33301414932885,
+          "encounter_period_s": 11.26357973037716,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.1856399716186483,
+          "beam_excitation": 0.8962309814712387,
+          "wave_steepness": 0.01741066552420768,
+          "Hs_over_beam": 0.1598423941035711,
+          "Hs_over_freeboard_proxy": 0.3996059852589277,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.44358767774939406,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.037902266342915505,
+            "wave_risk_factor": 0.09890342886663349,
+            "resonance_risk_factor": 0.5761454199258516,
+            "roll_term(beam-weighted)": 0.516359375170305,
+            "speed_in_sea_state_factor": 0.10852107161977688,
+            "structural_weakening_factor": 0.00005078175831612816,
+            "storm_factor": 0.31606039994746404,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.4599279156819508
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.037902266342915505,
+            "wave": 0.0791227430933068,
+            "resonance": 0.15490781255109148,
+            "speed": 0.06511264297186613,
+            "structural": 0.000030469054989676894,
+            "storm": 0.18963623996847842,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.09198558313639016
+          },
+          "hazard_sum": 0.7839955037730457,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "Roll-resonance risk: encounter period 11.3 s near roll period 9.5 s in beam-ish seas."
+      ]
+    },
+    {
+      "current_time_s": 561600.0,
+      "current_position": {
+        "latitude_deg": 40.0,
+        "longitude_deg": -21.0
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 36.346382042926095,
+        "water_temperature_c": 7.42565192662073,
+        "pH": 8.261298234020144,
+        "dissolved_oxygen_mg_l": 11.871975997393914,
+        "pollution_factor_0_1": 0.08366683979491699,
+        "biofouling_factor_0_1": 0.3013547936888804
+      },
+      "weather": {
+        "wind_speed_m_s": 9.686407311254854,
+        "wind_direction_deg": 130.87573153215817,
+        "air_temperature_c": 6.081846748234891,
+        "relative_humidity_0_1": 0.7542740649333883,
+        "precipitation_rate_mm_hr": 1.875633400713643,
+        "storm_intensity_0_1": 0.4015096416410956,
+        "atmospheric_pressure_pa": 99748.28202726512
+      },
+      "waves": {
+        "significant_wave_height_m": 2.3947969199972885,
+        "peak_period_s": 9.412503263655573,
+        "mean_wave_direction_deg": 295.6367717720496,
+        "current_speed_m_s": 1.238660706810552,
+        "current_direction_deg": 20.22203140647141,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 7.964932859744002e-7,
+        "side_shell_waterline": 7.964932859744002e-7,
+        "main_deck": 4.7789597158464e-7,
+        "superstructure_front": 1.7699850799431113e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999203506714027,
+        "side_shell_waterline": 0.011999203506714027,
+        "main_deck": 0.009999522104028416,
+        "superstructure_front": 0.005999982300149201
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000025409287442616476,
+        "side_shell_waterline": 0.000025409287442616476,
+        "main_deck": 0.000015245572465569884,
+        "superstructure_front": 5.646508320581437e-7
+      },
+      "stability_risk_score_0_1": 0.6203081233874036,
+      "capsize_probability_timestep": 0.8713826229720197,
+      "intermediate_physics_values": {
+        "heading_deg": 32.5,
+        "structural_weakening_factor": 0.000051915348094759106,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.21174406202180393,
+          "side_shell_waterline": 0.21174406202180393,
+          "main_deck": 0.12704643721308234,
+          "superstructure_front": 0.028232541602907186
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 179607.37278213535,
+          "wind_to_restoring_ratio": 0.05170149332104557,
+          "relative_heading_deg": 263.1367717720496,
+          "encounter_period_s": 8.891588523149293,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 0.935956686647294,
+          "beam_excitation": 0.9928342399103989,
+          "wave_steepness": 0.017318792309850853,
+          "Hs_over_beam": 0.19158375359978308,
+          "Hs_over_freeboard_proxy": 0.4789593839994577,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.0,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.040660223024179674,
+            "wave_risk_factor": 0.10927388349850116,
+            "resonance_risk_factor": 0.9364822266487988,
+            "roll_term(beam-weighted)": 0.929771619684458,
+            "speed_in_sea_state_factor": 0.07497106563649779,
+            "structural_weakening_factor": 0.000051915348094759106,
+            "storm_factor": 0.4015096416410956,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.5508353512047617
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.040660223024179674,
+            "wave": 0.08741910679880094,
+            "resonance": 0.2789314859053374,
+            "speed": 0.04498263938189867,
+            "structural": 0.000031149208856855465,
+            "storm": 0.24090578498465734,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.11016707024095235
+          },
+          "hazard_sum": 0.9683952061986907,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "Roll-resonance risk: encounter period 8.9 s near roll period 9.5 s in beam-ish seas.",
+        "High capsize-risk score (0.62)."
+      ]
+    },
+    {
+      "current_time_s": 583200.0,
+      "current_position": {
+        "latitude_deg": 41.0,
+        "longitude_deg": -20.25
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 36.61602262940677,
+        "water_temperature_c": 7.787447372708928,
+        "pH": 8.26919799855336,
+        "dissolved_oxygen_mg_l": 11.976421311641312,
+        "pollution_factor_0_1": 0.031461385209607715,
+        "biofouling_factor_0_1": 0.22515445785918914
+      },
+      "weather": {
+        "wind_speed_m_s": 18.02052341072234,
+        "wind_direction_deg": 126.53541532042331,
+        "air_temperature_c": 7.469248062575609,
+        "relative_humidity_0_1": 0.8296059594113993,
+        "precipitation_rate_mm_hr": 3.2186957936014142,
+        "storm_intensity_0_1": 0.6614466820089353,
+        "atmospheric_pressure_pa": 98492.92814249489
+      },
+      "waves": {
+        "significant_wave_height_m": 6.655195363582978,
+        "peak_period_s": 13.773977337624283,
+        "mean_wave_direction_deg": 288.10850155967717,
+        "current_speed_m_s": 1.2363706632299247,
+        "current_direction_deg": 87.36776241752622,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 8.183940544311725e-7,
+        "side_shell_waterline": 8.183940544311725e-7,
+        "main_deck": 4.910364326587034e-7,
+        "superstructure_front": 1.818653454291494e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.01399918160594557,
+        "side_shell_waterline": 0.01199918160594557,
+        "main_deck": 0.009999508963567341,
+        "superstructure_front": 0.005999981813465457
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003199702271534422,
+        "side_shell_waterline": 0.00003199702271534422,
+        "main_deck": 0.00001919821362920653,
+        "superstructure_front": 7.110449492298715e-7
+      },
+      "stability_risk_score_0_1": 0.6127636819304005,
+      "capsize_probability_timestep": 0.8512854573748772,
+      "intermediate_physics_values": {
+        "heading_deg": 33.125,
+        "structural_weakening_factor": 0.000053342837865292635,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.26664185596120177,
+          "side_shell_waterline": 0.26664185596120177,
+          "main_deck": 0.15998511357672104,
+          "superstructure_front": 0.03555224746149357
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 627221.1824936516,
+          "wind_to_restoring_ratio": 0.1805508942934625,
+          "relative_heading_deg": 254.98350155967717,
+          "encounter_period_s": 12.673862518157755,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.3340907913850268,
+          "beam_excitation": 0.9658512587556738,
+          "wave_steepness": 0.022475081398761528,
+          "Hs_over_beam": 0.5324156290866382,
+          "Hs_over_freeboard_proxy": 1.3310390727165955,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.0,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.0611401743772391,
+            "wave_risk_factor": 0.18782993888211158,
+            "resonance_risk_factor": 0.16765172610939963,
+            "roll_term(beam-weighted)": 0.1619266306953251,
+            "speed_in_sea_state_factor": 0.1456387085867101,
+            "structural_weakening_factor": 0.000053342837865292635,
+            "storm_factor": 0.6614466820089353,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.195785149526769
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.0611401743772391,
+            "wave": 0.15026395110568927,
+            "resonance": 0.04857798920859752,
+            "speed": 0.08738322515202605,
+            "structural": 0.00003200570271917558,
+            "storm": 0.3968680092053612,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.0391570299053538
+          },
+          "hazard_sum": 0.9487201313109936,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.61)."
+      ]
+    },
+    {
+      "current_time_s": 604800.0,
+      "current_position": {
+        "latitude_deg": 42.0,
+        "longitude_deg": -19.5
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 35.83397515887514,
+        "water_temperature_c": 7.83749273977995,
+        "pH": 8.234097602895188,
+        "dissolved_oxygen_mg_l": 12.15141288747675,
+        "pollution_factor_0_1": 0.06181465568303668,
+        "biofouling_factor_0_1": 0.14915660240378092
+      },
+      "weather": {
+        "wind_speed_m_s": 23.722742943181363,
+        "wind_direction_deg": 130.3517192236867,
+        "air_temperature_c": 8.415742424886325,
+        "relative_humidity_0_1": 0.8617750213866237,
+        "precipitation_rate_mm_hr": 6.6246331558485245,
+        "storm_intensity_0_1": 0.7939747058938632,
+        "atmospheric_pressure_pa": 97758.1357969535
+      },
+      "waves": {
+        "significant_wave_height_m": 11.610027220600399,
+        "peak_period_s": 16.784292550329344,
+        "mean_wave_direction_deg": 304.0343125574011,
+        "current_speed_m_s": 0.9507139687601838,
+        "current_direction_deg": 201.18577604795792,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 8.40317806082343e-7,
+        "side_shell_waterline": 8.40317806082343e-7,
+        "main_deck": 5.041906836494057e-7,
+        "superstructure_front": 1.8673729024052062e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999159682193918,
+        "side_shell_waterline": 0.011999159682193918,
+        "main_deck": 0.00999949580931635,
+        "superstructure_front": 0.005999981326270976
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00003203060116236009,
+        "side_shell_waterline": 0.00003203060116236009,
+        "main_deck": 0.000019218360697416056,
+        "superstructure_front": 7.117911369413351e-7
+      },
+      "stability_risk_score_0_1": 0.6765022365132869,
+      "capsize_probability_timestep": 0.9682792790761643,
+      "intermediate_physics_values": {
+        "heading_deg": 33.75,
+        "structural_weakening_factor": 0.00005477182567793134,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.26692167635300074,
+          "side_shell_waterline": 0.26692167635300074,
+          "main_deck": 0.16015300581180045,
+          "superstructure_front": 0.03558955684706675
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 1081673.6890803496,
+          "wind_to_restoring_ratio": 0.31136887169645694,
+          "relative_heading_deg": 270.2843125574011,
+          "encounter_period_s": 16.80722182033497,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.7691812442457864,
+          "beam_excitation": 0.9999876883593165,
+          "wave_steepness": 0.026405010797468865,
+          "Hs_over_beam": 0.928802177648032,
+          "Hs_over_freeboard_proxy": 2.3220054441200797,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.004962169867163256,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.091501564576836,
+            "wave_risk_factor": 0.23316709020390328,
+            "resonance_risk_factor": 0.00007742223195963606,
+            "roll_term(beam-weighted)": 0.00007742127876493526,
+            "speed_in_sea_state_factor": 0.1895939191061648,
+            "structural_weakening_factor": 0.00005477182567793134,
+            "storm_factor": 0.7939747058938632,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.4751641533990521
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.091501564576836,
+            "wave": 0.18653367216312264,
+            "resonance": 0.00002322638362948058,
+            "speed": 0.11375635146369888,
+            "structural": 0.0000328630954067588,
+            "storm": 0.4763848235363179,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.09503283067981043
+          },
+          "hazard_sum": 1.1285630785528296,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.68)."
+      ]
+    },
+    {
+      "current_time_s": 626400.0,
+      "current_position": {
+        "latitude_deg": 43.0,
+        "longitude_deg": -18.75
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 34.78709519829065,
+        "water_temperature_c": 7.071612374824286,
+        "pH": 8.159088465941895,
+        "dissolved_oxygen_mg_l": 12.2464142160398,
+        "pollution_factor_0_1": 0.15058739950694813,
+        "biofouling_factor_0_1": 0.14574543423674863
+      },
+      "weather": {
+        "wind_speed_m_s": 18.59322261135834,
+        "wind_direction_deg": 134.0313278466629,
+        "air_temperature_c": 7.307504078692026,
+        "relative_humidity_0_1": 0.7977965363239338,
+        "precipitation_rate_mm_hr": 7.3935864040237504,
+        "storm_intensity_0_1": 0.6107193937361112,
+        "atmospheric_pressure_pa": 98487.02765585762
+      },
+      "waves": {
+        "significant_wave_height_m": 6.538907682465636,
+        "peak_period_s": 13.99470758585333,
+        "mean_wave_direction_deg": 327.38279613367706,
+        "current_speed_m_s": 0.5735641843258301,
+        "current_direction_deg": 293.6152815611078,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 8.616101389292766e-7,
+        "side_shell_waterline": 8.616101389292766e-7,
+        "main_deck": 5.169660833575659e-7,
+        "superstructure_front": 1.9146891976206144e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999138389861072,
+        "side_shell_waterline": 0.011999138389861072,
+        "main_deck": 0.009999483033916642,
+        "superstructure_front": 0.005999980853108024
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.0000311080982893701,
+        "side_shell_waterline": 0.0000311080982893701,
+        "main_deck": 0.000018664858973622062,
+        "superstructure_front": 6.912910730971134e-7
+      },
+      "stability_risk_score_0_1": 0.6017485547761834,
+      "capsize_probability_timestep": 0.818989422678402,
+      "intermediate_physics_values": {
+        "heading_deg": 34.375,
+        "structural_weakening_factor": 0.00005615965767972927,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.25923415241141745,
+          "side_shell_waterline": 0.25923415241141745,
+          "main_deck": 0.15554049144685048,
+          "superstructure_front": 0.03456455365485566
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 659428.6258844082,
+          "wind_to_restoring_ratio": 0.18982207783989197,
+          "relative_heading_deg": 293.00779613367706,
+          "encounter_period_s": 16.06515389613892,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.691068831172518,
+          "beam_excitation": 0.9204516788492765,
+          "wave_steepness": 0.02139127849033732,
+          "Hs_over_beam": 0.5231126145972509,
+          "Hs_over_freeboard_proxy": 1.3077815364931271,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.390856376311745,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.06293836919400765,
+            "wave_risk_factor": 0.18499663481551648,
+            "resonance_risk_factor": 0.0004802431255707072,
+            "roll_term(beam-weighted)": 0.0004420405911873813,
+            "speed_in_sea_state_factor": 0.22886788923058984,
+            "structural_weakening_factor": 0.00005615965767972927,
+            "storm_factor": 0.6107193937361112,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.20259799905006792
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.06293836919400765,
+            "wave": 0.1479973078524132,
+            "resonance": 0.0001326121773562144,
+            "speed": 0.1373207335383539,
+            "structural": 0.00003369579460783756,
+            "storm": 0.3664316362416667,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.04051959981001359
+          },
+          "hazard_sum": 0.9206717012624266,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.60)."
+      ]
+    },
+    {
+      "current_time_s": 648000.0,
+      "current_position": {
+        "latitude_deg": 44.0,
+        "longitude_deg": -18.0
+      },
+      "speed_m_s": 7.202222222222223,
+      "environment": {
+        "salinity_ppt": 34.39385878263579,
+        "water_temperature_c": 5.56825205067475,
+        "pH": 8.066029904022182,
+        "dissolved_oxygen_mg_l": 12.324586199770499,
+        "pollution_factor_0_1": 0.2344047429607006,
+        "biofouling_factor_0_1": 0.2365243910377225
+      },
+      "weather": {
+        "wind_speed_m_s": 10.352325534698128,
+        "wind_direction_deg": 133.0649831548147,
+        "air_temperature_c": 3.7752372574184005,
+        "relative_humidity_0_1": 0.6853202613179371,
+        "precipitation_rate_mm_hr": 1.2908172660563546,
+        "storm_intensity_0_1": 0.2592376068669137,
+        "atmospheric_pressure_pa": 100045.88021482305
+      },
+      "waves": {
+        "significant_wave_height_m": 2.0377706038623584,
+        "peak_period_s": 9.617469786333743,
+        "mean_wave_direction_deg": 339.0659696733653,
+        "current_speed_m_s": 0.33428166108933827,
+        "current_direction_deg": 317.37668386772447,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 8.767858741244505e-7,
+        "side_shell_waterline": 8.767858741244505e-7,
+        "main_deck": 5.260715244746702e-7,
+        "superstructure_front": 1.9484130536098898e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999123214125875,
+        "side_shell_waterline": 0.011999123214125875,
+        "main_deck": 0.009999473928475526,
+        "superstructure_front": 0.005999980515869464
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000022171749120149005,
+        "side_shell_waterline": 0.000022171749120149005,
+        "main_deck": 0.000013303049472089402,
+        "superstructure_front": 4.927055360033112e-7
+      },
+      "stability_risk_score_0_1": 0.42520378372803347,
+      "capsize_probability_timestep": 0.19164799785667086,
+      "intermediate_physics_values": {
+        "heading_deg": 35.0,
+        "structural_weakening_factor": 0.000057148810493864076,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.1847645760012417,
+          "side_shell_waterline": 0.1847645760012417,
+          "main_deck": 0.110858745600745,
+          "superstructure_front": 0.024635276800165556
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 205312.2320804897,
+          "wind_to_restoring_ratio": 0.05910085332919146,
+          "relative_heading_deg": 304.0659696733653,
+          "encounter_period_s": 13.152301125169215,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.384452750017812,
+          "beam_excitation": 0.8283931751696679,
+          "wave_steepness": 0.014115388132742898,
+          "Hs_over_beam": 0.1630216483089887,
+          "Hs_over_freeboard_proxy": 0.40755412077247166,
+          "froude_number": 0.2710440832206562,
+          "following_weight": 0.5601470765185835,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.04163328661848033,
+            "wave_risk_factor": 0.0953608975675743,
+            "resonance_risk_factor": 0.09396220312955997,
+            "roll_term(beam-weighted)": 0.07783764779643348,
+            "speed_in_sea_state_factor": 0.12178959600547389,
+            "structural_weakening_factor": 0.000057148810493864076,
+            "storm_factor": 0.2592376068669137,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.09259025404968417
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.04163328661848033,
+            "wave": 0.07628871805405944,
+            "resonance": 0.023351294338930045,
+            "speed": 0.07307375760328433,
+            "structural": 0.00003428928629631844,
+            "storm": 0.15554256412014822,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.018518050809936834
+          },
+          "hazard_sum": 0.5537397074851431,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 669600.0,
+      "current_position": {
+        "latitude_deg": 45.0,
+        "longitude_deg": -17.0
+      },
+      "speed_m_s": 6.945,
+      "environment": {
+        "salinity_ppt": 34.925994926189944,
+        "water_temperature_c": 3.659623236305492,
+        "pH": 7.9819666051360825,
+        "dissolved_oxygen_mg_l": 12.581700369039098,
+        "pollution_factor_0_1": 0.25696968838251827,
+        "biofouling_factor_0_1": 0.37687234897290933
+      },
+      "weather": {
+        "wind_speed_m_s": 8.717798913796377,
+        "wind_direction_deg": 130.4403759757122,
+        "air_temperature_c": -1.4766889748650185,
+        "relative_humidity_0_1": 0.6307018919126438,
+        "precipitation_rate_mm_hr": 0.0,
+        "storm_intensity_0_1": 0.08765361616178519,
+        "atmospheric_pressure_pa": 100824.13657470333
+      },
+      "waves": {
+        "significant_wave_height_m": 1.695339588732157,
+        "peak_period_s": 8.910480973958064,
+        "mean_wave_direction_deg": 332.9744510223673,
+        "current_speed_m_s": 0.3569218164489153,
+        "current_direction_deg": 271.55361622917275,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 8.899967248174889e-7,
+        "side_shell_waterline": 8.899967248174889e-7,
+        "main_deck": 5.339980348904933e-7,
+        "superstructure_front": 1.9777704995944193e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999110003275183,
+        "side_shell_waterline": 0.011999110003275183,
+        "main_deck": 0.009999466001965109,
+        "superstructure_front": 0.005999980222295004
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000019301052862529052,
+        "side_shell_waterline": 0.000019301052862529052,
+        "main_deck": 0.000011580631717517432,
+        "superstructure_front": 4.2891228583397887e-7
+      },
+      "stability_risk_score_0_1": 0.42691517917450095,
+      "capsize_probability_timestep": 0.19583241682944108,
+      "intermediate_physics_values": {
+        "heading_deg": 36.0,
+        "structural_weakening_factor": 0.00005800989234411302,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.16084210718774208,
+          "side_shell_waterline": 0.16084210718774208,
+          "main_deck": 0.09650526431264525,
+          "superstructure_front": 0.02144561429169894
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 146610.1009667094,
+          "wind_to_restoring_ratio": 0.0422029510176215,
+          "relative_heading_deg": 296.9744510223673,
+          "encounter_period_s": 11.519912897878674,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.2126224103030183,
+          "beam_excitation": 0.891208876218111,
+          "wave_steepness": 0.013680866402861324,
+          "Hs_over_beam": 0.13562716709857256,
+          "Hs_over_freeboard_proxy": 0.3390679177464314,
+          "froude_number": 0.26136393739134706,
+          "following_weight": 0.4535931425297916,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.039442996319170844,
+            "wave_risk_factor": 0.08490602500206151,
+            "resonance_risk_factor": 0.4851327909197468,
+            "roll_term(beam-weighted)": 0.43235464941214335,
+            "speed_in_sea_state_factor": 0.09254150463696123,
+            "structural_weakening_factor": 0.00005800989234411302,
+            "storm_factor": 0.08765361616178519,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.23098853822832605
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.039442996319170844,
+            "wave": 0.06792482000164922,
+            "resonance": 0.129706394823643,
+            "speed": 0.055524902782176734,
+            "structural": 0.000034805935406467815,
+            "storm": 0.05259216969707111,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.04619770764566521
+          },
+          "hazard_sum": 0.55672154385879,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 691200.0,
+      "current_position": {
+        "latitude_deg": 46.0,
+        "longitude_deg": -16.0
+      },
+      "speed_m_s": 6.687777777777779,
+      "environment": {
+        "salinity_ppt": 35.77594966924297,
+        "water_temperature_c": 2.0612428986605895,
+        "pH": 7.942020293134339,
+        "dissolved_oxygen_mg_l": 12.997156351162916,
+        "pollution_factor_0_1": 0.2023918959570612,
+        "biofouling_factor_0_1": 0.4526801989246798
+      },
+      "weather": {
+        "wind_speed_m_s": 13.725460535167825,
+        "wind_direction_deg": 127.53236510462459,
+        "air_temperature_c": -5.991590627959534,
+        "relative_humidity_0_1": 0.6981151773847964,
+        "precipitation_rate_mm_hr": 1.4471733978986159,
+        "storm_intensity_0_1": 0.3096027592195325,
+        "atmospheric_pressure_pa": 99815.30088726038
+      },
+      "waves": {
+        "significant_wave_height_m": 3.671432098469894,
+        "peak_period_s": 11.76500516995175,
+        "mean_wave_direction_deg": 315.63089853895053,
+        "current_speed_m_s": 0.6114039396243177,
+        "current_direction_deg": 200.44528066914424,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 9.063156156434531e-7,
+        "side_shell_waterline": 9.063156156434531e-7,
+        "main_deck": 5.437893693860719e-7,
+        "superstructure_front": 2.0140347014298957e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999093684384357,
+        "side_shell_waterline": 0.011999093684384357,
+        "main_deck": 0.009999456210630614,
+        "superstructure_front": 0.005999979859652986
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000023841899496733836,
+        "side_shell_waterline": 0.000023841899496733836,
+        "main_deck": 0.0000143051396980403,
+        "superstructure_front": 5.298199888163073e-7
+      },
+      "stability_risk_score_0_1": 0.5086223765465074,
+      "capsize_probability_timestep": 0.4638110399102032,
+      "intermediate_physics_values": {
+        "heading_deg": 37.0,
+        "structural_weakening_factor": 0.00005907355592119635,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.19868249580611527,
+          "side_shell_waterline": 0.19868249580611527,
+          "main_deck": 0.11920949748366916,
+          "superstructure_front": 0.026490999440815368
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 364494.36837043345,
+          "wind_to_restoring_ratio": 0.10492277048516072,
+          "relative_heading_deg": 278.63089853895053,
+          "encounter_period_s": 12.445211785753376,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.3100222932371974,
+          "beam_excitation": 0.9886755956685013,
+          "wave_steepness": 0.016994580493011908,
+          "Hs_over_beam": 0.2937145678775915,
+          "Hs_over_freeboard_proxy": 0.7342864196939788,
+          "froude_number": 0.2516837915620379,
+          "following_weight": 0.15006853943959791,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.048172717202189914,
+            "wave_risk_factor": 0.13674183198431078,
+            "resonance_risk_factor": 0.21484871345977627,
+            "roll_term(beam-weighted)": 0.21241567975845546,
+            "speed_in_sea_state_factor": 0.1158100851502536,
+            "structural_weakening_factor": 0.00005907355592119635,
+            "storm_factor": 0.3096027592195325,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.3433528606146991
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.048172717202189914,
+            "wave": 0.10939346558744863,
+            "resonance": 0.06372470392753664,
+            "speed": 0.06948605109015216,
+            "structural": 0.00003544413355271781,
+            "storm": 0.1857616555317195,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.06867057212293982
+          },
+          "hazard_sum": 0.7105423562495469,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 712800.0,
+      "current_position": {
+        "latitude_deg": 47.0,
+        "longitude_deg": -15.0
+      },
+      "speed_m_s": 6.430555555555556,
+      "environment": {
+        "salinity_ppt": 36.04109061025299,
+        "water_temperature_c": 0.8526824052927628,
+        "pH": 7.951393378163634,
+        "dissolved_oxygen_mg_l": 13.0,
+        "pollution_factor_0_1": 0.11425911546899854,
+        "biofouling_factor_0_1": 0.3891069314949399
+      },
+      "weather": {
+        "wind_speed_m_s": 26.49687486713814,
+        "wind_direction_deg": 128.53665993888885,
+        "air_temperature_c": -8.77891210907383,
+        "relative_humidity_0_1": 0.824594763315619,
+        "precipitation_rate_mm_hr": 4.77472451445777,
+        "storm_intensity_0_1": 0.7234847980831713,
+        "atmospheric_pressure_pa": 97940.71747126234
+      },
+      "waves": {
+        "significant_wave_height_m": 13.953021524735975,
+        "peak_period_s": 18.735070073498715,
+        "mean_wave_direction_deg": 306.636671832757,
+        "current_speed_m_s": 0.9227278808117296,
+        "current_direction_deg": 155.10642232480666,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 9.215524400320851e-7,
+        "side_shell_waterline": 9.215524400320851e-7,
+        "main_deck": 5.529314640192511e-7,
+        "superstructure_front": 2.047894311182411e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999078447559968,
+        "side_shell_waterline": 0.011999078447559968,
+        "main_deck": 0.00999944706853598,
+        "superstructure_front": 0.0059999795210568885
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000022261000431791344,
+        "side_shell_waterline": 0.000022261000431791344,
+        "main_deck": 0.000013356600259074807,
+        "superstructure_front": 4.946888984842519e-7
+      },
+      "stability_risk_score_0_1": 0.6550290864339902,
+      "capsize_probability_timestep": 0.9417833377406652,
+      "intermediate_physics_values": {
+        "heading_deg": 38.0,
+        "structural_weakening_factor": 0.0000600666905225052,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.18550833693159452,
+          "side_shell_waterline": 0.18550833693159452,
+          "main_deck": 0.11130500215895671,
+          "superstructure_front": 0.024734444924212597
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 1358394.6975628342,
+          "wind_to_restoring_ratio": 0.391025342086481,
+          "relative_heading_deg": 268.636671832757,
+          "encounter_period_s": 18.63755358292577,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.9618477455711336,
+          "beam_excitation": 0.9997169226874761,
+          "wave_steepness": 0.025469288531497828,
+          "Hs_over_beam": 1.116241721978878,
+          "Hs_over_freeboard_proxy": 2.790604304947195,
+          "froude_number": 0.24200364573272876,
+          "following_weight": 0.0,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.11609759038137706,
+            "wave_risk_factor": 0.24386054499068097,
+            "resonance_risk_factor": 3.7272782678231315e-7,
+            "roll_term(beam-weighted)": 3.7262231599080476e-7,
+            "speed_in_sea_state_factor": 0.17988446184701387,
+            "structural_weakening_factor": 0.0000600666905225052,
+            "storm_factor": 0.7234847980831713,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.22876846611104842
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.11609759038137706,
+            "wave": 0.19508843599254477,
+            "resonance": 1.1178669479724142e-7,
+            "speed": 0.10793067710820832,
+            "structural": 0.00003604001431350312,
+            "storm": 0.4340908788499028,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.045753693222209686
+          },
+          "hazard_sum": 1.0642951740092583,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.66)."
+      ]
+    },
+    {
+      "current_time_s": 734400.0,
+      "current_position": {
+        "latitude_deg": 48.0,
+        "longitude_deg": -14.0
+      },
+      "speed_m_s": 6.173333333333334,
+      "environment": {
+        "salinity_ppt": 35.36370570554442,
+        "water_temperature_c": -0.20170159299233092,
+        "pH": 7.989719272726632,
+        "dissolved_oxygen_mg_l": 13.0,
+        "pollution_factor_0_1": 0.05739576294236634,
+        "biofouling_factor_0_1": 0.2156128062453696
+      },
+      "weather": {
+        "wind_speed_m_s": 34.314442089654335,
+        "wind_direction_deg": 136.36251056188638,
+        "air_temperature_c": -10.252700763989697,
+        "relative_humidity_0_1": 0.8877600386916,
+        "precipitation_rate_mm_hr": 7.982159266675429,
+        "storm_intensity_0_1": 0.9327543296987141,
+        "atmospheric_pressure_pa": 97041.1243098143
+      },
+      "waves": {
+        "significant_wave_height_m": 16.0,
+        "peak_period_s": 20.0,
+        "mean_wave_direction_deg": 316.6900290266441,
+        "current_speed_m_s": 1.098905702754229,
+        "current_direction_deg": 150.0686140604938,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 9.350724843138393e-7,
+        "side_shell_waterline": 9.350724843138393e-7,
+        "main_deck": 5.610434905883036e-7,
+        "superstructure_front": 2.077938854030754e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999064927515686,
+        "side_shell_waterline": 0.011999064927515686,
+        "main_deck": 0.009999438956509413,
+        "superstructure_front": 0.0059999792206114596
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00001975278469564293,
+        "side_shell_waterline": 0.00001975278469564293,
+        "main_deck": 0.000011851670817385757,
+        "superstructure_front": 4.389507710142872e-7
+      },
+      "stability_risk_score_0_1": 0.7326428714712833,
+      "capsize_probability_timestep": 0.996179797560374,
+      "intermediate_physics_values": {
+        "heading_deg": 39.0,
+        "structural_weakening_factor": 0.00006094792557814385,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.16460653913035772,
+          "side_shell_waterline": 0.16460653913035772,
+          "main_deck": 0.09876392347821462,
+          "superstructure_front": 0.02194753855071436
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 2259509.1252074917,
+          "wind_to_restoring_ratio": 0.6504187113045737,
+          "relative_heading_deg": 277.6900290266441,
+          "encounter_period_s": 20.543660034978423,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 2.162490529997729,
+          "beam_excitation": 0.9910065018307447,
+          "wave_steepness": 0.025628263707502916,
+          "Hs_over_beam": 1.28,
+          "Hs_over_freeboard_proxy": 3.2,
+          "froude_number": 0.23232349990341958,
+          "following_weight": 0.13381372623610094,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.23771084351957758,
+            "wave_risk_factor": 0.25250951992708787,
+            "resonance_risk_factor": 4.070245074839956e-10,
+            "roll_term(beam-weighted)": 4.033639333210962e-10,
+            "speed_in_sea_state_factor": 0.21705968416280366,
+            "structural_weakening_factor": 0.00006094792557814385,
+            "storm_factor": 0.9327543296987141,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.12114385488638527
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.23771084351957758,
+            "wave": 0.2020076159416703,
+            "resonance": 1.2100917999632886e-10,
+            "speed": 0.13023581049768218,
+            "structural": 0.00003656875534688631,
+            "storm": 0.5596525978192284,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.024228770977277055
+          },
+          "hazard_sum": 1.3191699542857989,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.73)."
+      ]
+    },
+    {
+      "current_time_s": 756000.0,
+      "current_position": {
+        "latitude_deg": 49.0,
+        "longitude_deg": -13.0
+      },
+      "speed_m_s": 5.916111111111112,
+      "environment": {
+        "salinity_ppt": 34.22804862444166,
+        "water_temperature_c": -1.124070950265394,
+        "pH": 8.025565006588108,
+        "dissolved_oxygen_mg_l": 13.0,
+        "pollution_factor_0_1": 0.06945940172322619,
+        "biofouling_factor_0_1": 0.04971861350050799
+      },
+      "weather": {
+        "wind_speed_m_s": 26.89517618375166,
+        "wind_direction_deg": 150.912369051423,
+        "air_temperature_c": -11.084328441546518,
+        "relative_humidity_0_1": 0.8305037773281382,
+        "precipitation_rate_mm_hr": 9.220639227395605,
+        "storm_intensity_0_1": 0.7558707275053762,
+        "atmospheric_pressure_pa": 97948.97096000069
+      },
+      "waves": {
+        "significant_wave_height_m": 14.083659059539746,
+        "peak_period_s": 18.63552828559328,
+        "mean_wave_direction_deg": 339.04482378098544,
+        "current_speed_m_s": 1.0501095415765624,
+        "current_direction_deg": 162.15258183915893,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 9.473702465795305e-7,
+        "side_shell_waterline": 9.473702465795305e-7,
+        "main_deck": 5.684221479477183e-7,
+        "superstructure_front": 2.1052672146211788e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999052629753421,
+        "side_shell_waterline": 0.011999052629753421,
+        "main_deck": 0.009999431577852052,
+        "superstructure_front": 0.005999978947327854
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00001796703067017485,
+        "side_shell_waterline": 0.00001796703067017485,
+        "main_deck": 0.00001078021840210491,
+        "superstructure_front": 3.9926734822610784e-7
+      },
+      "stability_risk_score_0_1": 0.6684198654192459,
+      "capsize_probability_timestep": 0.9596712879351115,
+      "intermediate_physics_values": {
+        "heading_deg": 40.0,
+        "structural_weakening_factor": 0.00006174949242122585,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.1497252555847904,
+          "side_shell_waterline": 0.1497252555847904,
+          "main_deck": 0.08983515335087425,
+          "superstructure_front": 0.01996336741130539
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 1307406.487482134,
+          "wind_to_restoring_ratio": 0.3763479568427412,
+          "relative_heading_deg": 299.04482378098544,
+          "encounter_period_s": 20.677425492435333,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 2.176571104466877,
+          "beam_excitation": 0.8742401620280675,
+          "wave_steepness": 0.02598311875503759,
+          "Hs_over_beam": 1.1266927247631797,
+          "Hs_over_freeboard_proxy": 2.816731811907949,
+          "froude_number": 0.22264335407411046,
+          "following_weight": 0.4854937065474055,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.11117052232001504,
+            "wave_risk_factor": 0.24517253716297654,
+            "resonance_risk_factor": 2.4030479435089183e-10,
+            "roll_term(beam-weighted)": 2.1008410234944513e-10,
+            "speed_in_sea_state_factor": 0.28694344433884966,
+            "structural_weakening_factor": 0.00006174949242122585,
+            "storm_factor": 0.7558707275053762,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.027769568621535335
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.11117052232001504,
+            "wave": 0.19613802973038125,
+            "resonance": 6.302523070483353e-11,
+            "speed": 0.1721660666033098,
+            "structural": 0.000037049695452735504,
+            "storm": 0.4535224365032257,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.005553913724307067
+          },
+          "hazard_sum": 1.1038857652937242,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": [
+        "High capsize-risk score (0.67)."
+      ]
+    },
+    {
+      "current_time_s": 777600.0,
+      "current_position": {
+        "latitude_deg": 50.0,
+        "longitude_deg": -12.0
+      },
+      "speed_m_s": 5.65888888888889,
+      "environment": {
+        "salinity_ppt": 33.495477050397355,
+        "water_temperature_c": -1.6619245327598904,
+        "pH": 8.037170541102952,
+        "dissolved_oxygen_mg_l": 13.0,
+        "pollution_factor_0_1": 0.13598195809253855,
+        "biofouling_factor_0_1": 0.008916928821326442
+      },
+      "weather": {
+        "wind_speed_m_s": 14.508284305756192,
+        "wind_direction_deg": 169.36428767424817,
+        "air_temperature_c": -11.439152327554181,
+        "relative_humidity_0_1": 0.7117115303683362,
+        "precipitation_rate_mm_hr": 3.929099719157666,
+        "storm_intensity_0_1": 0.39079312028173413,
+        "atmospheric_pressure_pa": 99707.51578774203
+      },
+      "waves": {
+        "significant_wave_height_m": 3.7597305564642696,
+        "peak_period_s": 11.786337038942937,
+        "mean_wave_direction_deg": 359.4056535225643,
+        "current_speed_m_s": 0.8323525014240494,
+        "current_direction_deg": 162.0821033755054,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 9.589231972066754e-7,
+        "side_shell_waterline": 9.589231972066754e-7,
+        "main_deck": 5.753539183240052e-7,
+        "superstructure_front": 2.1309404382370563e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999041076802794,
+        "side_shell_waterline": 0.011999041076802794,
+        "main_deck": 0.009999424646081676,
+        "superstructure_front": 0.005999978690595618
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00001687886086625861,
+        "side_shell_waterline": 0.00001687886086625861,
+        "main_deck": 0.000010127316519755165,
+        "superstructure_front": 3.7508579702796914e-7
+      },
+      "stability_risk_score_0_1": 0.49750288675911325,
+      "capsize_probability_timestep": 0.42065292372876195,
+      "intermediate_physics_values": {
+        "heading_deg": 41.0,
+        "structural_weakening_factor": 0.00006250251252059395,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.1406571738854884,
+          "side_shell_waterline": 0.1406571738854884,
+          "main_deck": 0.08439430433129304,
+          "superstructure_front": 0.018754289851398456
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 319336.4313430462,
+          "wind_to_restoring_ratio": 0.09192367839084173,
+          "relative_heading_deg": 318.4056535225643,
+          "encounter_period_s": 15.308048048423398,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.6113734787814102,
+          "beam_excitation": 0.6638524222510623,
+          "wave_steepness": 0.017340363732236838,
+          "Hs_over_beam": 0.3007784445171416,
+          "Hs_over_freeboard_proxy": 0.7519461112928539,
+          "froude_number": 0.2129632082448013,
+          "following_weight": 0.747863598172419,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.046224380355563845,
+            "wave_risk_factor": 0.1388903947368945,
+            "resonance_risk_factor": 0.0025277126175743646,
+            "roll_term(beam-weighted)": 0.001678028143931315,
+            "speed_in_sea_state_factor": 0.17243632348532764,
+            "structural_weakening_factor": 0.00006250251252059395,
+            "storm_factor": 0.39079312028173413,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.13526182424823519
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.046224380355563845,
+            "wave": 0.1111123157895156,
+            "resonance": 0.0005034084431793944,
+            "speed": 0.10346179409119659,
+            "structural": 0.00003750150751235637,
+            "storm": 0.23447587216904048,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.02705236484964704
+          },
+          "hazard_sum": 0.6881653838596627,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 799200.0,
+      "current_position": {
+        "latitude_deg": 51.0,
+        "longitude_deg": -11.0
+      },
+      "speed_m_s": 5.401666666666667,
+      "environment": {
+        "salinity_ppt": 33.65063232602191,
+        "water_temperature_c": -1.6798645147775915,
+        "pH": 8.02610176911679,
+        "dissolved_oxygen_mg_l": 13.0,
+        "pollution_factor_0_1": 0.2054090210700707,
+        "biofouling_factor_0_1": 0.12102931170719353
+      },
+      "weather": {
+        "wind_speed_m_s": 8.952270652693558,
+        "wind_direction_deg": 188.04328123643808,
+        "air_temperature_c": -11.160880741345222,
+        "relative_humidity_0_1": 0.6361455539065768,
+        "precipitation_rate_mm_hr": 0.0,
+        "storm_intensity_0_1": 0.1798357630434229,
+        "atmospheric_pressure_pa": 100686.87906977805
+      },
+      "waves": {
+        "significant_wave_height_m": 2.0858813706348664,
+        "peak_period_s": 8.836691288965978,
+        "mean_wave_direction_deg": 11.735195902589112,
+        "current_speed_m_s": 0.5961624778192973,
+        "current_direction_deg": 145.11842085547937,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 9.682760377478281e-7,
+        "side_shell_waterline": 9.682760377478281e-7,
+        "main_deck": 5.809656226486968e-7,
+        "superstructure_front": 2.151724528328507e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999031723962253,
+        "side_shell_waterline": 0.011999031723962253,
+        "main_deck": 0.009999419034377352,
+        "superstructure_front": 0.005999978482754717
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000013664500030624172,
+        "side_shell_waterline": 0.000013664500030624172,
+        "main_deck": 8.198700018374503e-6,
+        "superstructure_front": 3.036555562360927e-7
+      },
+      "stability_risk_score_0_1": 0.4090709104964362,
+      "capsize_probability_timestep": 0.15523081591438326,
+      "intermediate_physics_values": {
+        "heading_deg": 42.0,
+        "structural_weakening_factor": 0.00006311212967726373,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.11387083358853475,
+          "side_shell_waterline": 0.11387083358853475,
+          "main_deck": 0.06832250015312084,
+          "superstructure_front": 0.015182777811804634
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 86615.77648379438,
+          "wind_to_restoring_ratio": 0.024933079973315505,
+          "relative_heading_deg": 329.7351959025891,
+          "encounter_period_s": 13.353913254354833,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.405675079405772,
+          "beam_excitation": 0.503997158254386,
+          "wave_steepness": 0.01711470555732996,
+          "Hs_over_beam": 0.1668705096507893,
+          "Hs_over_freeboard_proxy": 0.4171762741269733,
+          "froude_number": 0.20328306241549216,
+          "following_weight": 0.8637053111284563,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.037318872581819186,
+            "wave_risk_factor": 0.10090084037416225,
+            "resonance_risk_factor": 0.07185131814654301,
+            "roll_term(beam-weighted)": 0.03621286016268947,
+            "speed_in_sea_state_factor": 0.11604834755138693,
+            "structural_weakening_factor": 0.00006311212967726373,
+            "storm_factor": 0.1798357630434229,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.271448847377747
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.037318872581819186,
+            "wave": 0.0807206722993298,
+            "resonance": 0.010863858048806841,
+            "speed": 0.06962900853083216,
+            "structural": 0.00003786727780635824,
+            "storm": 0.10790145782605375,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.0542897694755494
+          },
+          "hazard_sum": 0.526059252694205,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 820800.0,
+      "current_position": {
+        "latitude_deg": 52.0,
+        "longitude_deg": -10.0
+      },
+      "speed_m_s": 5.144444444444446,
+      "environment": {
+        "salinity_ppt": 34.45022786285803,
+        "water_temperature_c": -1.4617938994201412,
+        "pH": 8.015127610810191,
+        "dissolved_oxygen_mg_l": 13.0,
+        "pollution_factor_0_1": 0.22959811516884474,
+        "biofouling_factor_0_1": 0.30474273660316775
+      },
+      "weather": {
+        "wind_speed_m_s": 9.84709027329016,
+        "wind_direction_deg": 204.5242692839784,
+        "air_temperature_c": -10.363178468065511,
+        "relative_humidity_0_1": 0.6491337597403455,
+        "precipitation_rate_mm_hr": 0.8119700826240557,
+        "storm_intensity_0_1": 0.2610285054581978,
+        "atmospheric_pressure_pa": 100250.08335938388
+      },
+      "waves": {
+        "significant_wave_height_m": 2.6175871115544087,
+        "peak_period_s": 9.500490722536075,
+        "mean_wave_direction_deg": 22.245865694987458,
+        "current_speed_m_s": 0.48287775331069027,
+        "current_direction_deg": 131.97724164522268,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 9.789354086414004e-7,
+        "side_shell_waterline": 9.789354086414004e-7,
+        "main_deck": 5.873612451848402e-7,
+        "superstructure_front": 2.175412019203112e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999021064591359,
+        "side_shell_waterline": 0.011999021064591359,
+        "main_deck": 0.009999412638754816,
+        "superstructure_front": 0.005999978245879808
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.000015573340875509034,
+        "side_shell_waterline": 0.000015573340875509034,
+        "main_deck": 9.34400452530542e-6,
+        "superstructure_front": 3.460742416779785e-7
+      },
+      "stability_risk_score_0_1": 0.45011276635974995,
+      "capsize_probability_timestep": 0.25872626517088027,
+      "intermediate_physics_values": {
+        "heading_deg": 43.0,
+        "structural_weakening_factor": 0.00006380690634419187,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.12977784062924194,
+          "side_shell_waterline": 0.12977784062924194,
+          "main_deck": 0.07786670437754516,
+          "superstructure_front": 0.017303712083898925
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 59456.29232146985,
+          "wind_to_restoring_ratio": 0.01711499396008291,
+          "relative_heading_deg": 339.24586569498746,
+          "encounter_period_s": 14.06281942485242,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.4802967815634125,
+          "beam_excitation": 0.3543585138461686,
+          "wave_steepness": 0.018580964775263015,
+          "Hs_over_beam": 0.2094069689243527,
+          "Hs_over_freeboard_proxy": 0.5235174223108817,
+          "froude_number": 0.19360291658618303,
+          "following_weight": 0.9351096425899664,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.036393832298623176,
+            "wave_risk_factor": 0.11652148037924567,
+            "resonance_risk_factor": 0.024948041070317135,
+            "roll_term(beam-weighted)": 0.008840550757050758,
+            "speed_in_sea_state_factor": 0.13753751044324247,
+            "structural_weakening_factor": 0.00006380690634419187,
+            "storm_factor": 0.2610285054581978,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.3065161467713945
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.036393832298623176,
+            "wave": 0.09321718430339654,
+            "resonance": 0.0026521652271152274,
+            "speed": 0.08252250626594548,
+            "structural": 0.00003828414380651512,
+            "storm": 0.15661710327491865,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.0613032293542789
+          },
+          "hazard_sum": 0.598042051522092,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    },
+    {
+      "current_time_s": 842400.0,
+      "current_position": {
+        "latitude_deg": 53.0,
+        "longitude_deg": -9.0
+      },
+      "speed_m_s": 4.887222222222222,
+      "environment": {
+        "salinity_ppt": 35.23645172588591,
+        "water_temperature_c": -1.5363903253372986,
+        "pH": 8.031817449439236,
+        "dissolved_oxygen_mg_l": 13.0,
+        "pollution_factor_0_1": 0.19760290395928057,
+        "biofouling_factor_0_1": 0.4342006196191043
+      },
+      "weather": {
+        "wind_speed_m_s": 15.016518114531793,
+        "wind_direction_deg": 218.5580149781728,
+        "air_temperature_c": -9.640789515698042,
+        "relative_humidity_0_1": 0.7090660426218496,
+        "precipitation_rate_mm_hr": 2.549822584738342,
+        "storm_intensity_0_1": 0.4816773354261196,
+        "atmospheric_pressure_pa": 99166.44652475345
+      },
+      "waves": {
+        "significant_wave_height_m": 4.796483616841974,
+        "peak_period_s": 12.456441426593933,
+        "mean_wave_direction_deg": 38.52133507486309,
+        "current_speed_m_s": 0.5398291142180474,
+        "current_direction_deg": 142.71133518645087,
+        "wave_spectrum_type": "pierson_moskowitz"
+      },
+      "accumulated_corrosion_m_by_component": {
+        "bottom_plating": 9.918293878069214e-7,
+        "side_shell_waterline": 9.918293878069214e-7,
+        "main_deck": 5.950976326841528e-7,
+        "superstructure_front": 2.204065306237603e-8
+      },
+      "effective_thickness_m_by_component": {
+        "bottom_plating": 0.013999008170612193,
+        "side_shell_waterline": 0.011999008170612193,
+        "main_deck": 0.009999404902367316,
+        "superstructure_front": 0.005999977959346938
+      },
+      "corrosion_rate_m_per_year_by_component": {
+        "bottom_plating": 0.00001883810356082609,
+        "side_shell_waterline": 0.00001883810356082609,
+        "main_deck": 0.000011302862136495655,
+        "superstructure_front": 4.1862452357391307e-7
+      },
+      "stability_risk_score_0_1": 0.5545373011550596,
+      "capsize_probability_timestep": 0.6489604345091009,
+      "intermediate_physics_values": {
+        "heading_deg": 44.0,
+        "structural_weakening_factor": 0.00006464733454178972,
+        "corrosion_total_multiplier_by_component": {
+          "bottom_plating": 0.1569841963402174,
+          "side_shell_waterline": 0.1569841963402174,
+          "main_deck": 0.09419051780413044,
+          "superstructure_front": 0.020931226178695653
+        },
+        "stability": {
+          "GM_m": 0.85,
+          "KG_m": 5.1,
+          "displacement_weight_N": 23535960.0,
+          "reference_heel_deg": 10.0,
+          "restoring_moment_proxy_Nm": 3473930.079095501,
+          "wind_heeling_moment_Nm": 41378.59468554428,
+          "wind_to_restoring_ratio": 0.01191117660500465,
+          "relative_heading_deg": 354.5213350748631,
+          "encounter_period_s": 16.613676186138818,
+          "roll_natural_period_s": 9.5,
+          "encounter_to_roll_ratio": 1.7488080195935598,
+          "beam_excitation": 0.0954750928866033,
+          "wave_steepness": 0.019805881568041944,
+          "Hs_over_beam": 0.3837186893473579,
+          "Hs_over_freeboard_proxy": 0.9592967233683949,
+          "froude_number": 0.18392277075687383,
+          "following_weight": 0.9954318191811504,
+          "kg_ratio": 0.5543478260869565,
+          "factors": {
+            "gm_factor": 0.06008665017400762,
+            "wind_factor": 0.035790385713925565,
+            "wave_risk_factor": 0.1598479553266129,
+            "resonance_risk_factor": 0.00012698835059363818,
+            "roll_term(beam-weighted)": 0.000012124224568444152,
+            "speed_in_sea_state_factor": 0.20441722608381846,
+            "structural_weakening_factor": 0.00006464733454178972,
+            "storm_factor": 0.4816773354261196,
+            "cg_factor": 0.3106458881506612,
+            "misalignment_factor": 0.339880525582787
+          },
+          "weighted_contributions": {
+            "gm": 0.07210398020880913,
+            "wind": 0.035790385713925565,
+            "wave": 0.12787836426129032,
+            "resonance": 3.6372673705332453e-6,
+            "speed": 0.12265033565029107,
+            "structural": 0.000038788400725073826,
+            "storm": 0.2890064012556718,
+            "cg": 0.09319376644519835,
+            "misalignment": 0.0679761051165574
+          },
+          "hazard_sum": 0.8086417643198393,
+          "structural_detail": "Importance-weighted effective-strength loss is 0.0%. Most critical: side_shell_waterline (100% strength), bottom_plating (100% strength), main_deck (100% strength)."
+        }
+      },
+      "warnings": []
+    }
+  ],
+  "final_corrosion_summary": {
+    "by_component": {
+      "bottom_plating": {
+        "original_thickness_m": 0.014,
+        "final_effective_thickness_m": 0.013999008170612193,
+        "accumulated_corrosion_m": 9.918293878069214e-7,
+        "thickness_loss_fraction": 0.00007084495627194503,
+        "final_corrosion_rate_mm_per_year": 0.018838103560826092,
+        "min_safety_margin": 2.0362193702708646
+      },
+      "side_shell_waterline": {
+        "original_thickness_m": 0.012,
+        "final_effective_thickness_m": 0.011999008170612193,
+        "accumulated_corrosion_m": 9.918293878069214e-7,
+        "thickness_loss_fraction": 0.00008265244898393587,
+        "final_corrosion_rate_mm_per_year": 0.018838103560826092,
+        "min_safety_margin": 1.894580237465083
+      },
+      "main_deck": {
+        "original_thickness_m": 0.01,
+        "final_effective_thickness_m": 0.009999404902367316,
+        "accumulated_corrosion_m": 5.950976326841528e-7,
+        "thickness_loss_fraction": 0.00005950976326839913,
+        "final_corrosion_rate_mm_per_year": 0.011302862136495655,
+        "min_safety_margin": 1.8748884191938717
+      },
+      "superstructure_front": {
+        "original_thickness_m": 0.006,
+        "final_effective_thickness_m": 0.005999977959346938,
+        "accumulated_corrosion_m": 2.204065306237603e-8,
+        "thickness_loss_fraction": 3.673442177034904e-6,
+        "final_corrosion_rate_mm_per_year": 0.00041862452357391305,
+        "min_safety_margin": 1.6799938286171423
+      }
+    },
+    "final_effective_thickness_m_by_component": {
+      "bottom_plating": 0.013999008170612193,
+      "side_shell_waterline": 0.011999008170612193,
+      "main_deck": 0.009999404902367316,
+      "superstructure_front": 0.005999977959346938
+    },
+    "min_safety_margin_by_component": {
+      "bottom_plating": 2.0362193702708646,
+      "side_shell_waterline": 1.894580237465083,
+      "main_deck": 1.8748884191938717,
+      "superstructure_front": 1.6799938286171423
+    },
+    "total_accumulated_corrosion_m": 2.6007970613603714e-6,
+    "most_corroded_component": "side_shell_waterline",
+    "dominant_environmental_factors": [
+      {
+        "factor": "splash_factor",
+        "mean_value": 1.8678108979279997
+      },
+      {
+        "factor": "coating_factor",
+        "mean_value": 0.14249999999999982
+      },
+      {
+        "factor": "temperature_factor",
+        "mean_value": 0.8294071049968241
+      },
+      {
+        "factor": "oxygen_factor",
+        "mean_value": 1.1272008337891442
+      },
+      {
+        "factor": "speed_erosion_factor",
+        "mean_value": 1.0966500929291478
+      },
+      {
+        "factor": "pollution_factor",
+        "mean_value": 1.0764795004423573
+      },
+      {
+        "factor": "salinity_factor",
+        "mean_value": 0.9982034892383458
+      },
+      {
+        "factor": "pH_factor",
+        "mean_value": 0.999685995568154
+      }
+    ]
+  },
+  "final_stability_summary": {
+    "max_risk_score": 0.7326428714712833,
+    "time_of_max_risk_s": 734400.0,
+    "position_of_max_risk": {
+      "latitude_deg": 48.0,
+      "longitude_deg": -14.0
+    },
+    "max_risk_dominant_contributions": {
+      "gm": 0.07210398020880913,
+      "wind": 0.23771084351957758,
+      "wave": 0.2020076159416703,
+      "resonance": 1.2100917999632886e-10,
+      "speed": 0.13023581049768218,
+      "structural": 0.00003656875534688631,
+      "storm": 0.5596525978192284,
+      "cg": 0.09319376644519835,
+      "misalignment": 0.024228770977277055
+    },
+    "final_risk_score": 0.5545373011550596
+  },
+  "cumulative_capsize_probability": 1.0,
+  "warnings": [
+    "[t=0.00 h] High capsize-risk score (0.63).",
+    "[t=6.00 h] High capsize-risk score (0.68).",
+    "[t=96.00 h] High capsize-risk score (0.71).",
+    "[t=102.00 h] High capsize-risk score (0.73).",
+    "[t=108.00 h] High capsize-risk score (0.65).",
+    "[t=132.00 h] High capsize-risk score (0.64).",
+    "[t=150.00 h] Roll-resonance risk: encounter period 11.3 s near roll period 9.5 s in beam-ish seas.",
+    "[t=156.00 h] Roll-resonance risk: encounter period 8.9 s near roll period 9.5 s in beam-ish seas.",
+    "[t=156.00 h] High capsize-risk score (0.62).",
+    "[t=162.00 h] High capsize-risk score (0.61).",
+    "[t=174.00 h] High capsize-risk score (0.60).",
+    "[t=198.00 h] High capsize-risk score (0.66).",
+    "[t=210.00 h] High capsize-risk score (0.67)."
+  ],
+  "assumptions": [
+    "ENGINEERING APPROXIMATION ONLY -- not a certified intact/damage stability, structural, or corrosion assessment.",
+    "Conditions are sampled once per timestep and held constant over the step (explicit forward Euler integration of corrosion loss).",
+    "Trajectory position uses linear lat/lon interpolation (not great-circle).",
+    "Coating is treated as intact; time-dependent coating breakdown is not yet integrated by the engine.",
+    "Components corrode independently; galvanic coupling and load redistribution between components are not modeled.",
+    "GM is treated as constant; corrosion-driven weight/KG changes are ignored."
+  ]
+}

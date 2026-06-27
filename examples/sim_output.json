@@ -1,0 +1,88 @@
+{
+  "failure": null,
+  "optimizer": null,
+  "result": {
+    "cost_breakdown": {
+      "material_usd": 800.6348973333332,
+      "seal_usd": 873.0,
+      "weld_usd": 8006.399999999999
+    },
+    "distance_completed_nm": 3250.0,
+    "distance_completed_pct": 100.0,
+    "final_gm_m": 1.249061371401491,
+    "fuel_remaining_kg": 2793.2098765432092,
+    "time_elapsed_h": 55.72702331961591,
+    "total_config_cost_usd": 9680.034897333331
+  },
+  "schema_version": "1.0",
+  "status": "survived",
+  "voyage": {
+    "segments": 3,
+    "total_distance_nm": 3250.0
+  },
+  "zones": [
+    {
+      "corrosion_depth_mm": 0.0019392230814949231,
+      "crack_half_length_mm": 0.00014280456054362092,
+      "fatigue_consumed": 0.11522177667324814,
+      "peak_stress_mpa": 361.5685219577062,
+      "zone": "Keel"
+    },
+    {
+      "corrosion_depth_mm": 0.0019392230814949231,
+      "crack_half_length_mm": 0.00011275315224835037,
+      "fatigue_consumed": 0.08977636544586017,
+      "peak_stress_mpa": 330.4903228011092,
+      "zone": "Bilge Strake"
+    },
+    {
+      "corrosion_depth_mm": 0.0019392230814949231,
+      "crack_half_length_mm": 0.00007235038357458112,
+      "fatigue_consumed": 0.05710762411306803,
+      "peak_stress_mpa": 282.9632133010655,
+      "zone": "Bottom Plating"
+    },
+    {
+      "corrosion_depth_mm": 0.0013851593439249453,
+      "crack_half_length_mm": 0.000032461229103609646,
+      "fatigue_consumed": 0.025351942736222557,
+      "peak_stress_mpa": 214.6677626549723,
+      "zone": "Side Plating"
+    },
+    {
+      "corrosion_depth_mm": 0.0012862193907874492,
+      "crack_half_length_mm": 0.000039254737429724226,
+      "fatigue_consumed": 0.03173128308851717,
+      "peak_stress_mpa": 238.88082870907064,
+      "zone": "Bow Flare"
+    },
+    {
+      "corrosion_depth_mm": 0.0013851593439249453,
+      "crack_half_length_mm": 0.000047253931432899034,
+      "fatigue_consumed": 0.03690491693720338,
+      "peak_stress_mpa": 243.29013100896861,
+      "zone": "Stern Plate"
+    },
+    {
+      "corrosion_depth_mm": 0.0013851593439249453,
+      "crack_half_length_mm": 0.000016620149301048138,
+      "fatigue_consumed": 0.012980194680945951,
+      "peak_stress_mpa": 171.73421012397785,
+      "zone": "Transom Frame"
+    },
+    {
+      "corrosion_depth_mm": 0.0013851593439249453,
+      "crack_half_length_mm": 0.00010880217935968485,
+      "fatigue_consumed": 0.08497357299376633,
+      "peak_stress_mpa": 321.260779061021,
+      "zone": "Weather Deck"
+    },
+    {
+      "corrosion_depth_mm": 0.0013851593439249453,
+      "crack_half_length_mm": 0.00002639218152897923,
+      "fatigue_consumed": 0.02061206840539102,
+      "peak_stress_mpa": 200.35657847797415,
+      "zone": "Bulkhead Frame"
+    }
+  ]
+}

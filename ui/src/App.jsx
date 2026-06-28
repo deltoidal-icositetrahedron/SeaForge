@@ -35,6 +35,10 @@ function formatFailureDetail(failure) {
   return `${zone} ${metric} ${value}`;
 }
 
+function displayStatus(status) {
+  return status === 'survived' ? 'SUCCESS' : status;
+}
+
 function responseErrorMessage(data, fallback) {
   const details = [data?.error, data?.stderr, data?.stdout]
     .filter(Boolean)
@@ -537,8 +541,6 @@ export default function App() {
                   {renderPanelRow('Mission', selectedMission?.name ?? selectedSimulation?.id, { wrap: true })}
                   {selectedMission ? renderPanelRow('Physics', selectedMission.primary_stressor?.replaceAll('_', ' '), { wrap: true }) : null}
                   {selectedMission ? renderPanelRow('Failure', (selectedMission.failure_modes_under_test ?? []).join(', ') || '—', { wrap: true }) : null}
-                  {selectedSimulation ? renderPanelRow('Status', selectedSimulation.status) : null}
-                  {Number.isFinite(selectedSimulation?.eval?.score_pct) ? renderPanelRow('Eval', `${selectedSimulation.eval.score_pct}%`) : null}
                   {bestSimulationLabel ? renderPanelRow('Best', bestSimulationLabel, { wrap: true }) : null}
                   {renderPanelRow('Leg', activeRouteSegment?.label ?? '—', { wrap: true })}
                   {renderPanelRow('Waves', activeConditions
@@ -600,7 +602,7 @@ export default function App() {
                   </>
                 ) : 'Run Gemini'}
               </button>
-              <div className="no-scrollbar" style={{ maxHeight: 170, overflowY: 'auto', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+              <div className="no-scrollbar" style={{ maxHeight: 170, overflowY: 'auto' }}>
                 {simulations.length === 0 ? (
                   <div style={{
                     padding: '7px 14px',
@@ -613,7 +615,7 @@ export default function App() {
                   </div>
                 ) : simulations.map((sim) => {
                   const isSelected = selectedSimulationId === sim.id;
-                  const failure = sim.failure?.mode ?? sim.status;
+                  const failure = sim.failure?.mode ?? displayStatus(sim.status);
                   const evalScore = Number.isFinite(sim.eval?.score_pct) ? `${sim.eval.score_pct}%` : '—';
                   return (
                     <div
@@ -664,7 +666,7 @@ export default function App() {
             <div style={{ ...panelSectionTitle, ...panelSectionDivider, marginTop: 8 }}>Analysis</div>
             {selectedSimulation || simResult?.failure ? (
               <>
-                {selectedSimulation ? renderPanelRow('Status', selectedSimulation.status) : null}
+                {selectedSimulation ? renderPanelRow('Status', displayStatus(selectedSimulation.status)) : null}
                 {Number.isFinite(selectedSimulation?.eval?.score_pct) ? renderPanelRow('Eval', `${selectedSimulation.eval.score_pct}%`) : null}
                 {selectedSimulation?.assessment?.model_used ? renderPanelRow('Model', selectedSimulation.assessment.model_used, { wrap: true }) : null}
                 {selectedSimulation?.assessment?.assessment ? renderPanelRow('AI', selectedSimulation.assessment.assessment, { wrap: true }) : null}

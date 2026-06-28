@@ -8,6 +8,7 @@ pub enum MaterialGrade {
     Ah36,
     Dh36,
     Eh36,
+    Eh40,
     Aluminum5083,
     GrpEGlass,
     CfrpEpoxy,
@@ -21,6 +22,7 @@ impl MaterialGrade {
             MaterialGrade::Ah36,
             MaterialGrade::Dh36,
             MaterialGrade::Eh36,
+            MaterialGrade::Eh40,
             MaterialGrade::Aluminum5083,
             MaterialGrade::GrpEGlass,
             MaterialGrade::CfrpEpoxy,
@@ -99,6 +101,20 @@ impl MaterialGrade {
                 cost_per_kg_usd: 1.60,
                 base_corrosion_rate_mm_yr: 0.12,
             },
+            MaterialGrade::Eh40 => MaterialSpec {
+                label: "EH40 Ultra-High-Strength Steel".into(),
+                density_kg_m3: 7850.0,
+                yield_mpa: 390.0,
+                uts_mpa: 510.0,
+                e_gpa: 206.0,
+                k_ic_mpa_sqrtm: 140.0,
+                min_temp_c: -40.0,
+                sn_slope: 3.0,
+                sn_ref_stress_mpa: 92.0,
+                sn_ref_cycles: 2_000_000,
+                cost_per_kg_usd: 1.85,
+                base_corrosion_rate_mm_yr: 0.09,
+            },
             MaterialGrade::Aluminum5083 => MaterialSpec {
                 label: "Aluminium 5083-H116".into(),
                 density_kg_m3: 2660.0,
@@ -153,6 +169,7 @@ impl MaterialGrade {
                 | MaterialGrade::Ah36
                 | MaterialGrade::Dh36
                 | MaterialGrade::Eh36
+                | MaterialGrade::Eh40
         )
     }
 
@@ -165,7 +182,8 @@ impl MaterialGrade {
             }
             "ah36" | "ah36steel" | "highstrengthah36" => MaterialGrade::Ah36,
             "dh36" | "dh36steel" | "highstrengthdh36" => MaterialGrade::Dh36,
-            "eh36" | "eh36steel" | "highstrengtheh36" | "eh40" | "eh40steel" => MaterialGrade::Eh36,
+            "eh36" | "eh36steel" | "highstrengtheh36" => MaterialGrade::Eh36,
+            "eh40" | "eh40steel" | "ultrahighstrengtheh40" => MaterialGrade::Eh40,
             "aluminum5083" | "aluminium5083" | "al5083" => MaterialGrade::Aluminum5083,
             "grp" | "grpeglass" | "grpfiberglass" | "fiberglass" => MaterialGrade::GrpEGlass,
             "cfrp" | "cfrpepoxy" | "cfrpcarbonfiber" | "carbonfiber" => MaterialGrade::CfrpEpoxy,
@@ -188,9 +206,16 @@ impl<'de> Deserialize<'de> for MaterialModel {
     {
         let value = serde_json::Value::deserialize(deserializer)?;
         if let Some(key) = value.as_str() {
-            return MaterialGrade::from_key(key)
-                .map(MaterialModel::Grade)
-                .ok_or_else(|| de::Error::custom(format!("unknown material grade '{key}'")));
+            if let Some(grade) = MaterialGrade::from_key(key) {
+                return Ok(MaterialModel::Grade(grade));
+            }
+            if landforge_grade_spec(key).is_some() {
+                return Ok(MaterialModel::Config(MaterialConfig {
+                    grade: Some(key.to_string()),
+                    ..MaterialConfig::default()
+                }));
+            }
+            return Err(de::Error::custom(format!("unknown material grade '{key}'")));
         }
 
         let config = MaterialConfig::deserialize(value).map_err(de::Error::custom)?;

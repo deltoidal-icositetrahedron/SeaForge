@@ -34,7 +34,17 @@ const HULL_ZONE_LABEL_TO_KEY = new Map([
   ['weatherdeck', 'WeatherDeck'],
   ['bulkheadframe', 'BulkheadFrame'],
 ]);
-const MATERIALS = ['MildSteelA', 'MildSteelE', 'Ah36', 'Dh36', 'Eh36', 'Aluminum5083', 'GrpEGlass', 'CfrpEpoxy'];
+const MATERIALS = [
+  'MildSteelA',
+  'Eh36',
+  'Aluminum5083',
+  'GrpEGlass',
+  'CfrpEpoxy',
+  'TitaniumGrade5',
+  'NickelAlloy625',
+  'KevlarComposite',
+  'TungstenCarbide',
+];
 const WELD_QUALITIES = ['Economy', 'Standard', 'Premium'];
 const SEAL_QUALITIES = ['Economy', 'Marine'];
 const DEFAULT_PROPULSION = {
@@ -90,7 +100,16 @@ function normalizeZoneKey(value) {
 
 function coerceEnum(value, allowed, fallback) {
   const match = allowed.find((item) => item.toLowerCase() === String(value ?? '').toLowerCase());
-  return match ?? fallback;
+  const fallbackMatch = allowed.find((item) => item.toLowerCase() === String(fallback ?? '').toLowerCase());
+  return match ?? fallbackMatch ?? allowed[0];
+}
+
+function materialValue(value, fallback) {
+  if (value && typeof value === 'object') {
+    const grade = value.grade ?? value.label ?? null;
+    return coerceEnum(grade, MATERIALS, fallback ?? 'MildSteelA');
+  }
+  return coerceEnum(value, MATERIALS, fallback ?? 'MildSteelA');
 }
 
 function normalizeZoneSpec(zone, fallback = {}) {
@@ -98,7 +117,7 @@ function normalizeZoneSpec(zone, fallback = {}) {
   if (!zoneKey) return null;
   return {
     zone: zoneKey,
-    material: coerceEnum(zone?.material, MATERIALS, fallback.material ?? 'MildSteelA'),
+    material: materialValue(zone?.material, fallback.material),
     thickness_m: Number.isFinite(Number(zone?.thickness_m))
       ? Math.max(0.003, Math.min(Number(zone.thickness_m), 0.02))
       : fallback.thickness_m ?? 0.004,
@@ -239,6 +258,27 @@ function normalizePropulsion(propulsion, fallback = DEFAULT_PROPULSION) {
   };
 }
 
+function strongerRepairMaterial(material, metric) {
+  const normalized = String(material ?? '').toLowerCase();
+  if (metric === 'corrosion' || metric === 'crack') {
+    if (normalized.includes('mild') || normalized.includes('steel') || normalized.includes('eh36')) {
+      return 'Aluminum5083';
+    }
+    if (normalized.includes('grp') || normalized.includes('aluminum')) {
+      return 'CfrpEpoxy';
+    }
+    return material || 'Aluminum5083';
+  }
+
+  if (normalized.includes('mild') || normalized.includes('ah36') || normalized.includes('dh36')) {
+    return 'Eh36';
+  }
+  if (normalized.includes('grp') || normalized.includes('aluminum')) {
+    return 'CfrpEpoxy';
+  }
+  return material || 'Eh36';
+}
+
 function failureAnalysisFromResult(result) {
   const failure = result?.failure ?? null;
   const detail = failure?.detail ?? {};
@@ -306,6 +346,7 @@ function localRepairAssessment(document, result) {
     if (analysis.failed_metric === 'fatigue' || analysis.failure_mode === 'Fatigue Failure') {
       return {
         ...zone,
+        material: strongerRepairMaterial(zone.material, 'fatigue'),
         thickness_m: Math.min(Math.max(zone.thickness_m * 1.75, 0.008), 0.02),
         weld_quality: 'Premium',
         seal_quality: zone.seal_quality === 'Economy' ? 'Marine' : zone.seal_quality,
@@ -314,7 +355,7 @@ function localRepairAssessment(document, result) {
     if (analysis.failed_metric === 'corrosion' || analysis.failed_metric === 'crack') {
       return {
         ...zone,
-        material: zone.material === 'MildSteelA' ? 'Ah36' : zone.material,
+        material: strongerRepairMaterial(zone.material, analysis.failed_metric),
         thickness_m: Math.min(Math.max(zone.thickness_m * 1.5, 0.007), 0.02),
         weld_quality: zone.weld_quality === 'Economy' ? 'Standard' : zone.weld_quality,
         seal_quality: 'Marine',
@@ -450,11 +491,11 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
   const currentZones = completeZonesFromResult(result, document.zones ?? []);
   const currentPropulsion = effectivePropulsionFromResult(result, document);
   const allowedParameters = compactAllowedParameters();
-  const survived = result?.status === 'survived';
+  const succeeded = result?.status === 'survived';
   const prompt = [
     'You are controlling a Rust naval simulation engine.',
-    survived
-      ? 'The latest simulation survived. Your job is now cost optimization: produce a cheaper candidate configuration that is still likely to survive the same mission.'
+    succeeded
+      ? 'The latest simulation reached SUCCESS. Your job is now cost optimization: produce a cheaper candidate configuration that is still likely to survive the same mission.'
       : 'Given the input JSON and latest simulation result, diagnose the failure exactly, repair the material configuration, and produce the next run input.',
     isBriefMode
       ? 'Return ONLY a JSON object with this exact shape:'
@@ -472,29 +513,29 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
     isBriefMode
       ? '- Return zones as a complete array of exactly 9 zone objects, one for every valid zone name: Keel, BilgeStrake, BottomPlating, SidePlating, BowFlare, SternPlate, TransomFrame, WeatherDeck, BulkheadFrame.'
       : '- Prefer targeted changes: material, thickness_m, weld_quality, seal_quality, propulsion fuel/drag, or route/conditions only when justified.',
-    survived && isBriefMode
-      ? '- Because the current run survived, search for the cheapest viable parameter configuration: reduce thickness, downgrade weld_quality, downgrade seal_quality, reduce fuel_capacity_kg, reduce max_power_kw, or choose cheaper materials where the latest margins suggest headroom.'
+    succeeded && isBriefMode
+      ? '- Because the current run reached SUCCESS, search for the cheapest viable parameter configuration: reduce thickness, downgrade weld_quality, downgrade seal_quality, reduce fuel_capacity_kg, reduce max_power_kw, or choose cheaper materials where the latest margins suggest headroom.'
       : isBriefMode
         ? '- Make targeted material configuration changes to the failed component and directly coupled components. Keep unrelated zones unchanged unless the failure analysis justifies changing them.'
         : '- Prefer targeted changes: material, thickness_m, weld_quality, seal_quality, propulsion fuel/drag, or route/conditions only when justified.',
-    survived
-      ? '- Do not stop just because this run survived. Return a new cheaper candidate unless every allowed cheaper combination is clearly unsafe or impossible.'
+    succeeded
+      ? '- Do not stop just because this run reached SUCCESS. Return a new cheaper candidate unless every allowed cheaper combination is clearly unsafe or impossible.'
       : '- Repair enough to address the exact failed mode, but do not overbuild unrelated components.',
-    survived
+    succeeded
       ? '- Cost search step limit: change at most three hull zones plus propulsion in this candidate.'
       : '- Failure repair step limit: change at most two hull zones plus propulsion in this candidate. Do not globally upgrade the whole vessel in one response.',
     '- Never set every zone to maximum thickness or Premium weld in one iteration. The runner is intentionally exploring many combinations over multiple iterations.',
     isBriefMode
       ? '- For fuel exhaustion, change propulsion fields instead of route: fuel_capacity_kg, propulsive_efficiency, hull_drag_coeff, and only reduce material mass if structurally justified.'
       : '- For fuel exhaustion, prefer propulsion fuel_capacity_kg, propulsive_efficiency, or hull_drag_coeff before route changes.',
-    '- Valid material names include MildSteelA, MildSteelE, Ah36, Dh36, Eh36, Aluminum5083, GrpEGlass, CfrpEpoxy.',
+    '- Valid material names are exactly the values in ALLOWED_PARAMETERS_JSON.materials. EH40/ultra-high-strength steel is not allowed; EH36 is the only high-strength steel upgrade.',
     '- Valid weld_quality values are Economy, Standard, Premium. Valid seal_quality values are Economy, Marine.',
     isBriefMode
-      ? '- If the current result survived, keep mission route/environment unchanged but make the configuration cheaper for the next trial.'
-      : '- If the current result survived, keep route/conditions unchanged but make parameters cheaper for the next trial.',
+      ? '- If the current result reached SUCCESS, keep mission route/environment unchanged but make the configuration cheaper for the next trial.'
+      : '- If the current result reached SUCCESS, keep route/conditions unchanged but make parameters cheaper for the next trial.',
     '- Avoid unrealistic values: thickness_m should usually stay between 0.003 and 0.020.',
-    '- For fatigue failures, prioritize weld_quality and thickness_m in the failed zone; material grade alone is not enough.',
-    '- For corrosion/crack failures, prioritize corrosion-resistant/cold-capable material, thickness_m, weld_quality, and seal_quality in the failed zone.',
+    '- For fatigue failures, prioritize weld_quality, thickness_m, and stronger material in the failed zone only; do not upgrade unrelated zones.',
+    '- For corrosion/crack failures, prioritize corrosion-resistant/cold-capable material, thickness_m, weld_quality, and seal_quality in the failed zone only.',
     '- Increased fuel_capacity_kg increases total configuration cost through fuel capacity cost.',
     '- Objective order: survive the full voyage first, then minimize total_config_cost_usd as much as possible.',
     '- Explore multiple combinations over iterations. Each response should be the single next best candidate to test.',
@@ -651,7 +692,7 @@ async function main() {
 
     let assessment = {
       assessment: result.status === 'survived'
-        ? 'Simulation survived. Continuing search for a cheaper viable configuration.'
+        ? 'Simulation reached SUCCESS. Continuing search for a cheaper viable configuration.'
         : 'Simulation failed before Gemini assessment completed.',
       changes: [],
       [mode === 'brief' ? 'brief' : 'params']: document,
@@ -693,7 +734,7 @@ async function main() {
         manifest.model = gemini.model;
         const nextDocument = nextDocumentFromAssessment(assessment, document, mode, result);
         if (result.status === 'survived' && JSON.stringify(nextDocument) === JSON.stringify(document)) {
-          assessment.assessment = `${assessment.assessment ?? 'Simulation survived.'} No cheaper candidate was returned; stopping optimization.`;
+          assessment.assessment = `${assessment.assessment ?? 'Simulation reached SUCCESS.'} No cheaper candidate was returned; stopping optimization.`;
           stopAfterIteration = true;
         }
         document = nextDocument;
@@ -703,7 +744,7 @@ async function main() {
       } catch (error) {
         if (mode === 'brief' && result.status === 'survived') {
           assessment = {
-            assessment: `Simulation survived, but Gemini could not produce a cheaper candidate: ${error.message}`,
+            assessment: `Simulation reached SUCCESS, but Gemini could not produce a cheaper candidate: ${error.message}`,
             changes: [],
             brief: document,
             error: error.stack || error.message,

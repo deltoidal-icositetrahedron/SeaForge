@@ -313,29 +313,12 @@
       "known_string_grades": {
         "MildSteelA": [
           "MildSteelA",
-          "mild steel temperate",
+          "Mild Steel A",
           "mild steel"
-        ],
-        "MildSteelE": [
-          "MildSteelE",
-          "mild steel cold weather",
-          "mild steel cold grade"
-        ],
-        "Ah36": [
-          "AH36",
-          "AH36 steel",
-          "high strength AH36"
-        ],
-        "Dh36": [
-          "DH36",
-          "DH36 steel",
-          "high strength DH36"
         ],
         "Eh36": [
           "EH36",
           "EH36 steel",
-          "EH40",
-          "EH40 steel",
           "high strength EH36"
         ],
         "Aluminum5083": [
@@ -354,6 +337,21 @@
           "CFRP epoxy",
           "CFRP carbon fiber",
           "carbon fiber"
+        ],
+        "TitaniumGrade5": [
+          "TitaniumGrade5",
+          "TiGrade5"
+        ],
+        "NickelAlloy625": [
+          "NickelAlloy625",
+          "NickelAlloy",
+          "NickelSuperalloy"
+        ],
+        "KevlarComposite": [
+          "KevlarComposite"
+        ],
+        "TungstenCarbide": [
+          "TungstenCarbide"
         ]
       }
     },

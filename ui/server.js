@@ -143,13 +143,7 @@ function evaluateSimulation(result) {
 
   const progressGate = voyagePct / 100;
   const score = result?.status === 'survived'
-    ? clamp(
-      72
-        + severityScore * 0.12
-        + costScore * 0.16,
-      0,
-      100,
-    )
+    ? 100
     : clamp(
       voyagePct * 0.82
         + timeScore * 0.10

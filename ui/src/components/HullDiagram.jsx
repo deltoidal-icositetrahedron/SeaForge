@@ -1,14 +1,92 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // Route in Three.js world space (Norfolk → Bermuda)
 const NORFOLK = new THREE.Vector3(0, 0, 0);
 const BERMUDA = new THREE.Vector3(48, 0, -62);
 const ROUTE_DIR = BERMUDA.clone().sub(NORFOLK).normalize();
 const HEADING = Math.atan2(ROUTE_DIR.x, ROUTE_DIR.z);
+const ROUTE_MIDPOINT = NORFOLK.clone().lerp(BERMUDA, 0.5);
+const ROUTE_RIGHT = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), HEADING);
 
-export default function HullDiagram({ simResult }) {
+const GRID_SIZE = 180;
+const GRID_DIVISIONS = 40;
+const GRID_LINE_WIDTH = 0.04;
+const GRID_SHADOW_LINE_WIDTH = 0.13;
+const GRID_LINE_OPACITY = 0.095;
+// const GRID_SHADOW_OPACITY = 0.045;
+const GRID_SHADOW_OPACITY = 0.015;
+export const DEFAULT_GRID_ROTATION_DEG = 67;
+
+function createShipShadowTexture() {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+
+  const gradient = ctx.createRadialGradient(
+    size * 0.5,
+    size * 0.5,
+    size * 0.08,
+    size * 0.5,
+    size * 0.5,
+    size * 0.48,
+  );
+  gradient.addColorStop(0, 'rgba(30, 38, 46, 0.52)');
+  gradient.addColorStop(0.38, 'rgba(30, 38, 46, 0.30)');
+  gradient.addColorStop(0.72, 'rgba(30, 38, 46, 0.10)');
+  gradient.addColorStop(1, 'rgba(30, 38, 46, 0)');
+
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.ellipse(size * 0.5, size * 0.5, size * 0.44, size * 0.30, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+function createGridMesh(size, divisions, lineWidth, color, opacity, options = {}) {
+  const { includeXLines = true, includeZLines = true } = options;
+  const group = new THREE.Group();
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthWrite: false,
+    toneMapped: false,
+  });
+  const step = size / divisions;
+  const half = size / 2;
+  const xLineGeo = new THREE.PlaneGeometry(size, lineWidth);
+  const zLineGeo = new THREE.PlaneGeometry(lineWidth, size);
+
+  for (let i = 0; i <= divisions; i += 1) {
+    const p = -half + i * step;
+
+    if (includeXLines) {
+      const xLine = new THREE.Mesh(xLineGeo, material);
+      xLine.rotation.x = -Math.PI / 2;
+      xLine.position.z = p;
+      group.add(xLine);
+    }
+
+    if (includeZLines) {
+      const zLine = new THREE.Mesh(zLineGeo, material);
+      zLine.rotation.x = -Math.PI / 2;
+      zLine.position.x = p;
+      group.add(zLine);
+    }
+  }
+
+  return group;
+}
+
+export default function HullDiagram({ simResult, gridRotationDeg = DEFAULT_GRID_ROTATION_DEG }) {
   const mountRef = useRef(null);
   const stateRef = useRef({});
   const [progress, setProgress] = useState(0);
@@ -44,44 +122,109 @@ export default function HullDiagram({ simResult }) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.03;
     renderer.setSize(el.clientWidth, el.clientHeight);
     el.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#eaecef');
+    scene.background = new THREE.Color('#C3C4CA');
 
-    // Camera — positioned perpendicular-right of the Norfolk→Bermuda route
-    // Route direction XZ: (0.612, -0.790). Perpendicular-right: (0.790, 0.612).
-    // Camera = midpoint(24,0,-31) + perp*70 + up*65
+    // Camera — positioned perpendicular-right of the route, orbiting around the ship.
+    const cameraOffset = new THREE.Vector3(55, 65, 43);
+    const shipFocus = NORFOLK.clone();
     const cam = new THREE.PerspectiveCamera(32, el.clientWidth / el.clientHeight, 0.1, 1000);
-    cam.position.set(24 + 55, 65, -31 + 43);  // (79, 65, 12)
-    cam.lookAt(24, 0, -31);
+    cam.position.copy(shipFocus).add(cameraOffset);
+    cam.lookAt(shipFocus);
+
+    const controls = new OrbitControls(cam, renderer.domElement);
+    controls.target.copy(shipFocus);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.08;
+    controls.enablePan = false;
+    controls.minDistance = 12;
+    controls.maxDistance = 180;
+    controls.maxPolarAngle = Math.PI * 0.48;
+    controls.rotateSpeed = 0.65;
+    controls.zoomSpeed = 0.85;
+    controls.panSpeed = 0.75;
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: THREE.MOUSE.ROTATE,
+    };
+    controls.update();
+
+    renderer.domElement.style.cursor = 'grab';
+    renderer.domElement.style.touchAction = 'none';
+    const setGrabbing = () => { renderer.domElement.style.cursor = 'grabbing'; };
+    const setGrab = () => { renderer.domElement.style.cursor = 'grab'; };
+    const blockContextMenu = (event) => event.preventDefault();
+    renderer.domElement.addEventListener('pointerdown', setGrabbing);
+    renderer.domElement.addEventListener('pointerup', setGrab);
+    renderer.domElement.addEventListener('pointerleave', setGrab);
+    renderer.domElement.addEventListener('contextmenu', blockContextMenu);
 
     // Lights
-    scene.add(new THREE.AmbientLight('#ffffff', 1.6));
-    const sun = new THREE.DirectionalLight('#ffffff', 2.0);
-    sun.position.set(40, 80, 40);
+    scene.add(new THREE.AmbientLight('#ffffff', 0.95));
+    scene.add(new THREE.HemisphereLight('#f5f8fb', '#b8c0c8', 0.42));
+    const sun = new THREE.DirectionalLight('#ffffff', 2.8);
+    sun.position.copy(ROUTE_MIDPOINT).add(ROUTE_RIGHT.clone().multiplyScalar(30));
+    sun.position.y = 72;
+    sun.target.position.copy(ROUTE_MIDPOINT);
+    scene.add(sun.target);
     sun.castShadow = true;
-    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.mapSize.set(4096, 4096);
+    sun.shadow.radius = 10;
+    sun.shadow.bias = -0.00012;
+    sun.shadow.normalBias = 0.02;
     Object.assign(sun.shadow.camera, { left: -120, right: 120, top: 120, bottom: -120, far: 300 });
     scene.add(sun);
-    const fill = new THREE.DirectionalLight('#b0c8e8', 0.5);
+    const fill = new THREE.DirectionalLight('#b0c8e8', 0.18);
     fill.position.set(-30, 20, -30);
     scene.add(fill);
 
     // Grid
-    const grid = new THREE.GridHelper(180, 40, 0x000000, 0x000000);
-    grid.material.opacity = 0.07;
-    grid.material.transparent = true;
-    grid.position.set(24, 0, -31);
-    scene.add(grid);
+    const gridGroup = new THREE.Group();
+    gridGroup.position.set(24, 0, -31);
+    gridGroup.rotation.y = THREE.MathUtils.degToRad(gridRotationDeg);
+    scene.add(gridGroup);
+
+    const gridShadowOffset = ROUTE_RIGHT.clone().multiplyScalar(-0.6);
+    const horizontalGridShadow = createGridMesh(
+      GRID_SIZE,
+      GRID_DIVISIONS,
+      GRID_SHADOW_LINE_WIDTH,
+      0x000000,
+      GRID_SHADOW_OPACITY,
+      { includeZLines: false },
+    );
+    horizontalGridShadow.position.set(gridShadowOffset.x, 0.008, gridShadowOffset.z);
+    gridGroup.add(horizontalGridShadow);
+
+    const verticalGridShadow = createGridMesh(
+      GRID_SIZE,
+      GRID_DIVISIONS,
+      GRID_LINE_WIDTH,
+      0x000000,
+      GRID_SHADOW_OPACITY,
+      { includeXLines: false },
+    );
+    verticalGridShadow.position.set(0, 0.008, 0);
+    gridGroup.add(verticalGridShadow);
+
+    const grid = createGridMesh(GRID_SIZE, GRID_DIVISIONS, GRID_LINE_WIDTH, 0x000000, GRID_LINE_OPACITY);
+    grid.position.set(0, 0.01, 0);
+    gridGroup.add(grid);
 
     // Shadow ground
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(200, 200),
-      new THREE.ShadowMaterial({ opacity: 0.08 }),
+      new THREE.ShadowMaterial({ color: 0x26313c, opacity: 0.08 }),
     );
     ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.01;
     ground.receiveShadow = true;
     scene.add(ground);
 
@@ -107,6 +250,22 @@ export default function HullDiagram({ simResult }) {
     shipGroup.position.copy(NORFOLK);
     shipGroup.rotation.y = HEADING;
     scene.add(shipGroup);
+
+    const shipShadow = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1),
+      new THREE.MeshBasicMaterial({
+        map: createShipShadowTexture(),
+        transparent: true,
+        opacity: 0.48,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    );
+    shipShadow.rotation.x = -Math.PI / 2;
+    shipShadow.position.set(-0.85, 0.018, -0.2);
+    shipShadow.scale.set(3.2, 8.4, 1);
+    shipShadow.renderOrder = 1;
+    shipGroup.add(shipShadow);
 
     // Load STL model
     const loader = new STLLoader();
@@ -149,7 +308,7 @@ export default function HullDiagram({ simResult }) {
 
     stateRef.current = {
       ...stateRef.current,
-      renderer, scene, cam, shipGroup,
+      renderer, scene, cam, controls, shipGroup, shipFocus, gridGroup,
     };
 
     // Resize
@@ -164,6 +323,7 @@ export default function HullDiagram({ simResult }) {
     let frameId;
     const loop = () => {
       frameId = requestAnimationFrame(loop);
+      controls.update();
       renderer.render(scene, cam);
     };
     loop();
@@ -171,18 +331,36 @@ export default function HullDiagram({ simResult }) {
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener('resize', onResize);
+      renderer.domElement.removeEventListener('pointerdown', setGrabbing);
+      renderer.domElement.removeEventListener('pointerup', setGrab);
+      renderer.domElement.removeEventListener('pointerleave', setGrab);
+      renderer.domElement.removeEventListener('contextmenu', blockContextMenu);
+      controls.dispose();
       renderer.dispose();
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
     };
   }, []);
 
+  useEffect(() => {
+    const { gridGroup } = stateRef.current;
+    if (!gridGroup) return;
+    gridGroup.rotation.y = THREE.MathUtils.degToRad(gridRotationDeg);
+  }, [gridRotationDeg]);
+
   // Update ship position on progress change
   useEffect(() => {
-    const { shipGroup } = stateRef.current;
+    const { shipGroup, controls, cam, shipFocus } = stateRef.current;
     if (!shipGroup) return;
 
     const pos = NORFOLK.clone().lerp(BERMUDA, progress);
     shipGroup.position.set(pos.x, 0, pos.z);
+    if (controls && cam && shipFocus) {
+      const delta = pos.clone().sub(shipFocus);
+      cam.position.add(delta);
+      controls.target.copy(pos);
+      shipFocus.copy(pos);
+      controls.update();
+    }
   }, [progress]);
 
   return (

@@ -32,14 +32,14 @@ export default function App() {
   useEffect(() => { loadResult(); }, [loadResult]);
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#e9ebee', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#C3C4CA', display: 'flex', flexDirection: 'column' }}>
 
       {/* Minimal header */}
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         padding: '0 18px', height: 40, flexShrink: 0,
         borderBottom: '1px solid rgba(0,0,0,0.1)',
-        background: 'rgba(233,235,238,0.95)',
+        background: 'rgba(195,196,202,0.95)',
         fontFamily: "'Courier New', monospace",
       }}>
         <span style={{ fontSize: 11, letterSpacing: '0.2em', color: 'rgba(0,0,0,0.35)', textTransform: 'uppercase' }}>

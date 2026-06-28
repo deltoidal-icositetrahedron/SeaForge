@@ -1,28 +1,28 @@
 {
   "hull": {
-    "loa_m": 7.3,
-    "beam_m": 2.4,
-    "depth_m": 1.1,
-    "draft_m": 0.32,
-    "block_coeff": 0.58,
-    "waterplane_coeff": 0.78
+    "loa_m": 7.315,
+    "beam_m": 2.5,
+    "depth_m": 0.85,
+    "draft_m": 0.40,
+    "block_coeff": 0.44,
+    "waterplane_coeff": 0.76
   },
   "zones": [
-    { "zone": "Keel",          "material": "Ah36", "thickness_m": 0.007, "weld_quality": "Standard", "seal_quality": "Marine" },
-    { "zone": "BilgeStrake",   "material": "Ah36", "thickness_m": 0.006, "weld_quality": "Standard", "seal_quality": "Marine" },
-    { "zone": "BottomPlating", "material": "Ah36", "thickness_m": 0.006, "weld_quality": "Standard", "seal_quality": "Commercial" },
-    { "zone": "SidePlating",   "material": "Ah36", "thickness_m": 0.005, "weld_quality": "Standard", "seal_quality": "Commercial" },
-    { "zone": "BowFlare",      "material": "Dh36", "thickness_m": 0.008, "weld_quality": "Premium",  "seal_quality": "Marine" },
-    { "zone": "SternPlate",    "material": "Ah36", "thickness_m": 0.005, "weld_quality": "Standard", "seal_quality": "Commercial" },
-    { "zone": "TransomFrame",  "material": "Ah36", "thickness_m": 0.005, "weld_quality": "Standard", "seal_quality": "Commercial" },
-    { "zone": "WeatherDeck",   "material": "Ah36", "thickness_m": 0.004, "weld_quality": "Standard", "seal_quality": "Marine" },
-    { "zone": "BulkheadFrame", "material": "Ah36", "thickness_m": 0.005, "weld_quality": "Standard", "seal_quality": "Commercial" }
+    { "zone": "Keel",          "material": "Aluminum5083", "thickness_m": 0.005, "weld_quality": "Premium",  "seal_quality": "Marine" },
+    { "zone": "BilgeStrake",   "material": "Aluminum5083", "thickness_m": 0.005, "weld_quality": "Standard", "seal_quality": "Marine" },
+    { "zone": "BottomPlating", "material": "Aluminum5083", "thickness_m": 0.005, "weld_quality": "Standard", "seal_quality": "Marine" },
+    { "zone": "SidePlating",   "material": "Aluminum5083", "thickness_m": 0.004, "weld_quality": "Standard", "seal_quality": "Marine" },
+    { "zone": "BowFlare",      "material": "Aluminum5083", "thickness_m": 0.006, "weld_quality": "Premium",  "seal_quality": "Marine" },
+    { "zone": "SternPlate",    "material": "Aluminum5083", "thickness_m": 0.004, "weld_quality": "Standard", "seal_quality": "Marine" },
+    { "zone": "TransomFrame",  "material": "Aluminum5083", "thickness_m": 0.005, "weld_quality": "Standard", "seal_quality": "Marine" },
+    { "zone": "WeatherDeck",   "material": "Aluminum5083", "thickness_m": 0.004, "weld_quality": "Standard", "seal_quality": "Marine" },
+    { "zone": "BulkheadFrame", "material": "Aluminum5083", "thickness_m": 0.005, "weld_quality": "Standard", "seal_quality": "Marine" }
   ],
   "propulsion": {
-    "max_power_kw": 180.0,
-    "fuel_capacity_kg": 5000.0,
+    "max_power_kw": 300.0,
+    "fuel_capacity_kg": 2000.0,
     "sfc_g_per_kwh": 220.0,
-    "propulsive_efficiency": 0.65,
-    "hull_drag_coeff": 0.015
+    "propulsive_efficiency": 0.72,
+    "hull_drag_coeff": 0.007
   }
 }

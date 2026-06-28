@@ -1,1 +1,19 @@
-/target
+# Rust build artifacts
+/target/
+
+# Node/Vite artifacts
+ui/node_modules/
+ui/dist/
+ui/.vite/
+
+# Local simulation outputs
+/result.json
+/sim_output.json
+ui/*_output.json
+
+# Local captures/media exports
+*.mov
+
+# OS/editor noise
+.DS_Store
+*.log

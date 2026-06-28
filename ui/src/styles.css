@@ -1,0 +1,331 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #000000;
+  --panel: #0a0a0a;
+  --panel2: #111111;
+  --border: #1e1e1e;
+  --border2: #2a2a2a;
+  --text: #cccccc;
+  --dim: #555555;
+  --green: #00ff88;
+  --red: #ff3333;
+  --amber: #ffaa00;
+  --blue: #0099ff;
+  --font: 'Courier New', Courier, monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  line-height: 1.4;
+  overflow-x: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #060606;
+}
+::-webkit-scrollbar-thumb {
+  background: #1a4d30;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--green);
+}
+
+/* Scanline overlay */
+.scanlines {
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* Buttons */
+.btn {
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--green);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 8px 16px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: background 0.2s ease, border-color 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:hover {
+  background: #001a0d;
+  border-color: var(--green);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn:disabled:hover {
+  background: transparent;
+  border-color: var(--border2);
+}
+
+.btn-danger {
+  color: var(--red);
+  border-color: #440000;
+}
+.btn-danger:hover {
+  background: #1a0000;
+  border-color: var(--red);
+}
+
+.btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-primary {
+  border-color: #004422;
+  background: #001408;
+}
+.btn-primary:hover {
+  background: #002a12;
+  border-color: var(--green);
+}
+
+/* Badges */
+.badge-survived {
+  color: var(--green);
+  border: 1px solid var(--green);
+  padding: 2px 8px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--font);
+}
+
+.badge-failed {
+  color: var(--red);
+  border: 1px solid var(--red);
+  padding: 2px 8px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--font);
+}
+
+.badge-standby {
+  color: var(--dim);
+  border: 1px solid #333;
+  padding: 2px 8px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--font);
+}
+
+.badge-running {
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  padding: 2px 8px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: var(--font);
+}
+
+/* Section headers */
+.section-header {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+/* Number highlight */
+.num-green {
+  color: var(--green);
+  font-family: var(--font);
+}
+.num-red {
+  color: var(--red);
+}
+.num-amber {
+  color: var(--amber);
+}
+
+/* Inputs */
+input[type="number"],
+input[type="text"],
+select {
+  background: #000;
+  border: 1px solid #222;
+  color: var(--green);
+  font-family: var(--font);
+  font-size: 12px;
+  padding: 5px 8px;
+  width: 100%;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+input[type="number"]:focus,
+input[type="text"]:focus,
+select:focus {
+  border-color: var(--green);
+}
+select option {
+  background: #0a0a0a;
+  color: var(--green);
+}
+
+/* Range slider */
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 3px;
+  background: #1e1e1e;
+  outline: none;
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--green);
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--green);
+  cursor: pointer;
+  border: none;
+}
+
+/* Progress bar */
+.progress-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background: #111;
+  border: 1px solid #1a1a1a;
+  margin-top: 6px;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: var(--green);
+  transition: width 0.6s ease;
+}
+.progress-bar-fill.amber {
+  background: var(--amber);
+}
+.progress-bar-fill.red {
+  background: var(--red);
+}
+
+/* Blink animation */
+@keyframes blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.blink {
+  animation: blink 1s infinite;
+}
+
+/* Pulse animation for critical zones */
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.pulse-red {
+  animation: pulse-red 0.8s infinite;
+}
+
+/* Fade-in animation */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in-down {
+  animation: fadeInDown 0.3s ease forwards;
+}
+
+/* Table */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+th {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--dim);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  font-weight: normal;
+}
+td {
+  padding: 6px 10px;
+  border-bottom: 1px solid #141414;
+  vertical-align: middle;
+}
+
+/* Horizontal rule separator */
+.hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 12px 0;
+}
+
+/* Loading spinner */
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #1a1a1a;
+  border-top-color: var(--green);
+  display: inline-block;
+  animation: rotate 0.8s linear infinite;
+}
+
+/* Cursor blink for active elements */
+@keyframes cursor-blink {
+  0%, 100% { border-right-color: var(--green); }
+  50% { border-right-color: transparent; }
+}
+.cursor-active {
+  border-right: 2px solid var(--green);
+  animation: cursor-blink 1s step-end infinite;
+  padding-right: 2px;
+}
+
+/* Transition defaults */
+.transition-all {
+  transition: all 0.2s ease;
+}

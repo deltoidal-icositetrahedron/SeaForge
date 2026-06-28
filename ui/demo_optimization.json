@@ -1,0 +1,93 @@
+{
+  "project": "SeaForge",
+  "tagline": "Failure-driven design optimization for autonomous vessels",
+  "mission": {
+    "origin": "Norfolk, VA",
+    "destination": "Bermuda",
+    "goal": "Find the cheapest vessel configuration that survives the mission",
+    "payload_kg": 200,
+    "risk_tolerance": 0.85
+  },
+  "attempts": [
+    {
+      "attempt_number": 1,
+      "status": "failed",
+      "cost_usd": 41200,
+      "mission_readiness": 38,
+      "distance_completed_pct": 61,
+      "failure_mode": "FLOODING",
+      "component_failed_first": "port seal",
+      "failure_summary": "Basic seals failed under repeated wave impact in sea state 5.",
+      "ai_diagnosis": "The vessel did not fail because of hull material or fuel. The first bottleneck was seal integrity during wave slamming.",
+      "patch": {
+        "change": "Upgrade seal grade from basic to marine-grade",
+        "expected_cost_delta_usd": 1400,
+        "expected_survival_gain": 0.24
+      }
+    },
+    {
+      "attempt_number": 2,
+      "status": "failed",
+      "cost_usd": 42600,
+      "mission_readiness": 61,
+      "distance_completed_pct": 78,
+      "failure_mode": "HULL_FATIGUE",
+      "component_failed_first": "port-side weld seam",
+      "failure_summary": "Seal upgrade worked, but the port-side weld seam accumulated fatigue damage in high sea state.",
+      "ai_diagnosis": "The previous patch fixed flooding. The new limiting factor is weld fatigue, so upgrading the entire hull would be wasteful.",
+      "patch": {
+        "change": "Use reinforced welds on high-stress hull zones",
+        "expected_cost_delta_usd": 3200,
+        "expected_survival_gain": 0.19
+      }
+    },
+    {
+      "attempt_number": 3,
+      "status": "failed",
+      "cost_usd": 45800,
+      "mission_readiness": 74,
+      "distance_completed_pct": 92,
+      "failure_mode": "FUEL_EXHAUSTION",
+      "component_failed_first": "fuel reserve",
+      "failure_summary": "The vessel survived structurally but ran out of fuel near the end of the mission.",
+      "ai_diagnosis": "Structural survivability is now acceptable. The cheapest next fix is a small fuel capacity increase rather than more material upgrades.",
+      "patch": {
+        "change": "Increase fuel capacity by 20 liters",
+        "expected_cost_delta_usd": 900,
+        "expected_survival_gain": 0.12
+      }
+    },
+    {
+      "attempt_number": 4,
+      "status": "passed",
+      "cost_usd": 46700,
+      "mission_readiness": 91,
+      "distance_completed_pct": 100,
+      "failure_mode": null,
+      "component_failed_first": null,
+      "failure_summary": "Mission completed successfully with acceptable structural, stability, flooding, and fuel margins.",
+      "ai_diagnosis": "This is the cheapest passing configuration found in the current search. Further upgrades improve margin but increase cost unnecessarily.",
+      "patch": null
+    }
+  ],
+  "cheapest_passing_config": {
+    "hull_material": "aluminum",
+    "hull_thickness_mm": 8,
+    "seal_grade": "marine-grade",
+    "weld_quality": "reinforced",
+    "coating": "anti-corrosion",
+    "fuel_capacity_l": 120,
+    "hull_geometry": "monohull",
+    "total_cost_usd": 46700
+  },
+  "final_eval_state": {
+    "mission_readiness": 91,
+    "survivability": 88,
+    "cost_efficiency": 84,
+    "structural_margin": 89,
+    "fuel_margin": 76,
+    "stability_margin": 86,
+    "flooding_risk": 9,
+    "corrosion_risk": 14
+  }
+}

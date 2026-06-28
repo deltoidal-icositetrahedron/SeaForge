@@ -388,7 +388,7 @@ export default function App() {
     : 'ended';
   const campaignMissionId = visibleSimulations.find((sim) => sim.params?.id)?.params?.id ?? null;
   const campaignMission = MISSIONS.find((mission) => mission.id === campaignMissionId) ?? null;
-  const missionBrief = campaignMission ?? selectedMission;
+  const missionBrief = selectedMission;
   const env = missionBrief?.environmental_profile ?? null;
   const campaignSuccessCount = visibleSimulations.filter((sim) => sim.status === 'survived').length;
   const campaignFailureCount = visibleSimulations.filter((sim) => sim.status === 'failed').length;
@@ -706,31 +706,19 @@ export default function App() {
 
             <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
               <div style={panelSectionTitle}>Mission Brief</div>
-              {missionBrief || selectedSimulation ? (
+              {missionBrief ? (
                 <>
-                  {renderPanelRow('Mission', missionBrief?.name ?? selectedSimulation?.id, { wrap: true })}
+                  {renderPanelRow('Mission', missionBrief.name, { wrap: true })}
                   {missionBrief?.objective ? renderPanelRow('Objective', missionBrief.objective, { wrap: true }) : null}
                   {missionBrief ? renderPanelRow('Physics', missionBrief.primary_stressor?.replaceAll('_', ' '), { wrap: true }) : null}
                   {missionBrief ? renderPanelRow('Failure', (missionBrief.failure_modes_under_test ?? []).join(', ') || '—', { wrap: true }) : null}
-                  {renderPanelRow('Waves', activeConditions
-                    ? `${fmtNumber(activeConditions.hs_m)}m Hs / ${fmtNumber(activeConditions.tp_s)}s Tp`
-                    : fmtRange(env?.wave_height_m, 'm'))}
-                  {renderPanelRow('Wind', missionFactor(activeConditions
-                    ? `${fmtNumber(activeConditions.wind_speed_ms)} m/s`
-                    : '—'))}
-                  {renderPanelRow('Slamming', missionFactor(activeConditions
-                    ? `${fmtNumber((activeConditions.slam_probability ?? 0) * 100, 0)}%`
-                    : (env?.slamming_probability ?? '—')))}
-                  {renderPanelRow('Water', missionFactor(activeConditions
-                    ? `${fmtNumber(activeConditions.water_temp_c)}°C`
-                    : fmtRange(env?.water_temp_c, '°C')))}
+                  {renderPanelRow('Waves', fmtRange(env?.wave_height_m, 'm'))}
+                  {renderPanelRow('Wind', missionFactor('—'))}
+                  {renderPanelRow('Slamming', missionFactor(env?.slamming_probability ?? '—'))}
+                  {renderPanelRow('Water', missionFactor(fmtRange(env?.water_temp_c, '°C')))}
                   {renderPanelRow('Ice', missionFactor(env?.ice_accretion_risk ?? '—'))}
-                  {renderPanelRow('Salinity', missionFactor(activeConditions
-                    ? `${fmtNumber(activeConditions.salinity_ppt)} ppt`
-                    : `${fmtNumber(env?.salinity_ppt)} ppt`))}
-                  {renderPanelRow('pH', missionFactor(activeConditions
-                    ? fmtNumber(activeConditions.ph, 2)
-                    : fmtNumber(env?.ph, 2)))}
+                  {renderPanelRow('Salinity', missionFactor(`${fmtNumber(env?.salinity_ppt)} ppt`))}
+                  {renderPanelRow('pH', missionFactor(fmtNumber(env?.ph, 2)))}
                 </>
               ) : (
                 <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
@@ -798,7 +786,7 @@ export default function App() {
                 <>
                   {renderPanelRow('Campaign', selectedCampaign.id, { wrap: true })}
                   {renderPanelRow('Status', selectedCampaignStatus)}
-                  {renderPanelRow('Mission', campaignMission?.name ?? missionBrief?.name ?? '—', { wrap: true })}
+                  {renderPanelRow('Mission', campaignMission?.name ?? '—', { wrap: true })}
                   {renderPanelRow('Runs', String(selectedCampaign.count))}
                   {renderPanelRow('Success', String(campaignSuccessCount))}
                   {renderPanelRow('Failed', String(campaignFailureCount))}

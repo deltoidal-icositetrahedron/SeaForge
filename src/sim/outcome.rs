@@ -144,6 +144,21 @@ pub struct ZoneSummary {
     pub peak_stress_mpa: f64,
 }
 
+/// State snapshot at the end of one route segment — used for replay.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SegmentSnapshot {
+    pub segment_index: usize,
+    pub segment_label: String,
+    pub distance_completed_nm: f64,
+    pub elapsed_h: f64,
+    pub speed_kts: f64,
+    pub fuel_remaining_kg: f64,
+    pub gm_m: f64,
+    pub zones: Vec<ZoneSummary>,
+    /// Set only on the tick where failure occurred.
+    pub failure: Option<String>,
+}
+
 /// What the voyage simulation returns.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SimOutcome {
@@ -156,6 +171,7 @@ pub struct SimOutcome {
     pub final_gm_m: f64,
     pub zone_summaries: Vec<ZoneSummary>,
     pub total_config_cost_usd: f64,
+    pub ticks: Vec<SegmentSnapshot>,
 }
 
 impl SimOutcome {

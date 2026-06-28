@@ -146,4 +146,21 @@ app.listen(PORT, () => {
   console.log(`SEAFORGE V2 API server running on http://localhost:${PORT}`);
   console.log(`Binary path: ${BINARY}`);
   console.log(`Binary exists: ${fs.existsSync(BINARY)}`);
+
+  const configFile = path.resolve(__dirname, '..', 'examples', 'vessel_config.json');
+  const routeFile  = path.resolve(__dirname, '..', 'examples', 'voyage_route.json');
+  if (fs.existsSync(BINARY) && fs.existsSync(configFile) && fs.existsSync(routeFile)) {
+    console.log('Running initial simulation...');
+    const result = spawnSync(BINARY, ['simulate', configFile, routeFile, RESULT_FILE], {
+      encoding: 'utf8',
+      timeout: 60000,
+    });
+    if (result.error) {
+      console.error('Initial simulation failed:', result.error.message);
+    } else {
+      console.log('Initial simulation complete → result.json');
+    }
+  } else {
+    console.log('Skipping initial simulation (binary or example files not found)');
+  }
 });

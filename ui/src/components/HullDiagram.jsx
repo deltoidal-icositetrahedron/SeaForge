@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
@@ -87,32 +87,12 @@ function createGridMesh(size, divisions, lineWidth, color, opacity, options = {}
   return group;
 }
 
-export default function HullDiagram({ simResult, gridRotationDeg = DEFAULT_GRID_ROTATION_DEG }) {
+export default function HullDiagram({ simResult, progress: tickProgress = null, gridRotationDeg = DEFAULT_GRID_ROTATION_DEG }) {
   const mountRef = useRef(null);
   const stateRef = useRef({});
-  const [progress, setProgress] = useState(0);
-  const rafRef = useRef(null);
-
-  const targetPct = simResult
-    ? Math.min((simResult.result?.distance_completed_pct ?? 0) / 100, 1)
-    : 0;
-
-  // Animate progress 0 → targetPct over 4s
-  useEffect(() => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    setProgress(0);
-    if (!simResult) return;
-    const DUR = 4000;
-    const t0  = Date.now();
-    const tick = () => {
-      const t    = Math.min((Date.now() - t0) / DUR, 1);
-      const ease = t < .5 ? 2*t*t : -1+(4-2*t)*t;
-      setProgress(ease * targetPct);
-      if (t < 1) rafRef.current = requestAnimationFrame(tick);
-    };
-    const id = setTimeout(() => { rafRef.current = requestAnimationFrame(tick); }, 200);
-    return () => { clearTimeout(id); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
-  }, [simResult, targetPct]);
+  const progress = Number.isFinite(tickProgress)
+    ? Math.max(0, Math.min(tickProgress, 1))
+    : Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
 
   // Three.js scene setup
   useEffect(() => {
@@ -238,11 +218,13 @@ export default function HullDiagram({ simResult, gridRotationDeg = DEFAULT_GRID_
       new THREE.BufferGeometry().setFromPoints([routeStart.clone(), routeEnd.clone()]),
       new THREE.LineBasicMaterial({ color: 0xFF0000, opacity: 0.85, transparent: true }),
     );
+    remainingRouteLine.frustumCulled = false;
     scene.add(remainingRouteLine);
     const traversedRouteLine = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints([routeStart.clone(), routeStart.clone()]),
       new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.85, transparent: true }),
     );
+    traversedRouteLine.frustumCulled = false;
     scene.add(traversedRouteLine);
 
     // Waypoint dots
@@ -372,6 +354,8 @@ export default function HullDiagram({ simResult, gridRotationDeg = DEFAULT_GRID_
     if (traversedRouteLine && remainingRouteLine) {
       traversedRouteLine.geometry.setFromPoints([routeStart, routePos]);
       remainingRouteLine.geometry.setFromPoints([routePos, routeEnd]);
+      traversedRouteLine.geometry.computeBoundingSphere();
+      remainingRouteLine.geometry.computeBoundingSphere();
     }
     if (controls && cam && shipFocus) {
       const delta = pos.clone().sub(shipFocus);

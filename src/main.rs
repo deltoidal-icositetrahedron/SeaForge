@@ -293,6 +293,27 @@ fn build_output(
         })
     }).collect();
 
+    let ticks_json: Vec<Value> = outcome.ticks.iter().map(|t| {
+        let zones: Vec<Value> = t.zones.iter().map(|z| serde_json::json!({
+            "zone": z.zone.label(),
+            "fatigue_consumed": z.fatigue_consumed,
+            "corrosion_depth_mm": z.corrosion_depth_mm,
+            "crack_half_length_mm": z.crack_half_length_mm,
+            "peak_stress_mpa": z.peak_stress_mpa,
+        })).collect();
+        serde_json::json!({
+            "segment_index": t.segment_index,
+            "segment_label": t.segment_label,
+            "distance_completed_nm": t.distance_completed_nm,
+            "elapsed_h": t.elapsed_h,
+            "speed_kts": t.speed_kts,
+            "fuel_remaining_kg": t.fuel_remaining_kg,
+            "gm_m": t.gm_m,
+            "zones": zones,
+            "failure": t.failure,
+        })
+    }).collect();
+
     let breakdown = CostBreakdown::for_config(config);
 
     serde_json::json!({
@@ -317,6 +338,7 @@ fn build_output(
         },
         "failure": failure_json,
         "zones": zone_json,
+        "ticks": ticks_json,
         "optimizer": optimizer.map(|o| serde_json::json!({
             "configs_tested": o.configs_tested,
             "survivors_found": o.survivors_found,

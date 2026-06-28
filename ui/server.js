@@ -37,6 +37,7 @@ const SIMULATIONS_DIR = path.resolve(ROOT_DIR, 'simulations');
 const GEMINI_RUNNER = path.resolve(ROOT_DIR, 'gemini_runner', 'run_gemini_simulations.js');
 const MISSION_BRIEFS_DIR = path.resolve(ROOT_DIR, 'mission-briefs');
 let activeGeminiProcess = null;
+let activeGeminiRun = null;
 
 function safeUnlink(file) {
   try {
@@ -78,6 +79,22 @@ function stopActiveGeminiRun() {
       return false;
     }
   }
+}
+
+function activeGeminiStatus() {
+  const child = activeGeminiProcess;
+  const active = Boolean(child && !child.killed && child.exitCode === null);
+  if (!active) {
+    activeGeminiProcess = null;
+    activeGeminiRun = null;
+  }
+  return {
+    active,
+    run_id: active ? activeGeminiRun?.run_id ?? null : null,
+    mission_id: active ? activeGeminiRun?.mission_id ?? null : null,
+    started_at: active ? activeGeminiRun?.started_at ?? null : null,
+    max_iterations: active ? activeGeminiRun?.max_iterations ?? null : null,
+  };
 }
 
 function missionBriefById(missionId) {
@@ -258,6 +275,7 @@ function spawnText(command, args, options) {
     let stderr = '';
     if (options?.trackGemini) {
       activeGeminiProcess = child;
+      activeGeminiRun = options.activeGeminiRun ?? null;
     }
 
     child.stdout?.on('data', (chunk) => {
@@ -267,11 +285,17 @@ function spawnText(command, args, options) {
       stderr += chunk.toString();
     });
     child.on('error', (error) => {
-      if (activeGeminiProcess === child) activeGeminiProcess = null;
+      if (activeGeminiProcess === child) {
+        activeGeminiProcess = null;
+        activeGeminiRun = null;
+      }
       resolve({ error, status: null, stdout, stderr });
     });
     child.on('close', (status) => {
-      if (activeGeminiProcess === child) activeGeminiProcess = null;
+      if (activeGeminiProcess === child) {
+        activeGeminiProcess = null;
+        activeGeminiRun = null;
+      }
       resolve({ status, stdout, stderr });
     });
   });
@@ -315,6 +339,11 @@ app.get('/api/result', (req, res) => {
 // GET /api/simulations — list all saved Gemini/Rust simulation iterations
 app.get('/api/simulations', (_req, res) => {
   res.json({ simulations: simulationEntries() });
+});
+
+// GET /api/gemini/status — report the active Gemini campaign, if any
+app.get('/api/gemini/status', (_req, res) => {
+  res.json(activeGeminiStatus());
 });
 
 // GET /api/simulation?id=<run-id/iteration-XX> — load a saved simulation result
@@ -383,6 +412,12 @@ app.post('/api/gemini/run', async (req, res) => {
         env: process.env,
         detached: true,
         trackGemini: true,
+        activeGeminiRun: {
+          run_id: runId,
+          mission_id: brief.id,
+          started_at: new Date().toISOString(),
+          max_iterations: maxIterations,
+        },
       },
     );
 

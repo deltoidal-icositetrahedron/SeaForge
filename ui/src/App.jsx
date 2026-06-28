@@ -52,6 +52,17 @@ function responseErrorMessage(data, fallback) {
   return details || fallback;
 }
 
+function sortCampaignsByCreatedAt(campaigns) {
+  return [...campaigns].sort((a, b) => {
+    const bTime = Date.parse(b.created_at);
+    const aTime = Date.parse(a.created_at);
+    if (Number.isFinite(bTime) && Number.isFinite(aTime) && bTime !== aTime) {
+      return bTime - aTime;
+    }
+    return b.id.localeCompare(a.id);
+  });
+}
+
 export default function App() {
   const [simResult, setSimResult] = useState(null);
   const [loading, setLoading]     = useState(false);
@@ -64,6 +75,7 @@ export default function App() {
   const [selectedSimulationId, setSelectedSimulationId] = useState(null);
   const [runningGemini, setRunningGemini] = useState(false);
   const [runningCampaignId, setRunningCampaignId] = useState(null);
+  const [runningCampaignStartedAt, setRunningCampaignStartedAt] = useState(null);
   const [geminiDotCount, setGeminiDotCount] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const tickPositionRef = useRef(0);
@@ -89,6 +101,27 @@ export default function App() {
       .catch(() => setSimulations([]));
   }, []);
 
+  const refreshGeminiStatus = useCallback(() => (
+    fetch('/api/gemini/status')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      .then((status) => {
+        if (status?.active && status.run_id) {
+          setRunningGemini(true);
+          setRunningCampaignId(status.run_id);
+          setRunningCampaignStartedAt(status.started_at ?? status.run_id);
+          setSelectedCampaignId((current) => current ?? status.run_id);
+          setLoading(true);
+          return status;
+        }
+        setRunningGemini(false);
+        setRunningCampaignId(null);
+        setRunningCampaignStartedAt(null);
+        setLoading(false);
+        return status;
+      })
+      .catch(() => null)
+  ), []);
+
   const campaigns = useMemo(() => {
     const byId = new Map();
     simulations.forEach((sim) => {
@@ -100,28 +133,22 @@ export default function App() {
         count: (existing?.count ?? 0) + 1,
       });
     });
-    return [...byId.values()].sort((a, b) => {
-      const bTime = Date.parse(b.created_at);
-      const aTime = Date.parse(a.created_at);
-      if (Number.isFinite(bTime) && Number.isFinite(aTime) && bTime !== aTime) {
-        return bTime - aTime;
-      }
-      return b.id.localeCompare(a.id);
-    });
+    return sortCampaignsByCreatedAt(byId.values());
   }, [simulations]);
   const visibleCampaigns = useMemo(() => {
     if (!runningCampaignId || campaigns.some((campaign) => campaign.id === runningCampaignId)) {
       return campaigns;
     }
-    return [
-      { id: runningCampaignId, created_at: runningCampaignId, count: 0 },
+    return sortCampaignsByCreatedAt([
+      { id: runningCampaignId, created_at: runningCampaignStartedAt ?? runningCampaignId, count: 0 },
       ...campaigns,
-    ];
-  }, [campaigns, runningCampaignId]);
+    ]);
+  }, [campaigns, runningCampaignId, runningCampaignStartedAt]);
 
   useEffect(() => {
     refreshSimulations();
-  }, [refreshSimulations]);
+    refreshGeminiStatus();
+  }, [refreshGeminiStatus, refreshSimulations]);
 
   useEffect(() => {
     if (visibleCampaigns.length === 0) {
@@ -145,6 +172,16 @@ export default function App() {
     const id = window.setInterval(refreshSimulations, 1500);
     return () => window.clearInterval(id);
   }, [refreshSimulations, runningGemini]);
+
+  useEffect(() => {
+    if (!runningGemini) return undefined;
+    const id = window.setInterval(() => {
+      refreshGeminiStatus().then((status) => {
+        if (!status?.active) refreshSimulations();
+      });
+    }, 1500);
+    return () => window.clearInterval(id);
+  }, [refreshGeminiStatus, refreshSimulations, runningGemini]);
 
   useEffect(() => {
     if (!runningGemini) {
@@ -202,7 +239,9 @@ export default function App() {
     setError(null);
     setSelectedSimulationId(null);
     const runId = makeCampaignRunId(selectedMission.id);
+    const startedAt = new Date().toISOString();
     setRunningCampaignId(runId);
+    setRunningCampaignStartedAt(startedAt);
     setSelectedCampaignId(runId);
     fetch('/api/gemini/run', {
       method: 'POST',
@@ -234,6 +273,7 @@ export default function App() {
       .finally(() => {
         setRunningGemini(false);
         setRunningCampaignId(null);
+        setRunningCampaignStartedAt(null);
       });
   }, [loadSavedSimulation, refreshSimulations, selectedMission]);
 

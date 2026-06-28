@@ -1,5 +1,5 @@
 import express from 'express';
-import { spawnSync } from 'child_process';
+import { spawn, spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
@@ -36,6 +36,7 @@ const RESULT_FILE = path.resolve(ROOT_DIR, 'result.json');
 const SIMULATIONS_DIR = path.resolve(ROOT_DIR, 'simulations');
 const GEMINI_RUNNER = path.resolve(ROOT_DIR, 'gemini_runner', 'run_gemini_simulations.js');
 const MISSION_BRIEFS_DIR = path.resolve(ROOT_DIR, 'mission-briefs');
+let activeGeminiProcess = null;
 
 function safeUnlink(file) {
   try {
@@ -56,6 +57,26 @@ function clearSimulationRuns() {
   for (const entry of fs.readdirSync(SIMULATIONS_DIR)) {
     if (entry === '.gitkeep') continue;
     fs.rmSync(path.join(SIMULATIONS_DIR, entry), { recursive: true, force: true });
+  }
+}
+
+function stopActiveGeminiRun() {
+  const child = activeGeminiProcess;
+  if (!child || child.killed) return false;
+  try {
+    if (child.pid) {
+      process.kill(-child.pid, 'SIGTERM');
+    } else {
+      child.kill('SIGTERM');
+    }
+    return true;
+  } catch (_) {
+    try {
+      child.kill('SIGTERM');
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 }
 
@@ -120,15 +141,26 @@ function evaluateSimulation(result) {
   const costUsd = Number(result?.result?.total_config_cost_usd ?? 0);
   const costScore = clamp(100 - ((costUsd - 5000) / 15000) * 100, 0, 100);
 
-  const score = clamp(
-    voyagePct * 0.34
-      + timeScore * 0.20
-      + componentScore * 0.14
-      + severityScore * 0.20
-      + costScore * 0.12,
-    0,
-    100,
-  );
+  const progressGate = voyagePct / 100;
+  const score = result?.status === 'survived'
+    ? clamp(
+      72
+        + severityScore * 0.12
+        + costScore * 0.16,
+      0,
+      100,
+    )
+    : clamp(
+      voyagePct * 0.82
+        + timeScore * 0.10
+        + (
+          componentScore * 0.03
+          + severityScore * 0.03
+          + costScore * 0.02
+        ) * progressGate,
+      0,
+      100,
+    );
 
   return {
     score_pct: Math.round(score),
@@ -140,6 +172,36 @@ function evaluateSimulation(result) {
   };
 }
 
+function simulationIterationDirs(runDir) {
+  const byName = new Map();
+  const collect = (parentDir) => {
+    if (!fs.existsSync(parentDir)) return;
+    for (const name of fs.readdirSync(parentDir)) {
+      if (!name.startsWith('iteration-')) continue;
+      const iterationDir = path.join(parentDir, name);
+      if (!fs.statSync(iterationDir).isDirectory()) continue;
+      if (!byName.has(name)) byName.set(name, iterationDir);
+    }
+  };
+
+  collect(runDir);
+  collect(path.join(runDir, 'iterations'));
+  return [...byName.entries()].map(([name, dir]) => ({ name, dir }));
+}
+
+function simulationIterationDirFromId(id) {
+  const match = id.match(/^([A-Za-z0-9_-]+)\/iteration-(\d+)$/);
+  if (!match) return null;
+  const runId = match[1];
+  const iterationName = `iteration-${match[2]}`;
+  const runDir = path.join(SIMULATIONS_DIR, runId);
+  const direct = path.join(runDir, iterationName);
+  if (fs.existsSync(direct) && fs.statSync(direct).isDirectory()) return direct;
+  const nested = path.join(runDir, 'iterations', iterationName);
+  if (fs.existsSync(nested) && fs.statSync(nested).isDirectory()) return nested;
+  return direct;
+}
+
 function simulationEntries() {
   if (!fs.existsSync(SIMULATIONS_DIR)) return [];
   const entries = [];
@@ -149,10 +211,7 @@ function simulationEntries() {
     if (!fs.statSync(runDir).isDirectory()) continue;
     const manifest = safeReadJson(path.join(runDir, 'manifest.json'));
 
-    for (const name of fs.readdirSync(runDir)) {
-      if (!name.startsWith('iteration-')) continue;
-      const iterationDir = path.join(runDir, name);
-      if (!fs.statSync(iterationDir).isDirectory()) continue;
+    for (const { name, dir: iterationDir } of simulationIterationDirs(runDir)) {
       const result = safeReadJson(path.join(iterationDir, 'result.json'));
       const assessment = safeReadJson(path.join(iterationDir, 'assessment.json'));
       const params = safeReadJson(path.join(iterationDir, 'params.json'));
@@ -196,6 +255,32 @@ function runnerErrorPayload(result) {
     stderr,
     stdout,
   };
+}
+
+function spawnText(command, args, options) {
+  return new Promise((resolve) => {
+    const child = spawn(command, args, options);
+    let stdout = '';
+    let stderr = '';
+    if (options?.trackGemini) {
+      activeGeminiProcess = child;
+    }
+
+    child.stdout?.on('data', (chunk) => {
+      stdout += chunk.toString();
+    });
+    child.stderr?.on('data', (chunk) => {
+      stderr += chunk.toString();
+    });
+    child.on('error', (error) => {
+      if (activeGeminiProcess === child) activeGeminiProcess = null;
+      resolve({ error, status: null, stdout, stderr });
+    });
+    child.on('close', (status) => {
+      if (activeGeminiProcess === child) activeGeminiProcess = null;
+      resolve({ status, stdout, stderr });
+    });
+  });
 }
 
 // CORS headers
@@ -245,9 +330,10 @@ app.get('/api/simulation', (req, res) => {
     return res.status(400).json({ error: 'GET /api/simulation requires id=<run-id/iteration-XX>' });
   }
 
-  const resultFile = path.join(SIMULATIONS_DIR, id, 'result.json');
+  const iterationDir = simulationIterationDirFromId(id);
+  const resultFile = path.join(iterationDir, 'result.json');
   const assessmentFile = path.join(SIMULATIONS_DIR, id, 'assessment.json');
-  const paramsFile = path.join(SIMULATIONS_DIR, id, 'params.json');
+  const paramsFile = path.join(iterationDir, 'params.json');
   const result = safeReadJson(resultFile);
   if (!result) {
     return res.status(404).json({ error: 'simulation result not found' });
@@ -256,13 +342,13 @@ app.get('/api/simulation', (req, res) => {
   res.json({
     id,
     result,
-    assessment: safeReadJson(assessmentFile),
+    assessment: safeReadJson(path.join(iterationDir, 'assessment.json')) ?? safeReadJson(assessmentFile),
     params: safeReadJson(paramsFile),
   });
 });
 
 // POST /api/gemini/run — run Gemini-guided simulation iterations
-app.post('/api/gemini/run', (req, res) => {
+app.post('/api/gemini/run', async (req, res) => {
   try {
     const requestedMissionId = req.body.mission_id ?? req.body.brief?.id ?? null;
     const brief = missionBriefById(String(requestedMissionId ?? ''));
@@ -284,6 +370,7 @@ app.post('/api/gemini/run', (req, res) => {
       });
     }
 
+    stopActiveGeminiRun();
     clearSimulationRuns();
 
     const runnerArgs = [
@@ -296,14 +383,14 @@ app.post('/api/gemini/run', (req, res) => {
       `--tier=${tier}`,
     ];
 
-    const result = spawnSync(
+    const result = await spawnText(
       process.execPath,
       runnerArgs,
       {
         cwd: path.resolve(__dirname, '..'),
-        encoding: 'utf8',
-        timeout: 300000,
         env: process.env,
+        detached: true,
+        trackGemini: true,
       },
     );
 

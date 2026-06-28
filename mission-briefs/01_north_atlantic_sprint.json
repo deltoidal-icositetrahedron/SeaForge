@@ -27,10 +27,10 @@
   "failure_modes_under_test": ["breaks_in_half", "sink"],
 
   "environmental_profile": {
-    "wave_height_m": { "avg": 3.8, "max": 9.5 },
-    "wave_period_s": { "avg": 10, "max": 16 },
-    "slamming_probability": "high",
-    "water_temp_c": { "avg": 12, "min": 6 },
+    "wave_height_m": { "avg": 4.8, "max": 13.5 },
+    "wave_period_s": { "avg": 9, "max": 18 },
+    "slamming_probability": "extreme",
+    "water_temp_c": { "avg": 10, "min": 3 },
     "salinity_ppt": 35,
     "ice_accretion_risk": "low"
   },

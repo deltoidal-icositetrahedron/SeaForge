@@ -1186,18 +1186,18 @@ fn conditions_for_leg(
     match stressor {
         "sustained_structural_fatigue" => {
             // North Atlantic: conditions worsen mid-ocean, ease on approach to UK
-            let hs = base_hs + (max_hs - base_hs) * mid_peak * 0.80;
-            let tp = base_tp + (max_tp - base_tp) * mid_peak * 0.65;
+            let hs = base_hs + (max_hs - base_hs) * (0.22 + 0.78 * mid_peak);
+            let tp = base_tp + (max_tp - base_tp) * (0.18 + 0.72 * mid_peak);
             OceanConditions {
                 hs_m: hs,
                 tp_s: tp.max(6.0),
-                jonswap_gamma: 2.8, // broad North Atlantic swell spectrum
-                encounter_angle_deg: 8.0 + 12.0 * mid_peak,  // mostly head seas
-                water_temp_c: base_temp - (base_temp - min_temp) * t * 0.8,
+                jonswap_gamma: 3.6, // steeper storm swell, more damaging fatigue spectrum
+                encounter_angle_deg: 4.0 + 10.0 * mid_peak,  // near head seas for sustained slamming
+                water_temp_c: base_temp - (base_temp - min_temp) * (0.30 + 0.70 * t),
                 salinity_ppt: salinity,
                 ph,
-                wind_speed_ms: 10.0 + 10.0 * mid_peak,
-                slam_probability: (base_slam * (0.55 + 0.90 * mid_peak)).min(0.95),
+                wind_speed_ms: 14.0 + 14.0 * mid_peak,
+                slam_probability: (base_slam * (0.78 + 0.45 * mid_peak)).min(0.99),
             }
         }
 

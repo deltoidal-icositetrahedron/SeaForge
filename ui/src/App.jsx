@@ -74,6 +74,13 @@ export default function App() {
   }, [refreshSimulations]);
 
   useEffect(() => {
+    if (!runningGemini) return undefined;
+    refreshSimulations();
+    const id = window.setInterval(refreshSimulations, 1500);
+    return () => window.clearInterval(id);
+  }, [refreshSimulations, runningGemini]);
+
+  useEffect(() => {
     if (!selectedMission) {
       if (!selectedSimulationId) {
         setSimResult(null);
@@ -128,9 +135,11 @@ export default function App() {
       })
       .then(manifest => {
         refreshSimulations();
+        const bestSurvivor = manifest.best_survivor;
         const last = Array.isArray(manifest.iterations) ? manifest.iterations.at(-1) : null;
-        if (last?.id) {
-          loadSavedSimulation(last.id);
+        const simulationToLoad = bestSurvivor?.id ? bestSurvivor : last;
+        if (simulationToLoad?.id) {
+          loadSavedSimulation(simulationToLoad.id);
         } else {
           setLoading(false);
         }
@@ -192,6 +201,22 @@ export default function App() {
   const displayedZones = config?.zones ?? [];
   const failureDetail = formatFailureDetail(simResult?.failure);
   const selectedSimulation = simulations.find((sim) => sim.id === selectedSimulationId) ?? null;
+  const bestSimulation = (() => {
+    const costOf = (sim) => Number(sim?.result?.total_config_cost_usd);
+    const survivors = simulations
+      .filter((sim) => sim.status === 'survived')
+      .sort((a, b) => {
+        const costDelta = (Number.isFinite(costOf(a)) ? costOf(a) : Infinity)
+          - (Number.isFinite(costOf(b)) ? costOf(b) : Infinity);
+        if (costDelta !== 0) return costDelta;
+        return (b.eval?.score_pct ?? 0) - (a.eval?.score_pct ?? 0);
+      });
+    if (survivors.length > 0) return survivors[0];
+    return [...simulations].sort((a, b) => (b.eval?.score_pct ?? 0) - (a.eval?.score_pct ?? 0))[0] ?? null;
+  })();
+  const bestSimulationLabel = bestSimulation
+    ? `${String(bestSimulation.iteration).padStart(2, '0')} ${bestSimulation.status}${Number.isFinite(bestSimulation.eval?.score_pct) ? ` / ${bestSimulation.eval.score_pct}%` : ''}`
+    : null;
   const tickProgress = (() => {
     if (playbackTickCount <= 0 || totalDistanceNm <= 0) {
       return Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
@@ -358,10 +383,17 @@ export default function App() {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   };
-  const renderPanelRow = (label, value) => (
+  const panelWrappedValue = {
+    overflow: 'visible',
+    textOverflow: 'clip',
+    whiteSpace: 'normal',
+    overflowWrap: 'anywhere',
+    wordBreak: 'normal',
+  };
+  const renderPanelRow = (label, value, options = {}) => (
     <div style={panelRow}>
       <span style={panelLabel}>{label}</span>
-      <span style={panelValue}>{value ?? '—'}</span>
+      <span style={{ ...panelValue, ...(options.wrap ? panelWrappedValue : null) }}>{value ?? '—'}</span>
     </div>
   );
   const panelColumnWidth = 280;
@@ -376,6 +408,10 @@ export default function App() {
     color: 'rgba(0,0,0,0.35)',
     whiteSpace: 'nowrap',
     borderBottom: '1px solid rgba(0,0,0,0.08)',
+  };
+  const panelSectionDivider = {
+    borderTop: '1px solid rgba(0,0,0,0.10)',
+    paddingTop: 8,
   };
 
   return (
@@ -478,18 +514,13 @@ export default function App() {
               <div style={panelSectionTitle}>Mission Environment</div>
               {selectedMission || selectedSimulation ? (
                 <>
-                  {renderPanelRow('Mission', selectedMission?.name ?? selectedSimulation?.id)}
-                  {selectedMission ? renderPanelRow('Physics', selectedMission.primary_stressor?.replaceAll('_', ' ')) : null}
-                  {selectedMission ? renderPanelRow('Failure', (selectedMission.failure_modes_under_test ?? []).join(', ') || '—') : null}
+                  {renderPanelRow('Mission', selectedMission?.name ?? selectedSimulation?.id, { wrap: true })}
+                  {selectedMission ? renderPanelRow('Physics', selectedMission.primary_stressor?.replaceAll('_', ' '), { wrap: true }) : null}
+                  {selectedMission ? renderPanelRow('Failure', (selectedMission.failure_modes_under_test ?? []).join(', ') || '—', { wrap: true }) : null}
                   {selectedSimulation ? renderPanelRow('Status', selectedSimulation.status) : null}
                   {Number.isFinite(selectedSimulation?.eval?.score_pct) ? renderPanelRow('Eval', `${selectedSimulation.eval.score_pct}%`) : null}
-                  {selectedSimulation?.assessment?.model_used ? renderPanelRow('Model', selectedSimulation.assessment.model_used) : null}
-                  {selectedSimulation?.assessment?.assessment ? renderPanelRow('AI', selectedSimulation.assessment.assessment) : null}
-                  {selectedSimulation?.assessment?.failed_part ? renderPanelRow('AI Part', selectedSimulation.assessment.failed_part) : null}
-                  {selectedSimulation?.assessment?.failed_metric ? renderPanelRow('AI Metric', selectedSimulation.assessment.failed_metric) : null}
-                  {selectedSimulation?.assessment?.root_cause ? renderPanelRow('AI Cause', selectedSimulation.assessment.root_cause) : null}
-                  {simResult?.failure ? renderPanelRow('Failed', failureDetail) : null}
-                  {renderPanelRow('Leg', activeRouteSegment?.label ?? '—')}
+                  {bestSimulationLabel ? renderPanelRow('Best', bestSimulationLabel, { wrap: true }) : null}
+                  {renderPanelRow('Leg', activeRouteSegment?.label ?? '—', { wrap: true })}
                   {renderPanelRow('Waves', activeConditions
                     ? `${fmtNumber(activeConditions.hs_m)}m Hs / ${fmtNumber(activeConditions.tp_s)}s Tp`
                     : fmtRange(env?.wave_height_m, 'm'))}
@@ -598,22 +629,41 @@ export default function App() {
               </div>
             </div>
 
-            <div style={{ ...panelSectionTitle, marginTop: 8 }}>Parameter Configuration</div>
+            <div style={{ ...panelSectionTitle, ...panelSectionDivider, marginTop: 8 }}>Cost</div>
+            {renderPanelRow('Total', simResult?.result?.total_config_cost_usd
+              ? `$${simResult.result.total_config_cost_usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+              : '—')}
+
+            <div style={{ ...panelSectionTitle, ...panelSectionDivider, marginTop: 8 }}>Summary</div>
+            {selectedSimulation || simResult?.failure ? (
+              <>
+                {selectedSimulation ? renderPanelRow('Status', selectedSimulation.status) : null}
+                {Number.isFinite(selectedSimulation?.eval?.score_pct) ? renderPanelRow('Eval', `${selectedSimulation.eval.score_pct}%`) : null}
+                {selectedSimulation?.assessment?.model_used ? renderPanelRow('Model', selectedSimulation.assessment.model_used, { wrap: true }) : null}
+                {selectedSimulation?.assessment?.assessment ? renderPanelRow('AI', selectedSimulation.assessment.assessment, { wrap: true }) : null}
+                {selectedSimulation?.assessment?.failed_part ? renderPanelRow('AI Part', selectedSimulation.assessment.failed_part, { wrap: true }) : null}
+                {selectedSimulation?.assessment?.failed_metric ? renderPanelRow('AI Metric', selectedSimulation.assessment.failed_metric, { wrap: true }) : null}
+                {selectedSimulation?.assessment?.root_cause ? renderPanelRow('AI Cause', selectedSimulation.assessment.root_cause, { wrap: true }) : null}
+                {simResult?.failure ? renderPanelRow('Failed', failureDetail, { wrap: true }) : null}
+              </>
+            ) : (
+              <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
+                Load a simulation to view summary.
+              </div>
+            )}
+
+            <div style={{ ...panelSectionTitle, ...panelSectionDivider, marginTop: 8 }}>Parameter Configuration</div>
             {config ? (
               <>
                 {renderPanelRow('Shell mass', `${fmtNumber(config.shell_mass_kg, 0)} kg`)}
                 {config.propulsion ? renderPanelRow('Fuel cap', `${fmtNumber(config.propulsion.fuel_capacity_kg, 0)} kg`) : null}
                 {config.propulsion ? renderPanelRow('Efficiency', fmtNumber(config.propulsion.propulsive_efficiency, 2)) : null}
                 {config.propulsion ? renderPanelRow('Drag coeff', fmtNumber(config.propulsion.hull_drag_coeff, 4)) : null}
-                {renderPanelRow('Cost', simResult?.result?.total_config_cost_usd
-                  ? `$${simResult.result.total_config_cost_usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-                  : '—')}
                 {displayedZones.map((zone, index) => (
                   <div
                     key={`${zone.zone_key ?? zone.zone}-${index}`}
                     style={{
                       padding: '6px 14px 7px',
-                      borderTop: '1px solid rgba(0,0,0,0.07)',
                       fontFamily: "'Courier New', monospace",
                       fontSize: 10,
                       lineHeight: 1.25,

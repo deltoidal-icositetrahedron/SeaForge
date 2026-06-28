@@ -16,8 +16,8 @@ use crate::{
 };
 
 const STEP_H: f64 = 1.0;
-const DAMAGE_RATE_MULTIPLIER: f64 = 2.4;
-const CRACK_GROWTH_MULTIPLIER: f64 = 0.08;
+const DAMAGE_RATE_MULTIPLIER: f64 = 3.4;
+const CRACK_GROWTH_MULTIPLIER: f64 = 0.12;
 const CORROSION_RATE_MULTIPLIER: f64 = 5.0;
 
 pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {

@@ -373,6 +373,11 @@ function summarizeResult(result) {
   };
 }
 
+function resultCostUsd(result) {
+  const value = Number(result?.result?.total_config_cost_usd);
+  return Number.isFinite(value) ? value : Infinity;
+}
+
 function nextDocumentFromAssessment(assessment, currentDocument, mode, result = null) {
   if (mode === 'brief') {
     const nextBrief = assessment.brief && typeof assessment.brief === 'object'
@@ -422,9 +427,12 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
   const currentZones = completeZonesFromResult(result, document.zones ?? []);
   const currentPropulsion = effectivePropulsionFromResult(result, document);
   const allowedParameters = readJsonOrNull(ALLOWED_PARAMETERS_FILE);
+  const survived = result?.status === 'survived';
   const prompt = [
     'You are controlling a Rust naval simulation engine.',
-    'Given the input JSON and latest simulation result, diagnose the failure exactly, repair the material configuration, and produce the next run input.',
+    survived
+      ? 'The latest simulation survived. Your job is now cost optimization: produce a cheaper candidate configuration that is still likely to survive the same mission.'
+      : 'Given the input JSON and latest simulation result, diagnose the failure exactly, repair the material configuration, and produce the next run input.',
     isBriefMode
       ? 'Return ONLY a JSON object with this exact shape:'
       : 'Return ONLY a JSON object with this exact shape:',
@@ -441,21 +449,32 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
     isBriefMode
       ? '- Return zones as a complete array of exactly 9 zone objects, one for every valid zone name: Keel, BilgeStrake, BottomPlating, SidePlating, BowFlare, SternPlate, TransomFrame, WeatherDeck, BulkheadFrame.'
       : '- Prefer targeted changes: material, thickness_m, weld_quality, seal_quality, propulsion fuel/drag, or route/conditions only when justified.',
-    isBriefMode
-      ? '- Make targeted material configuration changes to the failed component and directly coupled components. Keep unrelated zones unchanged unless the failure analysis justifies changing them.'
-      : '- Prefer targeted changes: material, thickness_m, weld_quality, seal_quality, propulsion fuel/drag, or route/conditions only when justified.',
+    survived && isBriefMode
+      ? '- Because the current run survived, search for the cheapest viable parameter configuration: reduce thickness, downgrade weld_quality, downgrade seal_quality, reduce fuel_capacity_kg, reduce max_power_kw, or choose cheaper materials where the latest margins suggest headroom.'
+      : isBriefMode
+        ? '- Make targeted material configuration changes to the failed component and directly coupled components. Keep unrelated zones unchanged unless the failure analysis justifies changing them.'
+        : '- Prefer targeted changes: material, thickness_m, weld_quality, seal_quality, propulsion fuel/drag, or route/conditions only when justified.',
+    survived
+      ? '- Do not stop just because this run survived. Return a new cheaper candidate unless every allowed cheaper combination is clearly unsafe or impossible.'
+      : '- Repair enough to address the exact failed mode, but do not overbuild unrelated components.',
+    survived
+      ? '- Cost search step limit: change at most three hull zones plus propulsion in this candidate.'
+      : '- Failure repair step limit: change at most two hull zones plus propulsion in this candidate. Do not globally upgrade the whole vessel in one response.',
+    '- Never set every zone to maximum thickness or Premium weld in one iteration. The runner is intentionally exploring many combinations over multiple iterations.',
     isBriefMode
       ? '- For fuel exhaustion, change propulsion fields instead of route: fuel_capacity_kg, propulsive_efficiency, hull_drag_coeff, and only reduce material mass if structurally justified.'
       : '- For fuel exhaustion, prefer propulsion fuel_capacity_kg, propulsive_efficiency, or hull_drag_coeff before route changes.',
     '- Valid material names include MildSteelA, MildSteelE, Ah36, Dh36, Eh36, Aluminum5083, GrpEGlass, CfrpEpoxy.',
     '- Valid weld_quality values are Economy, Standard, Premium. Valid seal_quality values are Economy, Marine.',
     isBriefMode
-      ? '- If the current result survived, keep the brief unchanged and explain why no rerun is needed.'
-      : '- If the current result survived, keep params unchanged and explain why no rerun is needed.',
+      ? '- If the current result survived, keep mission route/environment unchanged but make the configuration cheaper for the next trial.'
+      : '- If the current result survived, keep route/conditions unchanged but make parameters cheaper for the next trial.',
     '- Avoid unrealistic values: thickness_m should usually stay between 0.003 and 0.020.',
     '- For fatigue failures, prioritize weld_quality and thickness_m in the failed zone; material grade alone is not enough.',
     '- For corrosion/crack failures, prioritize corrosion-resistant/cold-capable material, thickness_m, weld_quality, and seal_quality in the failed zone.',
     '- Increased fuel_capacity_kg increases total configuration cost through fuel capacity cost.',
+    '- Objective order: survive the full voyage first, then minimize total_config_cost_usd as much as possible.',
+    '- Explore multiple combinations over iterations. Each response should be the single next best candidate to test.',
     '- Obey ALLOWED_PARAMETERS_JSON exactly for field names, enum values, zone names, and bounds.',
     `Iteration ${iteration} of ${maxIterations}.`,
     '',
@@ -578,6 +597,7 @@ async function main() {
     started_at: new Date().toISOString(),
     input_file: path.relative(ROOT, inputFile),
     iterations: [],
+    best_survivor: null,
   };
 
   fs.mkdirSync(runDir, { recursive: true });
@@ -595,16 +615,37 @@ async function main() {
       ? runRustBrief(binary, paramsFile, resultFile, tier)
       : runRustSimulation(binary, paramsFile, resultFile);
     const result = readJson(resultFile);
+    const costUsd = resultCostUsd(result);
 
     let assessment = {
       assessment: result.status === 'survived'
-        ? 'Simulation survived. No rerun required.'
+        ? 'Simulation survived. Continuing search for a cheaper viable configuration.'
         : 'Simulation failed before Gemini assessment completed.',
       changes: [],
       [mode === 'brief' ? 'brief' : 'params']: document,
     };
 
-    if (result.status !== 'survived' && i < maxIterations) {
+    if (result.status === 'survived') {
+      const candidateBest = {
+        id: `${runId}/${iterationId}`,
+        run_id: runId,
+        iteration: i,
+        total_config_cost_usd: Number.isFinite(costUsd) ? costUsd : null,
+        result_file: path.relative(ROOT, resultFile),
+        params_file: path.relative(ROOT, paramsFile),
+      };
+      if (
+        !manifest.best_survivor
+        || (
+          Number.isFinite(costUsd)
+          && costUsd < Number(manifest.best_survivor.total_config_cost_usd ?? Infinity)
+        )
+      ) {
+        manifest.best_survivor = candidateBest;
+      }
+    }
+
+    if (i < maxIterations) {
       try {
         const gemini = await callGeminiWithFallback({
           apiKey,
@@ -618,12 +659,25 @@ async function main() {
         assessment = gemini.assessment;
         assessment.model_used = gemini.model;
         manifest.model = gemini.model;
-        document = nextDocumentFromAssessment(assessment, document, mode, result);
+        const nextDocument = nextDocumentFromAssessment(assessment, document, mode, result);
+        if (result.status === 'survived' && JSON.stringify(nextDocument) === JSON.stringify(document)) {
+          assessment.assessment = `${assessment.assessment ?? 'Simulation survived.'} No cheaper candidate was returned; stopping optimization.`;
+          stopAfterIteration = true;
+        }
+        document = nextDocument;
         if (mode === 'brief') {
           assessment.repaired_zones = document.zones;
         }
       } catch (error) {
-        if (mode === 'brief') {
+        if (mode === 'brief' && result.status === 'survived') {
+          assessment = {
+            assessment: `Simulation survived, but Gemini could not produce a cheaper candidate: ${error.message}`,
+            changes: [],
+            brief: document,
+            error: error.stack || error.message,
+          };
+          stopAfterIteration = true;
+        } else if (mode === 'brief') {
           assessment = localRepairAssessment(document, result);
           assessment.gemini_error = error.stack || error.message;
           document = nextDocumentFromAssessment(assessment, document, mode, result);
@@ -649,6 +703,7 @@ async function main() {
       status: result.status,
       failure: result.failure ?? null,
       result: result.result ?? null,
+      total_config_cost_usd: Number.isFinite(costUsd) ? costUsd : null,
       params_file: path.relative(ROOT, paramsFile),
       result_file: path.relative(ROOT, resultFile),
       assessment_file: path.relative(ROOT, assessmentFile),
@@ -657,7 +712,7 @@ async function main() {
     });
     writeJson(path.join(runDir, 'manifest.json'), manifest);
 
-    if (result.status === 'survived' || stopAfterIteration) break;
+    if (stopAfterIteration) break;
   }
 
   manifest.completed_at = new Date().toISOString();

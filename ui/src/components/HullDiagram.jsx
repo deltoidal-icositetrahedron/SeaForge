@@ -67,6 +67,10 @@ const CAMERA_NEAR = 1;
 const CAMERA_FAR = 6000;
 const CAMERA_MIN_DISTANCE = 24;
 const CAMERA_MAX_DISTANCE = GLOBE_RADIUS * 5.2;
+const CAMERA_MIN_POLAR_ANGLE = 0.18;
+const CAMERA_MAX_POLAR_ANGLE = Math.PI * 0.72;
+const CAMERA_NEAR_ROTATE_SPEED = 0.65;
+const CAMERA_FAR_ROTATE_SPEED = 0.34;
 const SHIP_CAMERA_LOCAL_OFFSET = new THREE.Vector3(-55, 65, -43);
 
 const SHIP_SCREEN_BOUNDS_POINTS = [
@@ -1318,11 +1322,24 @@ function getGridOpacityScales(distance) {
   };
 }
 
+function updateCameraControlFeel(cam, controls) {
+  if (!cam || !controls) return;
+
+  const distance = cam.position.distanceTo(controls.target);
+  const zoomedOut = smoothstep(120, CAMERA_MAX_DISTANCE * 0.72, distance);
+  controls.rotateSpeed = THREE.MathUtils.lerp(
+    CAMERA_NEAR_ROTATE_SPEED,
+    CAMERA_FAR_ROTATE_SPEED,
+    zoomedOut,
+  );
+}
+
 function updateGridDetail({ cam, controls, globeGridLevels, localGridGroup }) {
   if (!cam || !controls || !globeGridLevels || !localGridGroup) return;
 
   const distance = cam.position.distanceTo(controls.target);
   const opacityScales = getGridOpacityScales(distance);
+  updateCameraControlFeel(cam, controls);
 
   globeGridLevels.forEach((level) => {
     setOpacityScale(level.group, opacityScales[level.key] ?? 0);
@@ -1425,8 +1442,9 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     controls.enablePan = false;
     controls.minDistance = CAMERA_MIN_DISTANCE;
     controls.maxDistance = CAMERA_MAX_DISTANCE;
-    controls.maxPolarAngle = Math.PI;
-    controls.rotateSpeed = 0.65;
+    controls.minPolarAngle = CAMERA_MIN_POLAR_ANGLE;
+    controls.maxPolarAngle = CAMERA_MAX_POLAR_ANGLE;
+    controls.rotateSpeed = CAMERA_NEAR_ROTATE_SPEED;
     controls.zoomSpeed = 0.85;
     controls.panSpeed = 0.75;
     controls.mouseButtons = {

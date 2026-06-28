@@ -1,17 +1,35 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import HullDiagram from './components/HullDiagram.jsx';
+
+const TICK_STEP_MS = 1000;
+const MIN_STEP_SPEED = 1;
+const MAX_STEP_SPEED = 64;
 
 export default function App() {
   const [simResult, setSimResult] = useState(null);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState(null);
-  const [tickIndex, setTickIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [tickPosition, setTickPosition] = useState(0);
+  const [stepSpeed, setStepSpeed] = useState(1);
+  const tickPositionRef = useRef(0);
+  const stepSpeedRef = useRef(1);
+  const heldDirectionRef = useRef(0);
+  const frameRef = useRef(null);
+  const lastFrameTimeRef = useRef(null);
+
+  const setDisplayedTickPosition = useCallback((nextPosition) => {
+    tickPositionRef.current = nextPosition;
+    setTickPosition(nextPosition);
+  }, []);
+
+  const setDisplayedStepSpeed = useCallback((nextSpeed) => {
+    stepSpeedRef.current = nextSpeed;
+    setStepSpeed(nextSpeed);
+  }, []);
 
   const loadResult = useCallback(async () => {
     setLoading(true);
     setError(null);
-    setIsPlaying(false);
     try {
       const res  = await fetch('/api/result');
       if (res.status === 404) {
@@ -35,13 +53,23 @@ export default function App() {
   useEffect(() => { loadResult(); }, [loadResult]);
 
   useEffect(() => {
-    setTickIndex(0);
-    setIsPlaying(false);
-  }, [simResult]);
+    heldDirectionRef.current = 0;
+    lastFrameTimeRef.current = null;
+    if (frameRef.current) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    }
+    setDisplayedTickPosition(0);
+  }, [setDisplayedTickPosition, simResult]);
 
   const ticks = Array.isArray(simResult?.ticks) ? simResult.ticks : [];
   const tickCount = ticks.length;
-  const activeTickIndex = tickCount > 0 ? Math.min(tickIndex, tickCount - 1) : 0;
+  const clampedTickPosition = tickCount > 0
+    ? Math.max(0, Math.min(tickPosition, tickCount - 1))
+    : 0;
+  const activeTickIndex = tickCount > 0
+    ? Math.max(0, Math.min(tickCount - 1, Math.round(clampedTickPosition)))
+    : 0;
   const activeTick = tickCount > 0 ? ticks[activeTickIndex] : null;
   const completedDistanceNm = simResult?.result?.distance_completed_nm;
   const completedPct = simResult?.result?.distance_completed_pct;
@@ -52,54 +80,65 @@ export default function App() {
     ?? completedDistanceNm
     ?? ticks[tickCount - 1]?.distance_completed_nm
     ?? 0;
-  const tickProgress = activeTick && totalDistanceNm > 0
-    ? Math.min(activeTick.distance_completed_nm / totalDistanceNm, 1)
-    : Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
-
-  useEffect(() => {
-    if (tickCount > 0 && tickIndex > tickCount - 1) {
-      setTickIndex(tickCount - 1);
+  const tickProgress = (() => {
+    if (tickCount <= 0 || totalDistanceNm <= 0) {
+      return Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
     }
-  }, [tickCount, tickIndex]);
+
+    const fromIndex = Math.floor(clampedTickPosition);
+    const toIndex = Math.min(tickCount - 1, fromIndex + 1);
+    const t = clampedTickPosition - fromIndex;
+    const fromDistance = ticks[fromIndex]?.distance_completed_nm ?? 0;
+    const toDistance = ticks[toIndex]?.distance_completed_nm ?? fromDistance;
+    return Math.min((fromDistance + (toDistance - fromDistance) * t) / totalDistanceNm, 1);
+  })();
 
   useEffect(() => {
-    if (!isPlaying || tickCount <= 1) return undefined;
-
-    const id = window.setInterval(() => {
-      setTickIndex((current) => {
-        if (current >= tickCount - 1) {
-          setIsPlaying(false);
-          return current;
-        }
-        return current + 1;
-      });
-    }, 750);
-
-    return () => window.clearInterval(id);
-  }, [isPlaying, tickCount]);
-
-  const canStepBack = tickCount > 0 && activeTickIndex > 0;
-  const canStepForward = tickCount > 0 && activeTickIndex < tickCount - 1;
-  const stepBack = useCallback(() => {
-    setIsPlaying(false);
-    setTickIndex((current) => Math.max(0, current - 1));
-  }, []);
-  const stepForward = useCallback(() => {
-    setIsPlaying(false);
-    setTickIndex((current) => Math.min(Math.max(tickCount - 1, 0), current + 1));
-  }, [tickCount]);
-  const togglePlayback = useCallback(() => {
-    if (tickCount <= 1) return;
-    setIsPlaying((current) => {
-      if (current) return false;
-      if (activeTickIndex >= tickCount - 1) {
-        setTickIndex(0);
+    const stopHeldStep = () => {
+      heldDirectionRef.current = 0;
+      lastFrameTimeRef.current = null;
+      if (frameRef.current) {
+        window.cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
       }
-      return true;
-    });
-  }, [activeTickIndex, tickCount]);
+    };
 
-  useEffect(() => {
+    const stepFrame = (now) => {
+      const direction = heldDirectionRef.current;
+      if (!direction || tickCount <= 1) {
+        stopHeldStep();
+        return;
+      }
+
+      const previousTime = lastFrameTimeRef.current ?? now;
+      lastFrameTimeRef.current = now;
+      const deltaTicks = ((now - previousTime) / TICK_STEP_MS) * stepSpeedRef.current;
+      const nextPosition = Math.max(
+        0,
+        Math.min(tickCount - 1, tickPositionRef.current + direction * deltaTicks),
+      );
+      setDisplayedTickPosition(nextPosition);
+
+      if (
+        (direction > 0 && nextPosition >= tickCount - 1)
+        || (direction < 0 && nextPosition <= 0)
+      ) {
+        stopHeldStep();
+        return;
+      }
+
+      frameRef.current = window.requestAnimationFrame(stepFrame);
+    };
+
+    const startHeldStep = (direction) => {
+      if (tickCount <= 1) return;
+      if (heldDirectionRef.current === direction) return;
+      stopHeldStep();
+      heldDirectionRef.current = direction;
+      lastFrameTimeRef.current = null;
+      frameRef.current = window.requestAnimationFrame(stepFrame);
+    };
+
     const onKeyDown = (event) => {
       const target = event.target;
       const isEditable = target instanceof HTMLElement && (
@@ -110,85 +149,125 @@ export default function App() {
       );
       if (isEditable) return;
 
-      if (event.code === 'Space') {
+      if (event.code === 'ArrowRight') {
         event.preventDefault();
-        togglePlayback();
+        startHeldStep(1);
       } else if (event.code === 'ArrowLeft') {
         event.preventDefault();
-        stepBack();
-      } else if (event.code === 'ArrowRight') {
+        startHeldStep(-1);
+      } else if (event.code === 'ArrowUp') {
         event.preventDefault();
-        stepForward();
+        setDisplayedStepSpeed(Math.min(MAX_STEP_SPEED, stepSpeedRef.current * 2));
+      } else if (event.code === 'ArrowDown') {
+        event.preventDefault();
+        setDisplayedStepSpeed(Math.max(MIN_STEP_SPEED, stepSpeedRef.current / 2));
+      }
+    };
+
+    const onKeyUp = (event) => {
+      if (
+        (event.code === 'ArrowRight' && heldDirectionRef.current > 0)
+        || (event.code === 'ArrowLeft' && heldDirectionRef.current < 0)
+      ) {
+        stopHeldStep();
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [stepBack, stepForward, togglePlayback]);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', stopHeldStep);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', stopHeldStep);
+      stopHeldStep();
+    };
+  }, [setDisplayedStepSpeed, setDisplayedTickPosition, tickCount]);
 
-  const controlButtonStyle = {
-    width: 26,
-    height: 22,
-    border: '1px solid rgba(0,0,0,0.22)',
-    background: 'transparent',
-    color: 'rgba(0,0,0,0.48)',
+  const canStepBack = tickCount > 1 && clampedTickPosition > 0;
+  const canStepForward = tickCount > 1 && clampedTickPosition < tickCount - 1;
+
+  const stepBack = useCallback(() => {
+    if (!canStepBack) return;
+    setDisplayedTickPosition(Math.max(0, Math.round(tickPositionRef.current) - 1));
+  }, [canStepBack, setDisplayedTickPosition]);
+
+  const stepForward = useCallback(() => {
+    if (!canStepForward) return;
+    setDisplayedTickPosition(Math.min(tickCount - 1, Math.round(tickPositionRef.current) + 1));
+  }, [canStepForward, setDisplayedTickPosition, tickCount]);
+
+  const cell = {
     fontFamily: "'Courier New', monospace",
-    fontSize: 11,
+    background: '#C3C4CA',
+    border: '1px solid rgba(0,0,0,0.13)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 28,
     lineHeight: 1,
-    cursor: 'pointer',
-  };
-  const disabledControlButtonStyle = {
-    ...controlButtonStyle,
-    opacity: 0.35,
-    cursor: 'not-allowed',
   };
 
   return (
-    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#C3C4CA', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#C3C4CA', position: 'relative' }}>
+      <HullDiagram simResult={simResult} loading={loading} progress={tickProgress} activeTick={activeTick} />
 
-      {/* Full-height mission stage */}
-      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <HullDiagram simResult={simResult} loading={loading} progress={tickProgress} activeTick={activeTick} />
+      {/* Floating transport controls */}
+      <div style={{
+        position: 'absolute',
+        bottom: 24,
+        left: '50%',
+        transform: 'translateX(-50%)',
+        display: 'flex',
+        userSelect: 'none',
+      }}>
+        <button
+          onClick={stepBack}
+          disabled={!canStepBack}
+          aria-label="Step back"
+          style={{
+            ...cell,
+            width: 36,
+            marginRight: -1,
+            fontSize: 13,
+            fontWeight: 700,
+            color: 'rgba(0,0,0,0.76)',
+            cursor: canStepBack ? 'pointer' : 'default',
+            opacity: canStepBack ? 1 : 0.22,
+          }}
+        >
+          &#x276E;
+        </button>
+
         <div style={{
-          position: 'absolute',
-          left: '50%',
-          bottom: 18,
-          transform: 'translateX(-50%)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 7,
-          padding: '6px 9px',
-          border: '1px solid rgba(0,0,0,0.16)',
-          background: 'rgba(195,196,202,0.78)',
-          backdropFilter: 'blur(6px)',
-          fontFamily: "'Courier New', monospace",
-          zIndex: 2,
+          ...cell,
+          width: 36,
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.06em',
+          color: 'rgba(0,0,0,0.38)',
+          textTransform: 'uppercase',
         }}>
-          <button
-            onClick={stepBack}
-            disabled={!canStepBack}
-            style={canStepBack ? controlButtonStyle : disabledControlButtonStyle}
-            title="Step back"
-          >
-            ‹
-          </button>
-          <button
-            onClick={togglePlayback}
-            disabled={tickCount <= 1}
-            style={tickCount > 1 ? controlButtonStyle : disabledControlButtonStyle}
-            title={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isPlaying ? 'Ⅱ' : '▶'}
-          </button>
-          <button
-            onClick={stepForward}
-            disabled={!canStepForward}
-            style={canStepForward ? controlButtonStyle : disabledControlButtonStyle}
-            title="Step forward"
-          >
-            ›
-          </button>
+          ×{stepSpeed}
         </div>
+
+        <button
+          onClick={stepForward}
+          disabled={!canStepForward}
+          aria-label="Step forward"
+          style={{
+            ...cell,
+            width: 36,
+            marginLeft: -1,
+            fontSize: 13,
+            fontWeight: 700,
+            color: 'rgba(0,0,0,0.76)',
+            cursor: canStepForward ? 'pointer' : 'default',
+            opacity: canStepForward ? 1 : 0.22,
+          }}
+        >
+          &#x276F;
+        </button>
       </div>
     </div>
   );

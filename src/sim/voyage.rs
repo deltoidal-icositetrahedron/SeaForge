@@ -40,6 +40,17 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
         HullZone::all().iter().map(|&z| (z, 0.0)).collect();
 
     let mut ticks: Vec<SegmentSnapshot> = Vec::new();
+    if let Some(first_segment) = route.segments.first() {
+        ticks.push(snapshot_at(
+            &state,
+            0,
+            &first_segment.label,
+            0.0,
+            &peak_stress,
+            config,
+            None,
+        ));
+    }
 
     for (seg_idx, segment) in route.segments.iter().enumerate() {
         let conditions = &segment.conditions;
@@ -184,7 +195,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
             }
 
             // Advance state for this step
-            state.distance_nm += step_distance_nm;
+            state.distance_nm = (state.distance_nm + step_distance_nm).min(total_distance_nm);
             state.elapsed_h += step_h;
             seg_elapsed_h += step_h;
 

@@ -98,6 +98,21 @@ const ZONE_ANCHORS = {
   'Weather Deck': { anchor: [0.08, 0.88, 0.30], fallbackSide: 'top' },
   'Bulkhead Frame': { anchor: [0.28, 0.72, -0.86], fallbackSide: 'top' },
 };
+const SHIP_BASE_COLOR = new THREE.Color('#6f7d89');
+const SHIP_DAMAGE_COLOR = new THREE.Color('#ff0000');
+const SHIP_DAMAGE_FULL_RADIUS_FACTOR = 0.22;
+const DEFAULT_ZONE_DAMAGE_SHAPE = { x: 0.85, y: 0.45, z: 0.85 };
+const ZONE_DAMAGE_SHAPES = {
+  Keel: { x: 0.42, y: 0.18, z: 2.65 },
+  'Bilge Strake': { x: 0.58, y: 0.26, z: 2.35 },
+  'Bottom Plating': { x: 0.82, y: 0.20, z: 1.75 },
+  'Side Plating': { x: 0.34, y: 0.58, z: 1.7 },
+  'Bow Flare': { x: 0.7, y: 0.45, z: 0.95 },
+  'Stern Plate': { x: 0.7, y: 0.45, z: 0.7 },
+  'Transom Frame': { x: 0.7, y: 0.45, z: 0.62 },
+  'Weather Deck': { x: 0.75, y: 0.24, z: 1.25 },
+  'Bulkhead Frame': { x: 0.68, y: 0.38, z: 0.72 },
+};
 
 const DEFAULT_ROUTE_GEO = {
   origin: { lat_deg: 35.0, lon_deg: -74.5 },
@@ -549,6 +564,70 @@ function getFallbackZoneAnchor(index, count) {
 
 function getZoneAnchor(zoneName, index, count) {
   return ZONE_ANCHORS[zoneName] || getFallbackZoneAnchor(index, count);
+}
+
+function zoneDamageValue(zone, failedZoneName = null, tickFailed = false) {
+  if (tickFailed && failedZoneName && zone?.zone === failedZoneName) {
+    return 1;
+  }
+  const fatigue = Number(zone?.fatigue_consumed);
+  return clamp(Number.isFinite(fatigue) ? fatigue : 0, 0, 1);
+}
+
+function initializeShipDamageColors(mesh) {
+  const geometry = mesh.geometry;
+  const position = geometry.getAttribute('position');
+  if (!position) return;
+
+  const colors = new Float32Array(position.count * 3);
+  for (let i = 0; i < position.count; i += 1) {
+    colors[i * 3] = SHIP_BASE_COLOR.r;
+    colors[i * 3 + 1] = SHIP_BASE_COLOR.g;
+    colors[i * 3 + 2] = SHIP_BASE_COLOR.b;
+  }
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  geometry.userData.damageLocalPoints = Array.from({ length: position.count }, (_, index) => {
+    const point = new THREE.Vector3().fromBufferAttribute(position, index);
+    return mesh.localToWorld(point.clone());
+  });
+}
+
+function updateShipDamageColors(mesh, tick, failedZoneName = null) {
+  if (!mesh?.geometry) return;
+  const geometry = mesh.geometry;
+  const colorAttr = geometry.getAttribute('color');
+  const points = geometry.userData.damageLocalPoints;
+  if (!colorAttr || !points) return;
+
+  const zones = Array.isArray(tick?.zones) ? tick.zones : [];
+  const tickFailed = Boolean(tick?.failure);
+  const damagedZones = zones
+    .map((zone, index) => ({
+      anchor: new THREE.Vector3(...getZoneAnchor(zone.zone, index, zones.length).anchor),
+      damage: zoneDamageValue(zone, failedZoneName, tickFailed),
+      shape: ZONE_DAMAGE_SHAPES[zone.zone] ?? DEFAULT_ZONE_DAMAGE_SHAPE,
+    }))
+    .filter((zone) => zone.damage > 0.001);
+
+  const tempColor = new THREE.Color();
+  for (let i = 0; i < colorAttr.count; i += 1) {
+    let damage = 0;
+    const point = points[i];
+    damagedZones.forEach((zone) => {
+      const dx = (point.x - zone.anchor.x) / zone.shape.x;
+      const dy = (point.y - zone.anchor.y) / zone.shape.y;
+      const dz = (point.z - zone.anchor.z) / zone.shape.z;
+      const distance = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      const fullRadius = SHIP_DAMAGE_FULL_RADIUS_FACTOR;
+      const influence = distance <= fullRadius
+        ? 1
+        : Math.max(0, 1 - (distance - fullRadius) / (1 - fullRadius)) ** 2;
+      damage = Math.max(damage, zone.damage * influence);
+    });
+    tempColor.copy(SHIP_BASE_COLOR).lerp(SHIP_DAMAGE_COLOR, clamp(damage, 0, 1));
+    colorAttr.setXYZ(i, tempColor.r, tempColor.g, tempColor.b);
+  }
+  colorAttr.needsUpdate = true;
 }
 
 function spreadLabelYs(labels, elementHeight, centerY) {
@@ -1486,6 +1565,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
 
   useEffect(() => {
     stateRef.current.activeTick = activeTick;
+    updateShipDamageColors(stateRef.current.shipMesh, activeTick, failedZoneName);
     if (!activeTick?.failure) {
       if (!stateRef.current.isHoveringShip) {
         setZoneOverlay((current) => (current.visible ? emptyZoneOverlay() : current));
@@ -1769,11 +1849,12 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       const scale = SHIP_MODEL_LENGTH / size.x;
 
       const mat = new THREE.MeshStandardMaterial({
-        color: '#6f7d89',
+        color: '#ffffff',
         emissive: '#1d252c',
         emissiveIntensity: 0.08,
         metalness: 0.12,
         roughness: 0.72,
+        vertexColors: true,
       });
       const mesh = new THREE.Mesh(geo, mat);
       mesh.scale.setScalar(scale);
@@ -1782,6 +1863,9 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
 
       // Align STL axes to the ship group: local +Z follows the route tangent.
       mesh.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
+      mesh.updateMatrixWorld(true);
+      initializeShipDamageColors(mesh);
+      updateShipDamageColors(mesh, stateRef.current.activeTick, stateRef.current.failedZoneName);
 
       const shadowMesh = new THREE.Mesh(
         geo,

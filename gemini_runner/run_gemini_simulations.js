@@ -12,6 +12,7 @@ const DEFAULT_INPUT = path.join(ROOT, 'examples', 'simulation_params.json');
 const DEFAULT_BINARY = path.join(ROOT, 'target', 'release', 'seaforge_v2');
 const SIM_DIR = path.join(ROOT, 'simulations');
 const MISSION_BRIEFS_DIR = path.join(ROOT, 'mission-briefs');
+const GLOBAL_DESIGN_MEMORY_FILE = path.join(ROOT, 'gemini_runner', 'design_memory.json');
 const HULL_ZONE_KEYS = [
   'Keel',
   'BilgeStrake',
@@ -54,6 +55,14 @@ const DEFAULT_PROPULSION = {
   propulsive_efficiency: 0.72,
   hull_drag_coeff: 0.007,
 };
+const EXPLORATION_STRATEGIES = [
+  'targeted_reinforcement',
+  'weld_quality_path',
+  'material_substitution',
+  'lightweight_composite_path',
+  'fuel_drag_tradeoff',
+  'cost_cut_from_best',
+];
 
 function loadEnvFile(file) {
   if (!fs.existsSync(file)) return;
@@ -83,6 +92,15 @@ function argValue(name, fallback = null) {
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
+}
+
+function readJsonIfExists(file, fallback = null) {
+  if (!fs.existsSync(file)) return fallback;
+  try {
+    return readJson(file);
+  } catch (_) {
+    return fallback;
+  }
 }
 
 function writeJson(file, value) {
@@ -258,6 +276,153 @@ function normalizePropulsion(propulsion, fallback = DEFAULT_PROPULSION) {
   };
 }
 
+function clampNumber(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function roundNumber(value, digits = 6) {
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function candidateSignature(document, mode) {
+  if (mode === 'brief') {
+    return JSON.stringify({
+      zones: (document.zones ?? []).map((zone) => normalizeZoneSpec(zone)).filter(Boolean),
+      propulsion: normalizePropulsion(document.propulsion, DEFAULT_PROPULSION),
+    });
+  }
+  return JSON.stringify(document);
+}
+
+function materialRank(material) {
+  const order = new Map(MATERIALS.map((item, index) => [item, index]));
+  return order.get(materialValue(material, 'MildSteelA')) ?? 0;
+}
+
+function cheaperMaterial(material) {
+  const current = materialValue(material, 'MildSteelA');
+  const rank = materialRank(current);
+  return MATERIALS[Math.max(0, rank - 1)] ?? current;
+}
+
+function strongerMaterial(material) {
+  const current = materialValue(material, 'MildSteelA');
+  const rank = materialRank(current);
+  return MATERIALS[Math.min(MATERIALS.length - 1, rank + 1)] ?? current;
+}
+
+function downgradeWeld(weld) {
+  if (weld === 'Premium') return 'Standard';
+  if (weld === 'Standard') return 'Economy';
+  return 'Economy';
+}
+
+function upgradeWeld(weld) {
+  if (weld === 'Economy') return 'Standard';
+  if (weld === 'Standard') return 'Premium';
+  return 'Premium';
+}
+
+function zonesByRisk(result) {
+  const failureZone = normalizeZoneKey(result?.failure?.detail?.failed_zone);
+  const finalTick = Array.isArray(result?.ticks) ? result.ticks.at(-1) : null;
+  const tickZones = Array.isArray(finalTick?.zones) ? finalTick.zones : [];
+  const ranked = tickZones
+    .map((zone) => ({
+      zone: normalizeZoneKey(zone.zone),
+      score: Number(zone.fatigue_consumed ?? 0) * 100
+        + Number(zone.crack_half_length_mm ?? 0) * 2
+        + Number(zone.corrosion_depth_mm ?? 0) * 10
+        + Number(zone.peak_stress_mpa ?? 0) / 1000,
+    }))
+    .filter((zone) => zone.zone)
+    .sort((a, b) => b.score - a.score)
+    .map((zone) => zone.zone);
+
+  return [...new Set([failureZone, ...ranked].filter(Boolean))];
+}
+
+function mutateExploratoryDocument(currentDocument, result, bestDocument, mode, iteration) {
+  if (mode !== 'brief') return null;
+
+  const strategy = EXPLORATION_STRATEGIES[(iteration - 1) % EXPLORATION_STRATEGIES.length];
+  const seed = bestDocument ?? currentDocument;
+  const next = cloneJson(seed);
+  const resultZones = completeZonesFromResult(result, next.zones ?? []);
+  const riskyZones = zonesByRisk(result);
+  const primaryTarget = riskyZones[0] ?? resultZones[iteration % resultZones.length]?.zone ?? 'Keel';
+  const secondaryTarget = riskyZones[1] ?? resultZones[(iteration + 3) % resultZones.length]?.zone ?? 'BottomPlating';
+  const targetSet = new Set([primaryTarget, secondaryTarget]);
+
+  next.zones = resultZones.map((zone, index) => {
+    const mutated = { ...zone };
+    const isTarget = targetSet.has(zone.zone);
+
+    if (strategy === 'targeted_reinforcement' && isTarget) {
+      mutated.material = strongerMaterial(mutated.material);
+      mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.22, 0.003, 0.02));
+      mutated.weld_quality = upgradeWeld(mutated.weld_quality);
+    } else if (strategy === 'weld_quality_path') {
+      if (isTarget) {
+        mutated.weld_quality = upgradeWeld(mutated.weld_quality);
+        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.08, 0.003, 0.02));
+      } else if ((index + iteration) % 4 === 0) {
+        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 0.92, 0.003, 0.02));
+      }
+    } else if (strategy === 'material_substitution' && isTarget) {
+      mutated.material = mutated.material === 'Eh36' ? 'Aluminum5083' : strongerMaterial(mutated.material);
+      mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.12, 0.003, 0.02));
+    } else if (strategy === 'lightweight_composite_path') {
+      if (isTarget) {
+        mutated.material = zone.zone === 'Keel' || zone.zone === 'BilgeStrake' ? 'CfrpEpoxy' : 'GrpEGlass';
+        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.18, 0.004, 0.02));
+        mutated.weld_quality = upgradeWeld(mutated.weld_quality);
+        mutated.seal_quality = 'Marine';
+      } else if ((index + iteration) % 3 === 0) {
+        mutated.material = cheaperMaterial(mutated.material);
+      }
+    } else if (strategy === 'cost_cut_from_best') {
+      if (!isTarget && (index + iteration) % 2 === 0) {
+        mutated.material = cheaperMaterial(mutated.material);
+        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 0.84, 0.003, 0.02));
+        mutated.weld_quality = downgradeWeld(mutated.weld_quality);
+      }
+    }
+
+    return mutated;
+  });
+
+  const propulsion = normalizePropulsion(next.propulsion, effectivePropulsionFromResult(result, seed));
+  if (strategy === 'fuel_drag_tradeoff') {
+    next.propulsion = normalizePropulsion({
+      ...propulsion,
+      fuel_capacity_kg: propulsion.fuel_capacity_kg * 1.18,
+      propulsive_efficiency: Math.min(propulsion.propulsive_efficiency + 0.03, 0.86),
+      hull_drag_coeff: propulsion.hull_drag_coeff * 0.9,
+      max_power_kw: propulsion.max_power_kw * 0.95,
+    }, propulsion);
+  } else if (strategy === 'cost_cut_from_best') {
+    next.propulsion = normalizePropulsion({
+      ...propulsion,
+      fuel_capacity_kg: propulsion.fuel_capacity_kg * 0.86,
+      max_power_kw: propulsion.max_power_kw * 0.92,
+    }, propulsion);
+  } else {
+    next.propulsion = propulsion;
+  }
+
+  return {
+    document: next,
+    strategy,
+    targets: [...targetSet],
+  };
+}
+
 function strongerRepairMaterial(material, metric) {
   const normalized = String(material ?? '').toLowerCase();
   if (metric === 'corrosion' || metric === 'crack') {
@@ -410,6 +575,181 @@ function resultCostUsd(result) {
   return Number.isFinite(value) ? value : Infinity;
 }
 
+function potentialScore(result) {
+  const completion = Number(result?.failure?.completion_pct ?? result?.result?.distance_completed_pct ?? 0);
+  const cost = resultCostUsd(result);
+  const costScore = Number.isFinite(cost) ? Math.max(0, 100 - ((cost - 5000) / 25000) * 100) : 0;
+  const singleFixBonus = result?.failure?.detail?.failed_zone ? 12 : 0;
+  const survivedBonus = result?.status === 'survived' ? 40 : 0;
+  return Math.round((completion * 0.72 + costScore * 0.18 + singleFixBonus + survivedBonus) * 10) / 10;
+}
+
+function emptyDesignMemory(scope = 'campaign') {
+  return {
+    schema_version: 1,
+    scope,
+    updated_at: null,
+    missions: {},
+  };
+}
+
+function missionMemory(memory, missionId) {
+  const key = missionId || 'unknown';
+  if (!memory.missions) memory.missions = {};
+  if (!memory.missions[key]) {
+    memory.missions[key] = {
+      runs_seen: 0,
+      successes_seen: 0,
+      failures_seen: 0,
+      best_survivor_cost_usd: null,
+      best_survivor_summary: null,
+      best_potential_score: null,
+      lessons: [],
+      component_lessons: {},
+      strategy_stats: {},
+    };
+  }
+  return memory.missions[key];
+}
+
+function compactZoneConfig(document) {
+  return (document?.zones ?? []).map((zone) => ({
+    zone: zone.zone,
+    material: zone.material,
+    thickness_mm: Number.isFinite(Number(zone.thickness_m))
+      ? Math.round(Number(zone.thickness_m) * 100000) / 100
+      : null,
+    weld_quality: zone.weld_quality,
+    seal_quality: zone.seal_quality,
+  }));
+}
+
+function pushBounded(list, item, limit = 18) {
+  list.unshift(item);
+  const seen = new Set();
+  const unique = [];
+  for (const entry of list) {
+    const signature = JSON.stringify(entry);
+    if (seen.has(signature)) continue;
+    seen.add(signature);
+    unique.push(entry);
+    if (unique.length >= limit) break;
+  }
+  list.length = 0;
+  list.push(...unique);
+}
+
+function recordDesignMemory(memory, { document, result, assessment, iteration, strategy, potential }) {
+  const missionId = document?.id ?? 'params';
+  const mission = missionMemory(memory, missionId);
+  const cost = resultCostUsd(result);
+  const failure = result?.failure ?? null;
+  const failedPart = failure?.detail?.failed_zone ?? assessment?.failed_part ?? null;
+  const failedMetric = failure?.detail?.failed_metric ?? assessment?.failed_metric ?? failure?.mode ?? null;
+  const status = result?.status ?? 'unknown';
+  const completion = Number(failure?.completion_pct ?? result?.result?.distance_completed_pct ?? 0);
+
+  memory.updated_at = new Date().toISOString();
+  mission.runs_seen += 1;
+  if (status === 'survived') mission.successes_seen += 1;
+  if (status === 'failed') mission.failures_seen += 1;
+
+  const strategyKey = strategy ?? 'unknown';
+  if (!mission.strategy_stats[strategyKey]) {
+    mission.strategy_stats[strategyKey] = { runs: 0, successes: 0, best_cost_usd: null, best_potential_score: null };
+  }
+  const stat = mission.strategy_stats[strategyKey];
+  stat.runs += 1;
+  if (status === 'survived') stat.successes += 1;
+  if (Number.isFinite(cost) && (stat.best_cost_usd === null || cost < stat.best_cost_usd)) {
+    stat.best_cost_usd = Math.round(cost);
+  }
+  if (Number.isFinite(potential) && (stat.best_potential_score === null || potential > stat.best_potential_score)) {
+    stat.best_potential_score = potential;
+  }
+
+  if (status === 'survived' && Number.isFinite(cost)) {
+    if (mission.best_survivor_cost_usd === null || cost < mission.best_survivor_cost_usd) {
+      mission.best_survivor_cost_usd = Math.round(cost);
+      mission.best_survivor_summary = {
+        iteration,
+        strategy: strategyKey,
+        cost_usd: Math.round(cost),
+        propulsion: normalizePropulsion(document.propulsion, DEFAULT_PROPULSION),
+        zones: compactZoneConfig(document),
+      };
+    }
+  }
+
+  if (Number.isFinite(potential) && (mission.best_potential_score === null || potential > mission.best_potential_score)) {
+    mission.best_potential_score = potential;
+  }
+
+  const lesson = {
+    iteration,
+    status,
+    strategy: strategyKey,
+    cost_usd: Number.isFinite(cost) ? Math.round(cost) : null,
+    completion_pct: Number.isFinite(completion) ? Math.round(completion * 10) / 10 : null,
+    failed_part: failedPart,
+    failed_metric: failedMetric,
+    root_cause: assessment?.root_cause ?? failure?.why ?? null,
+    takeaway: status === 'survived'
+      ? `Configuration survived at $${Number.isFinite(cost) ? Math.round(cost) : 'unknown'}; use it as a cost ceiling.`
+      : `${failedPart ?? 'Unknown component'} failed by ${failedMetric ?? 'unknown mode'} at ${Number.isFinite(completion) ? Math.round(completion) : 0}% completion.`,
+  };
+  pushBounded(mission.lessons, lesson, 24);
+
+  if (failedPart) {
+    if (!mission.component_lessons[failedPart]) {
+      mission.component_lessons[failedPart] = [];
+    }
+    pushBounded(mission.component_lessons[failedPart], {
+      iteration,
+      status,
+      metric: failedMetric,
+      strategy: strategyKey,
+      completion_pct: lesson.completion_pct,
+      root_cause: lesson.root_cause,
+      zone_config: compactZoneConfig(document).find((zone) => zone.zone === normalizeZoneKey(failedPart)) ?? null,
+    }, 8);
+  }
+}
+
+function compactDesignMemory(memory, missionId) {
+  const mission = memory?.missions?.[missionId] ?? null;
+  if (!mission) return null;
+  const strategyStats = Object.fromEntries(
+    Object.entries(mission.strategy_stats ?? {})
+      .sort((a, b) => (b[1].best_potential_score ?? 0) - (a[1].best_potential_score ?? 0))
+      .slice(0, 8),
+  );
+  return {
+    runs_seen: mission.runs_seen,
+    successes_seen: mission.successes_seen,
+    failures_seen: mission.failures_seen,
+    best_survivor_cost_usd: mission.best_survivor_cost_usd,
+    best_survivor_summary: mission.best_survivor_summary,
+    best_potential_score: mission.best_potential_score,
+    lessons: (mission.lessons ?? []).slice(0, 10),
+    component_lessons: mission.component_lessons ?? {},
+    strategy_stats: strategyStats,
+  };
+}
+
+function compactHistory(history) {
+  return history.slice(-8).map((entry) => ({
+    iteration: entry.iteration,
+    status: entry.status,
+    cost_usd: entry.total_config_cost_usd,
+    failure_mode: entry.failure?.mode ?? null,
+    failed_part: entry.failure?.detail?.failed_zone ?? null,
+    failed_metric: entry.failure?.detail?.failed_metric ?? null,
+    completion_pct: entry.failure?.completion_pct ?? entry.result?.distance_completed_pct ?? null,
+    strategy: entry.strategy ?? null,
+  }));
+}
+
 function compactAllowedParameters() {
   return {
     zone_names: HULL_ZONE_KEYS,
@@ -484,7 +824,7 @@ function nextDocumentFromAssessment(assessment, currentDocument, mode, result = 
   return assessment.params;
 }
 
-async function callGemini({ apiKey, model, document, mode, result, iteration, maxIterations }) {
+async function callGemini({ apiKey, model, document, mode, result, iteration, maxIterations, searchState = {} }) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const isBriefMode = mode === 'brief';
   const failureAnalysis = failureAnalysisFromResult(result);
@@ -519,7 +859,7 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
         ? '- Make targeted material configuration changes to the failed component and directly coupled components. Keep unrelated zones unchanged unless the failure analysis justifies changing them.'
         : '- Prefer targeted changes: material, thickness_m, weld_quality, seal_quality, propulsion fuel/drag, or route/conditions only when justified.',
     succeeded
-      ? '- Do not stop just because this run reached SUCCESS. Return a new cheaper candidate unless every allowed cheaper combination is clearly unsafe or impossible.'
+      ? '- Do not stop just because this run reached SUCCESS. Return a new cheaper or meaningfully different candidate unless every allowed cheaper or higher-potential branch is clearly unsafe or impossible.'
       : '- Repair enough to address the exact failed mode, but do not overbuild unrelated components.',
     succeeded
       ? '- Cost search step limit: change at most three hull zones plus propulsion in this candidate.'
@@ -539,6 +879,11 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
     '- Increased fuel_capacity_kg increases total configuration cost through fuel capacity cost.',
     '- Objective order: survive the full voyage first, then minimize total_config_cost_usd as much as possible.',
     '- Explore multiple combinations over iterations. Each response should be the single next best candidate to test.',
+    '- If RECENT_SEARCH_HISTORY_JSON shows stagnation, try a different design family instead of tiny edits: weld-quality-first, material-substitution-first, lightweight-composite, fuel/drag tradeoff, or targeted reinforcement only on failing zones.',
+    '- Compare against BEST_SURVIVOR_JSON. If the latest run is worse than the best survivor, branch from the best survivor unless the latest branch has obvious potential.',
+    '- Compare against BEST_POTENTIAL_JSON too. If a failed candidate completed much more distance at lower cost with one fixable failure, explore that branch before abandoning it.',
+    '- A candidate has potential if it fails late with lower cost, fails in only one fixable component, or exposes a cheaper material/weld/fuel pattern that can be repaired locally.',
+    '- Use DESIGN_MEMORY_JSON as continuous learned experience from previous iterations/campaigns. Prefer patterns that worked, avoid patterns that repeatedly failed, but override memory when the latest physics result contradicts it.',
     '- Obey ALLOWED_PARAMETERS_JSON exactly for field names, enum values, zone names, and bounds.',
     `Iteration ${iteration} of ${maxIterations}.`,
     '',
@@ -561,6 +906,21 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
     '',
     'CURRENT_PROPULSION_JSON:',
     JSON.stringify(currentPropulsion, null, 2),
+    '',
+    'BEST_SURVIVOR_JSON:',
+    JSON.stringify(searchState.bestSurvivor ?? null, null, 2),
+    '',
+    'BEST_POTENTIAL_JSON:',
+    JSON.stringify(searchState.bestPotential ?? null, null, 2),
+    '',
+    'RECENT_SEARCH_HISTORY_JSON:',
+    JSON.stringify(compactHistory(searchState.history ?? []), null, 2),
+    '',
+    'DESIGN_MEMORY_JSON:',
+    JSON.stringify(searchState.designMemory ?? null, null, 2),
+    '',
+    'SEARCH_DIRECTIVE:',
+    searchState.directive ?? 'balance repair and cost optimization',
     '',
     'STRUCTURED_FAILURE_ANALYSIS_JSON:',
     JSON.stringify(failureAnalysis, null, 2),
@@ -596,7 +956,7 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
   return extractJsonObject(text);
 }
 
-async function callGeminiWithFallback({ apiKey, models, document, mode, result, iteration, maxIterations }) {
+async function callGeminiWithFallback({ apiKey, models, document, mode, result, iteration, maxIterations, searchState = {} }) {
   const errors = [];
   for (const model of models) {
     try {
@@ -608,6 +968,7 @@ async function callGeminiWithFallback({ apiKey, models, document, mode, result, 
         result,
         iteration,
         maxIterations,
+        searchState,
       });
       console.error(`[gemini] selected model=${model}`);
       return { assessment, model };
@@ -649,6 +1010,7 @@ async function main() {
   const maxIterations = Number(argValue('max-iterations', String(MAX_ITERATIONS)));
   const runId = argValue('run-id', new Date().toISOString().replace(/[:.]/g, '-'));
   const runDir = path.join(SIM_DIR, runId);
+  const campaignMemoryFile = path.join(runDir, 'design_memory.json');
 
   if (!fs.existsSync(binary)) {
     throw new Error(`Simulation binary not found: ${binary}. Run cargo build --release first.`);
@@ -671,24 +1033,45 @@ async function main() {
     input_file: path.relative(ROOT, inputFile),
     iterations: [],
     best_survivor: null,
+    best_potential: null,
+    search: {
+      strategy: 'sequential adaptive exploration',
+      exploration_strategies: EXPLORATION_STRATEGIES,
+    },
+    memory: {
+      enabled: true,
+      type: 'persistent design memory',
+      global_file: path.relative(ROOT, GLOBAL_DESIGN_MEMORY_FILE),
+      campaign_file: path.relative(ROOT, campaignMemoryFile),
+    },
   };
 
   fs.mkdirSync(runDir, { recursive: true });
+  const globalDesignMemory = readJsonIfExists(GLOBAL_DESIGN_MEMORY_FILE, emptyDesignMemory('global'));
+  const campaignDesignMemory = readJsonIfExists(campaignMemoryFile, emptyDesignMemory('campaign'));
+  globalDesignMemory.scope = 'global';
+  campaignDesignMemory.scope = 'campaign';
+  let bestSurvivorDocument = null;
+  let bestPotentialDocument = cloneJson(document);
+  const visitedCandidates = new Set([candidateSignature(document, mode)]);
 
   for (let i = 1; i <= maxIterations; i += 1) {
     let stopAfterIteration = false;
+    let iterationStrategy = 'gemini';
     const iterationId = `iteration-${String(i).padStart(2, '0')}`;
     const iterationDir = path.join(runDir, iterationId);
     const paramsFile = path.join(iterationDir, 'params.json');
     const resultFile = path.join(iterationDir, 'result.json');
     const assessmentFile = path.join(iterationDir, 'assessment.json');
+    const runDocument = cloneJson(document);
 
-    writeJson(paramsFile, document);
+    writeJson(paramsFile, runDocument);
     const rust = mode === 'brief'
       ? runRustBrief(binary, paramsFile, resultFile, tier)
       : runRustSimulation(binary, paramsFile, resultFile);
     const result = readJson(resultFile);
     const costUsd = resultCostUsd(result);
+    const candidatePotential = potentialScore(result);
 
     let assessment = {
       assessment: result.status === 'survived'
@@ -715,11 +1098,48 @@ async function main() {
         )
       ) {
         manifest.best_survivor = candidateBest;
+        bestSurvivorDocument = cloneJson(runDocument);
       }
+    }
+    if (
+      !manifest.best_potential
+      || candidatePotential > Number(manifest.best_potential.score ?? -Infinity)
+      || (
+        candidatePotential === Number(manifest.best_potential.score ?? -Infinity)
+        && Number.isFinite(costUsd)
+        && costUsd < Number(manifest.best_potential.total_config_cost_usd ?? Infinity)
+      )
+    ) {
+      manifest.best_potential = {
+        id: `${runId}/${iterationId}`,
+        run_id: runId,
+        iteration: i,
+        score: candidatePotential,
+        status: result.status,
+        failure: result.failure ?? null,
+        total_config_cost_usd: Number.isFinite(costUsd) ? costUsd : null,
+        result_file: path.relative(ROOT, resultFile),
+        params_file: path.relative(ROOT, paramsFile),
+      };
+      bestPotentialDocument = cloneJson(runDocument);
     }
 
     if (i < maxIterations) {
       try {
+        const bestSurvivorContext = manifest.best_survivor
+          ? {
+            ...manifest.best_survivor,
+            zones: bestSurvivorDocument?.zones ?? null,
+            propulsion: bestSurvivorDocument?.propulsion ?? null,
+          }
+          : null;
+        const bestPotentialContext = manifest.best_potential
+          ? {
+            ...manifest.best_potential,
+            zones: bestPotentialDocument?.zones ?? null,
+            propulsion: bestPotentialDocument?.propulsion ?? null,
+          }
+          : null;
         const gemini = await callGeminiWithFallback({
           apiKey,
           models: modelCandidates,
@@ -728,32 +1148,93 @@ async function main() {
           result,
           iteration: i,
           maxIterations,
+          searchState: {
+            bestSurvivor: bestSurvivorContext,
+            bestPotential: bestPotentialContext,
+            history: manifest.iterations,
+            designMemory: {
+              global: compactDesignMemory(globalDesignMemory, document.id ?? 'params'),
+              campaign: compactDesignMemory(campaignDesignMemory, document.id ?? 'params'),
+            },
+            directive: result.status === 'survived'
+              ? 'exploit the best survivor for lower cost, but branch into a different design family if recent trials are stuck'
+              : 'repair the failure locally, or branch if this failure suggests a more promising architecture',
+          },
         });
         assessment = gemini.assessment;
         assessment.model_used = gemini.model;
         manifest.model = gemini.model;
-        const nextDocument = nextDocumentFromAssessment(assessment, document, mode, result);
-        if (result.status === 'survived' && JSON.stringify(nextDocument) === JSON.stringify(document)) {
-          assessment.assessment = `${assessment.assessment ?? 'Simulation reached SUCCESS.'} No cheaper candidate was returned; stopping optimization.`;
-          stopAfterIteration = true;
+        let nextDocument = nextDocumentFromAssessment(assessment, document, mode, result);
+        let nextSignature = candidateSignature(nextDocument, mode);
+        const shouldForceExplore = result.status === 'survived'
+          && (
+            nextSignature === candidateSignature(document, mode)
+            || visitedCandidates.has(nextSignature)
+            || i % 3 === 0
+          );
+
+        if (shouldForceExplore) {
+          const exploration = mutateExploratoryDocument(document, result, bestSurvivorDocument, mode, i);
+          if (exploration) {
+            nextDocument = exploration.document;
+            nextSignature = candidateSignature(nextDocument, mode);
+            iterationStrategy = `explore:${exploration.strategy}`;
+            assessment.search_strategy = iterationStrategy;
+            assessment.exploration_targets = exploration.targets;
+            assessment.assessment = `${assessment.assessment ?? 'Gemini candidate reviewed.'} Branching into ${exploration.strategy} to test another design path.`;
+          }
         }
+
+        if (visitedCandidates.has(nextSignature)) {
+          const exploration = mutateExploratoryDocument(document, result, bestSurvivorDocument, mode, i + 1);
+          if (exploration) {
+            nextDocument = exploration.document;
+            nextSignature = candidateSignature(nextDocument, mode);
+            iterationStrategy = `explore:${exploration.strategy}`;
+            assessment.search_strategy = iterationStrategy;
+            assessment.exploration_targets = exploration.targets;
+            assessment.assessment = `${assessment.assessment ?? 'Duplicate candidate avoided.'} Replaced duplicate with ${exploration.strategy}.`;
+          }
+        }
+
+        visitedCandidates.add(nextSignature);
         document = nextDocument;
         if (mode === 'brief') {
           assessment.repaired_zones = document.zones;
         }
       } catch (error) {
         if (mode === 'brief' && result.status === 'survived') {
-          assessment = {
-            assessment: `Simulation reached SUCCESS, but Gemini could not produce a cheaper candidate: ${error.message}`,
-            changes: [],
-            brief: document,
-            error: error.stack || error.message,
-          };
-          stopAfterIteration = true;
+          const exploration = mutateExploratoryDocument(document, result, bestSurvivorDocument, mode, i);
+          if (exploration) {
+            document = exploration.document;
+            visitedCandidates.add(candidateSignature(document, mode));
+            iterationStrategy = `explore:${exploration.strategy}`;
+            assessment = {
+              assessment: `Gemini could not produce the next candidate (${error.message}). Continuing with ${exploration.strategy}.`,
+              changes: [`Local exploratory branch: ${exploration.strategy}`],
+              zones: document.zones,
+              propulsion: document.propulsion,
+              brief: document,
+              model_used: 'local-exploration-fallback',
+              search_strategy: iterationStrategy,
+              exploration_targets: exploration.targets,
+              error: error.stack || error.message,
+            };
+          } else {
+            assessment = {
+              assessment: `Simulation reached SUCCESS, but no exploratory candidate could be produced: ${error.message}`,
+              changes: [],
+              brief: document,
+              error: error.stack || error.message,
+            };
+            stopAfterIteration = true;
+          }
         } else if (mode === 'brief') {
           assessment = localRepairAssessment(document, result);
           assessment.gemini_error = error.stack || error.message;
           document = nextDocumentFromAssessment(assessment, document, mode, result);
+          visitedCandidates.add(candidateSignature(document, mode));
+          iterationStrategy = assessment.model_used ?? 'local-repair';
           assessment.repaired_zones = document.zones;
         } else {
           assessment = {
@@ -767,6 +1248,19 @@ async function main() {
       }
     }
 
+    const memoryPayload = {
+      document: runDocument,
+      result,
+      assessment,
+      iteration: i,
+      strategy: assessment.search_strategy ?? iterationStrategy,
+      potential: candidatePotential,
+    };
+    recordDesignMemory(globalDesignMemory, memoryPayload);
+    recordDesignMemory(campaignDesignMemory, memoryPayload);
+    writeJson(GLOBAL_DESIGN_MEMORY_FILE, globalDesignMemory);
+    writeJson(campaignMemoryFile, campaignDesignMemory);
+
     writeJson(assessmentFile, assessment);
 
     manifest.iterations.push({
@@ -777,6 +1271,7 @@ async function main() {
       failure: result.failure ?? null,
       result: result.result ?? null,
       total_config_cost_usd: Number.isFinite(costUsd) ? costUsd : null,
+      strategy: assessment.search_strategy ?? iterationStrategy,
       params_file: path.relative(ROOT, paramsFile),
       result_file: path.relative(ROOT, resultFile),
       assessment_file: path.relative(ROOT, assessmentFile),

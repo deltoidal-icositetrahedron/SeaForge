@@ -39,6 +39,12 @@ function displayStatus(status) {
   return status === 'survived' ? 'SUCCESS' : status;
 }
 
+function makeCampaignRunId(missionId) {
+  const safeMission = String(missionId ?? 'campaign').replace(/[^A-Za-z0-9_-]/g, '_');
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  return `${safeMission}_${stamp}`;
+}
+
 function responseErrorMessage(data, fallback) {
   const details = [data?.error, data?.stderr, data?.stdout]
     .filter(Boolean)
@@ -57,6 +63,7 @@ export default function App() {
   const [selectedCampaignId, setSelectedCampaignId] = useState(null);
   const [selectedSimulationId, setSelectedSimulationId] = useState(null);
   const [runningGemini, setRunningGemini] = useState(false);
+  const [runningCampaignId, setRunningCampaignId] = useState(null);
   const [geminiDotCount, setGeminiDotCount] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const tickPositionRef = useRef(0);
@@ -93,22 +100,44 @@ export default function App() {
         count: (existing?.count ?? 0) + 1,
       });
     });
-    return [...byId.values()].sort((a, b) => b.id.localeCompare(a.id));
+    return [...byId.values()].sort((a, b) => {
+      const bTime = Date.parse(b.created_at);
+      const aTime = Date.parse(a.created_at);
+      if (Number.isFinite(bTime) && Number.isFinite(aTime) && bTime !== aTime) {
+        return bTime - aTime;
+      }
+      return b.id.localeCompare(a.id);
+    });
   }, [simulations]);
+  const visibleCampaigns = useMemo(() => {
+    if (!runningCampaignId || campaigns.some((campaign) => campaign.id === runningCampaignId)) {
+      return campaigns;
+    }
+    return [
+      { id: runningCampaignId, created_at: runningCampaignId, count: 0 },
+      ...campaigns,
+    ];
+  }, [campaigns, runningCampaignId]);
 
   useEffect(() => {
     refreshSimulations();
   }, [refreshSimulations]);
 
   useEffect(() => {
-    if (campaigns.length === 0) {
-      if (selectedCampaignId !== null) setSelectedCampaignId(null);
+    if (visibleCampaigns.length === 0) {
+      if (selectedCampaignId !== null && selectedCampaignId !== runningCampaignId) setSelectedCampaignId(null);
       return;
     }
-    if (!selectedCampaignId || !campaigns.some((campaign) => campaign.id === selectedCampaignId)) {
-      setSelectedCampaignId(campaigns[0].id);
+    if (
+      !selectedCampaignId
+      || (
+        !visibleCampaigns.some((campaign) => campaign.id === selectedCampaignId)
+        && selectedCampaignId !== runningCampaignId
+      )
+    ) {
+      setSelectedCampaignId(visibleCampaigns[0].id);
     }
-  }, [campaigns, selectedCampaignId]);
+  }, [runningCampaignId, selectedCampaignId, visibleCampaigns]);
 
   useEffect(() => {
     if (!runningGemini) return undefined;
@@ -172,10 +201,13 @@ export default function App() {
     setLoading(true);
     setError(null);
     setSelectedSimulationId(null);
+    const runId = makeCampaignRunId(selectedMission.id);
+    setRunningCampaignId(runId);
+    setSelectedCampaignId(runId);
     fetch('/api/gemini/run', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mission_id: selectedMission.id, tier: 'lowest' }),
+      body: JSON.stringify({ mission_id: selectedMission.id, tier: 'lowest', run_id: runId }),
     })
       .then(r => {
         if (!r.ok) return r.json().then(d => Promise.reject(new Error(responseErrorMessage(d, `HTTP ${r.status}`))));
@@ -199,19 +231,17 @@ export default function App() {
         setError(e.message);
         setLoading(false);
       })
-      .finally(() => setRunningGemini(false));
+      .finally(() => {
+        setRunningGemini(false);
+        setRunningCampaignId(null);
+      });
   }, [loadSavedSimulation, refreshSimulations, selectedMission]);
 
   const selectCampaign = useCallback((campaignId) => {
     setSelectedCampaignId(campaignId);
     setSelectedSimulationId(null);
     setSimResult(null);
-    const campaignSim = simulations.find((sim) => sim.run_id === campaignId && sim.params?.id);
-    const matchingMission = MISSIONS.find((mission) => mission.id === campaignSim?.params?.id);
-    if (matchingMission) {
-      setSelectedMission(matchingMission);
-    }
-  }, [simulations]);
+  }, []);
 
   useEffect(() => {
     heldDirectionRef.current = 0;
@@ -265,10 +295,13 @@ export default function App() {
   const visibleSimulations = selectedCampaignId
     ? simulations.filter((sim) => sim.run_id === selectedCampaignId)
     : simulations;
-  const selectedCampaign = campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
+  const selectedCampaign = visibleCampaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
+  const selectedCampaignStatus = selectedCampaign?.id && runningCampaignId === selectedCampaign.id
+    ? 'running'
+    : 'ended';
   const campaignMissionId = visibleSimulations.find((sim) => sim.params?.id)?.params?.id ?? null;
   const campaignMission = MISSIONS.find((mission) => mission.id === campaignMissionId) ?? null;
-  const missionBrief = selectedMission ?? campaignMission;
+  const missionBrief = campaignMission ?? selectedMission;
   const env = missionBrief?.environmental_profile ?? null;
   const campaignSuccessCount = visibleSimulations.filter((sim) => sim.status === 'survived').length;
   const campaignFailureCount = visibleSimulations.filter((sim) => sim.status === 'failed').length;
@@ -486,6 +519,7 @@ export default function App() {
     borderTop: '1px solid rgba(0,0,0,0.10)',
     paddingTop: 8,
   };
+  const panelFooterHeight = 62;
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#C3C4CA', position: 'relative' }}>
@@ -546,7 +580,7 @@ export default function App() {
             gridTemplateColumns: `${panelColumnWidth}px ${panelColumnWidth}px`,
           }}
         >
-          <div className="no-scrollbar" style={{ minWidth: 0, overflowY: 'auto' }}>
+          <div className="no-scrollbar" style={{ minWidth: 0, overflowY: 'auto', paddingBottom: panelFooterHeight }}>
             {/* Missions section */}
             <div style={{ flexShrink: 0 }}>
               <div style={panelHeaderStyle}>Missions</div>
@@ -620,7 +654,7 @@ export default function App() {
             <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
               <div style={panelSectionTitle}>Campaign Selector</div>
               <div className="no-scrollbar" style={{ maxHeight: 116, overflowY: 'auto' }}>
-                {campaigns.length === 0 ? (
+                {visibleCampaigns.length === 0 ? (
                   <div style={{
                     padding: '7px 14px',
                     fontFamily: "'Courier New', monospace",
@@ -630,20 +664,21 @@ export default function App() {
                   }}>
                     No campaigns.
                   </div>
-                ) : campaigns.map((campaign) => {
+                ) : visibleCampaigns.map((campaign) => {
                   const isSelected = selectedCampaignId === campaign.id;
                   return (
                     <div
                       key={campaign.id}
                       onClick={() => selectCampaign(campaign.id)}
                       style={{
-                        padding: '6px 14px',
+                        padding: '7px 14px',
                         fontFamily: "'Courier New', monospace",
                         fontSize: 10,
+                        letterSpacing: '0.02em',
                         cursor: 'pointer',
                         color: isSelected ? 'rgba(0,0,0,0.82)' : 'rgba(0,0,0,0.55)',
                         background: isSelected ? 'rgba(0,0,0,0.06)' : 'transparent',
-                        borderBottom: '1px solid rgba(0,0,0,0.05)',
+                        borderBottom: '1px solid rgba(0,0,0,0.06)',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         display: 'grid',
@@ -674,6 +709,7 @@ export default function App() {
               {selectedCampaign ? (
                 <>
                   {renderPanelRow('Campaign', selectedCampaign.id, { wrap: true })}
+                  {renderPanelRow('Status', selectedCampaignStatus)}
                   {renderPanelRow('Mission', campaignMission?.name ?? missionBrief?.name ?? '—', { wrap: true })}
                   {renderPanelRow('Runs', String(selectedCampaign.count))}
                   {renderPanelRow('Success', String(campaignSuccessCount))}
@@ -690,37 +726,10 @@ export default function App() {
             </div>
           </div>
 
-          <div className="no-scrollbar" style={{ minWidth: 0, overflowY: 'auto', borderLeft: '1px solid rgba(0,0,0,0.10)' }}>
+          <div className="no-scrollbar" style={{ minWidth: 0, overflowY: 'auto', borderLeft: '1px solid rgba(0,0,0,0.10)', paddingBottom: panelFooterHeight }}>
             {/* Simulation history section */}
             <div style={{ flexShrink: 0 }}>
               <div style={panelHeaderStyle}>Simulation Runs</div>
-              <button
-                type="button"
-                onClick={runGeminiSimulations}
-                disabled={runningGemini || !selectedMission}
-                style={{
-                  width: '100%',
-                  padding: '7px 14px',
-                  fontFamily: "'Courier New', monospace",
-                  fontSize: 10,
-                  textAlign: 'left',
-                  cursor: runningGemini || !selectedMission ? 'default' : 'pointer',
-                  color: runningGemini || !selectedMission ? 'rgba(0,0,0,0.34)' : 'rgba(0,0,0,0.72)',
-                  background: 'transparent',
-                  border: 0,
-                  borderBottom: '1px solid rgba(0,0,0,0.06)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {runningGemini ? (
-                  <>
-                    Running Gemini
-                    <span style={{ display: 'inline-block', width: '3ch', textAlign: 'left' }}>
-                      {'.'.repeat(geminiDotCount)}
-                    </span>
-                  </>
-                ) : 'Run Gemini'}
-              </button>
               <div className="no-scrollbar" style={{ maxHeight: 170, overflowY: 'auto' }}>
                 {visibleSimulations.length === 0 ? (
                   <div style={{
@@ -850,6 +859,49 @@ export default function App() {
                 Run a mission to load configuration.
               </div>
             )}
+          </div>
+
+          <div
+            style={{
+              position: 'absolute',
+              left: 0,
+              bottom: 0,
+              width: panelColumnWidth,
+              height: panelFooterHeight,
+              padding: '10px 14px',
+              boxSizing: 'border-box',
+              background: '#C3C4CA',
+              borderTop: '1px solid rgba(0,0,0,0.12)',
+            }}
+          >
+            <button
+              type="button"
+              onClick={runGeminiSimulations}
+              disabled={runningGemini || !selectedMission}
+              style={{
+                width: '100%',
+                height: 40,
+                fontFamily: "'Courier New', monospace",
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                textAlign: 'center',
+                cursor: runningGemini || !selectedMission ? 'default' : 'pointer',
+                color: runningGemini || !selectedMission ? 'rgba(0,0,0,0.34)' : 'rgba(0,0,0,0.76)',
+                background: runningGemini || !selectedMission ? 'rgba(0,0,0,0.035)' : 'rgba(0,0,0,0.075)',
+                border: '1px solid rgba(0,0,0,0.16)',
+              }}
+            >
+              {runningGemini ? (
+                <>
+                  Running Gemini
+                  <span style={{ display: 'inline-block', width: '3ch', textAlign: 'left' }}>
+                    {'.'.repeat(geminiDotCount)}
+                  </span>
+                </>
+              ) : 'Run Gemini'}
+            </button>
           </div>
         </div>
       </div>

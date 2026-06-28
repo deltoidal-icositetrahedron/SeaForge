@@ -1,0 +1,533 @@
+{
+  "title": "SeaForge simulate-params allowed parameters",
+  "applies_to": {
+    "cli": "seaforge_v2 simulate-params <params.json> [output.json]",
+    "api": "POST /api/simulate",
+    "api_input_shapes": [
+      "bare compact params object",
+      "{ \"params\": <compact params object> }",
+      "legacy { \"config\": <VesselConfig>, \"route\": <VoyageRoute> }"
+    ]
+  },
+  "notes": [
+    "All top-level compact params sections are optional; omitted fields use defaults.",
+    "If zones is provided, it replaces construction and must define the per-zone construction.",
+    "Bounds marked code_bound are currently enforced by the Rust simulation parameter parser.",
+    "Bounds marked recommended_bound are domain-safe expectations, but are not fully enforced by the parser yet."
+  ],
+  "top_level": {
+    "hull": {
+      "type": "object",
+      "optional": true,
+      "fields": {
+        "loa_m": {
+          "type": "number",
+          "unit": "m",
+          "default": 7.315,
+          "code_bound": "> 0"
+        },
+        "beam_m": {
+          "type": "number",
+          "unit": "m",
+          "default": 2.5,
+          "code_bound": "> 0"
+        },
+        "depth_m": {
+          "type": "number",
+          "unit": "m",
+          "default": 0.85,
+          "code_bound": "> 0"
+        },
+        "draft_m": {
+          "type": "number",
+          "unit": "m",
+          "default": 0.4,
+          "code_bound": "> 0"
+        },
+        "block_coeff": {
+          "type": "number",
+          "default": 0.44,
+          "code_bound": "(0, 1]"
+        },
+        "waterplane_coeff": {
+          "type": "number",
+          "default": 0.76,
+          "code_bound": "(0, 1]"
+        }
+      }
+    },
+    "propulsion": {
+      "type": "object",
+      "optional": true,
+      "fields": {
+        "max_power_kw": {
+          "type": "number",
+          "unit": "kW",
+          "default": 300.0,
+          "code_bound": "> 0"
+        },
+        "fuel_capacity_kg": {
+          "type": "number",
+          "unit": "kg",
+          "default": 2000.0,
+          "code_bound": "> 0"
+        },
+        "sfc_g_per_kwh": {
+          "type": "number",
+          "unit": "g/kWh",
+          "default": 220.0,
+          "code_bound": "> 0"
+        },
+        "propulsive_efficiency": {
+          "type": "number",
+          "default": 0.72,
+          "code_bound": "(0, 1]"
+        },
+        "hull_drag_coeff": {
+          "type": "number",
+          "default": 0.007,
+          "code_bound": "> 0"
+        }
+      }
+    },
+    "construction": {
+      "type": "object",
+      "optional": true,
+      "ignored_when": "zones is provided",
+      "fields": {
+        "material": {
+          "$ref": "#/definitions/material_model",
+          "default": "AH36"
+        },
+        "thickness_m": {
+          "type": "number",
+          "unit": "m",
+          "default": 0.005,
+          "code_bound": "> 0"
+        },
+        "weld_quality": {
+          "type": "string",
+          "default": "Standard",
+          "options": [
+            "Premium",
+            "Standard",
+            "Economy"
+          ]
+        },
+        "seal_quality": {
+          "type": "string",
+          "default": "Marine",
+          "options": [
+            "Marine",
+            "Commercial",
+            "Economy"
+          ]
+        }
+      }
+    },
+    "zones": {
+      "type": "array",
+      "optional": true,
+      "code_bound": "if provided, array must not be empty and every thickness_m must be > 0",
+      "recommended_bound": "provide exactly one entry for each required hull zone",
+      "required_zone_options": [
+        "Keel",
+        "BilgeStrake",
+        "BottomPlating",
+        "SidePlating",
+        "BowFlare",
+        "SternPlate",
+        "TransomFrame",
+        "WeatherDeck",
+        "BulkheadFrame"
+      ],
+      "item": {
+        "type": "object",
+        "fields": {
+          "zone": {
+            "type": "string",
+            "options": [
+              "Keel",
+              "BilgeStrake",
+              "BottomPlating",
+              "SidePlating",
+              "BowFlare",
+              "SternPlate",
+              "TransomFrame",
+              "WeatherDeck",
+              "BulkheadFrame"
+            ]
+          },
+          "material": {
+            "$ref": "#/definitions/material_model"
+          },
+          "thickness_m": {
+            "type": "number",
+            "unit": "m",
+            "code_bound": "> 0"
+          },
+          "weld_quality": {
+            "type": "string",
+            "options": [
+              "Premium",
+              "Standard",
+              "Economy"
+            ]
+          },
+          "seal_quality": {
+            "type": "string",
+            "options": [
+              "Marine",
+              "Commercial",
+              "Economy"
+            ]
+          }
+        }
+      }
+    },
+    "route": {
+      "type": "object",
+      "optional": true,
+      "fields": {
+        "origin": {
+          "$ref": "#/definitions/geo_point",
+          "default": {
+            "lat_deg": 35.0,
+            "lon_deg": -74.5
+          }
+        },
+        "destination": {
+          "$ref": "#/definitions/geo_point",
+          "default": {
+            "lat_deg": 32.3,
+            "lon_deg": -64.78
+          }
+        },
+        "distance_nm": {
+          "type": "number",
+          "unit": "nautical miles",
+          "default": 580.0,
+          "code_bound": "> 0"
+        },
+        "heading_deg": {
+          "type": "number",
+          "unit": "degrees true",
+          "default": 110.0,
+          "code_bound": "not enforced",
+          "recommended_bound": "[0, 360)"
+        },
+        "label": {
+          "type": "string",
+          "default": "Cape Hatteras -> Bermuda (open Atlantic)"
+        }
+      }
+    },
+    "conditions": {
+      "type": "object",
+      "optional": true,
+      "fields": {
+        "hs_m": {
+          "type": "number",
+          "unit": "m",
+          "default": 3.2,
+          "code_bound": ">= 0"
+        },
+        "tp_s": {
+          "type": "number",
+          "unit": "s",
+          "default": 10.0,
+          "code_bound": "> 0"
+        },
+        "jonswap_gamma": {
+          "type": "number",
+          "default": 3.5,
+          "code_bound": "> 0"
+        },
+        "encounter_angle_deg": {
+          "type": "number",
+          "unit": "degrees",
+          "default": 15.0,
+          "code_bound": "not enforced",
+          "recommended_bound": "[0, 180]",
+          "reference": "0=head seas, 90=beam seas, 180=following seas"
+        },
+        "water_temp_c": {
+          "type": "number",
+          "unit": "C",
+          "default": 22.0,
+          "code_bound": "not enforced"
+        },
+        "salinity_ppt": {
+          "type": "number",
+          "unit": "ppt",
+          "default": 36.0,
+          "code_bound": ">= 0"
+        },
+        "ph": {
+          "type": "number",
+          "default": 8.1,
+          "code_bound": "[0, 14]"
+        },
+        "wind_speed_ms": {
+          "type": "number",
+          "unit": "m/s",
+          "default": 14.0,
+          "code_bound": ">= 0"
+        },
+        "slam_probability": {
+          "type": "number",
+          "default": 0.42,
+          "code_bound": "[0, 1]"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "geo_point": {
+      "type": "object",
+      "fields": {
+        "lat_deg": {
+          "type": "number",
+          "unit": "degrees",
+          "code_bound": "not enforced",
+          "recommended_bound": "[-90, 90]"
+        },
+        "lon_deg": {
+          "type": "number",
+          "unit": "degrees",
+          "code_bound": "not enforced",
+          "recommended_bound": "[-180, 180]"
+        }
+      }
+    },
+    "material_model": {
+      "one_of": [
+        {
+          "type": "string",
+          "description": "A known material grade or alias. Unknown strings are rejected when material itself is a string."
+        },
+        {
+          "$ref": "#/definitions/material_config"
+        }
+      ],
+      "known_string_grades": {
+        "MildSteelA": [
+          "MildSteelA",
+          "mild steel temperate",
+          "mild steel"
+        ],
+        "MildSteelE": [
+          "MildSteelE",
+          "mild steel cold weather",
+          "mild steel cold grade"
+        ],
+        "Ah36": [
+          "AH36",
+          "AH36 steel",
+          "high strength AH36"
+        ],
+        "Dh36": [
+          "DH36",
+          "DH36 steel",
+          "high strength DH36"
+        ],
+        "Eh36": [
+          "EH36",
+          "EH36 steel",
+          "EH40",
+          "EH40 steel",
+          "high strength EH36"
+        ],
+        "Aluminum5083": [
+          "Aluminum5083",
+          "Aluminium5083",
+          "Al5083"
+        ],
+        "GrpEGlass": [
+          "GRP",
+          "GRP EGlass",
+          "GRP fiberglass",
+          "fiberglass"
+        ],
+        "CfrpEpoxy": [
+          "CFRP",
+          "CFRP epoxy",
+          "CFRP carbon fiber",
+          "carbon fiber"
+        ]
+      }
+    },
+    "material_config": {
+      "type": "object",
+      "description": "LandForge-style material object plus SeaForge physical overrides. Unknown grade strings in this object are allowed; the simulator falls back to strength_index-derived properties.",
+      "landforge_grade_keys_with_builtin_specs": [
+        "Al5086",
+        "Aluminum5086",
+        "TitaniumGrade5",
+        "TiGrade5",
+        "StainlessSteel",
+        "StainlessSteel316",
+        "StainlessSteel304",
+        "NickelAlloy",
+        "NickelAlloy625",
+        "NickelSuperalloy",
+        "ChromolySteel",
+        "CastIron",
+        "KevlarComposite",
+        "CeramicComposite",
+        "TungstenCarbide"
+      ],
+      "fields": {
+        "grade": {
+          "type": "string",
+          "optional": true,
+          "code_bound": "known grade key uses built-in specs; unknown string is accepted and used as a label/fallback key"
+        },
+        "label": {
+          "type": "string",
+          "optional": true
+        },
+        "strength_index": {
+          "type": "number",
+          "optional": true,
+          "default_if_needed": 0.52,
+          "code_behavior": "clamped to [0.05, 1.0] only when deriving fallback material properties"
+        },
+        "cost": {
+          "type": "number",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": ">= 0"
+        },
+        "cost_unit": {
+          "type": "string",
+          "optional": true,
+          "default": "USD/kg",
+          "code_behavior": "strings containing /kg are treated as cost per kg; strings containing /l or per l are converted using density; other strings are treated as cost per kg"
+        },
+        "heat_threshold_c": {
+          "type": "number",
+          "optional": true,
+          "code_behavior": "parsed but currently unused by the simulation"
+        },
+        "cold_threshold_c": {
+          "type": "number",
+          "optional": true,
+          "code_behavior": "used as min_temp_c only when min_temp_c is omitted"
+        },
+        "dust_coeff": {
+          "type": "number",
+          "optional": true,
+          "code_behavior": "parsed but currently unused by the simulation"
+        },
+        "humidity_coeff": {
+          "type": "number",
+          "optional": true,
+          "code_behavior": "parsed but currently unused by the simulation"
+        },
+        "salinity_coeff": {
+          "type": "number",
+          "optional": true,
+          "code_behavior": "if base_corrosion_rate_mm_yr is omitted, corrosion rate becomes clamp(salinity_coeff * 0.95, 0.0, 0.35)"
+        },
+        "uv_coeff": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "optional": true,
+          "code_behavior": "parsed but currently unused by the simulation"
+        },
+        "density_kg_m3": {
+          "type": "number",
+          "unit": "kg/m^3",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": "> 0"
+        },
+        "yield_mpa": {
+          "type": "number",
+          "unit": "MPa",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": "> 0"
+        },
+        "uts_mpa": {
+          "type": "number",
+          "unit": "MPa",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": "> 0"
+        },
+        "e_gpa": {
+          "type": "number",
+          "unit": "GPa",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": "> 0"
+        },
+        "k_ic_mpa_sqrtm": {
+          "type": "number",
+          "unit": "MPa*sqrt(m)",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": "> 0"
+        },
+        "min_temp_c": {
+          "type": "number",
+          "unit": "C",
+          "optional": true,
+          "code_bound": "not enforced"
+        },
+        "sn_slope": {
+          "type": "number",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": "> 0"
+        },
+        "sn_ref_stress_mpa": {
+          "type": "number",
+          "unit": "MPa",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": "> 0"
+        },
+        "sn_ref_cycles": {
+          "type": "integer",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": "> 0"
+        },
+        "cost_per_kg_usd": {
+          "type": "number",
+          "unit": "USD/kg",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": ">= 0",
+          "precedence": "overrides cost and cost_unit"
+        },
+        "base_corrosion_rate_mm_yr": {
+          "type": "number",
+          "unit": "mm/year",
+          "optional": true,
+          "code_bound": "not enforced",
+          "recommended_bound": ">= 0",
+          "precedence": "overrides salinity_coeff-derived corrosion"
+        }
+      }
+    }
+  },
+  "minimal_example": {
+    "construction": {
+      "material": "AH36",
+      "thickness_m": 0.005,
+      "weld_quality": "Standard",
+      "seal_quality": "Marine"
+    },
+    "conditions": {
+      "hs_m": 3.2,
+      "tp_s": 10.0,
+      "slam_probability": 0.42
+    }
+  }
+}

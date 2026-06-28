@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::vessel::{
     hull::{HullGeometry, HullZone},
-    materials::{MaterialGrade, SealQuality, WeldQuality},
+    materials::{MaterialModel, SealQuality, WeldQuality},
     propulsion::PropulsionSpec,
 };
 
@@ -10,7 +10,7 @@ use crate::vessel::{
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ZoneSpec {
     pub zone: HullZone,
-    pub material: MaterialGrade,
+    pub material: MaterialModel,
     pub thickness_m: f64,
     pub weld_quality: WeldQuality,
     pub seal_quality: SealQuality,
@@ -28,7 +28,7 @@ impl VesselConfig {
     /// Build a config with identical material + quality across all zones.
     pub fn uniform(
         hull: HullGeometry,
-        material: MaterialGrade,
+        material: MaterialModel,
         thickness_m: f64,
         weld: WeldQuality,
         seal: SealQuality,
@@ -38,13 +38,17 @@ impl VesselConfig {
             .iter()
             .map(|&zone| ZoneSpec {
                 zone,
-                material,
+                material: material.clone(),
                 thickness_m,
                 weld_quality: weld,
                 seal_quality: seal,
             })
             .collect();
-        Self { hull, zones, propulsion }
+        Self {
+            hull,
+            zones,
+            propulsion,
+        }
     }
 
     /// Retrieve the spec for a specific zone.
@@ -61,10 +65,13 @@ impl VesselConfig {
         let draft = self.hull.draft_m;
         let total_area = self.hull.wetted_area_m2(draft);
         let zone_area_fraction = total_area / HullZone::all().len() as f64;
-        self.zones.iter().map(|z| {
-            let spec = z.material.spec();
-            zone_area_fraction * z.thickness_m * spec.density_kg_m3
-        }).sum()
+        self.zones
+            .iter()
+            .map(|z| {
+                let spec = z.material.spec();
+                zone_area_fraction * z.thickness_m * spec.density_kg_m3
+            })
+            .sum()
     }
 
     /// Total vessel operating mass including fuel [kg].

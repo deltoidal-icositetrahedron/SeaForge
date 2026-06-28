@@ -9,10 +9,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = Number(process.env.PORT || 3001);
 
 const BINARY = path.resolve(__dirname, '..', 'target', 'release', 'seaforge_v2');
 const RESULT_FILE = path.resolve(__dirname, '..', 'result.json');
+
+function safeUnlink(file) {
+  try {
+    if (file) fs.unlinkSync(file);
+  } catch (_) {}
+}
 
 // CORS headers
 app.use((req, res, next) => {
@@ -71,21 +77,37 @@ app.post('/api/demo', (req, res) => {
 // POST /api/simulate
 app.post('/api/simulate', (req, res) => {
   const ts = Date.now();
+  const paramsFile = path.join(os.tmpdir(), `seaforge_params_${ts}.json`);
   const configFile = path.join(os.tmpdir(), `seaforge_config_${ts}.json`);
   const routeFile = path.join(os.tmpdir(), `seaforge_route_${ts}.json`);
   const outFile = path.join(os.tmpdir(), `seaforge_out_${ts}.json`);
+  const params = req.body.params ?? (!req.body.config ? req.body : null);
 
   try {
-    fs.writeFileSync(configFile, JSON.stringify(req.body.config, null, 2));
-    fs.writeFileSync(routeFile, JSON.stringify(req.body.route, null, 2));
+    let args;
 
-    const result = spawnSync(BINARY, ['simulate', configFile, routeFile, outFile], {
+    if (params) {
+      fs.writeFileSync(paramsFile, JSON.stringify(params, null, 2));
+      args = ['simulate-params', paramsFile, outFile];
+    } else {
+      if (!req.body.config || !req.body.route) {
+        return res.status(400).json({
+          error: 'POST /api/simulate requires either { params } or { config, route }',
+        });
+      }
+      fs.writeFileSync(configFile, JSON.stringify(req.body.config, null, 2));
+      fs.writeFileSync(routeFile, JSON.stringify(req.body.route, null, 2));
+      args = ['simulate', configFile, routeFile, outFile];
+    }
+
+    const result = spawnSync(BINARY, args, {
       encoding: 'utf8',
       timeout: 60000,
     });
 
-    fs.unlinkSync(configFile);
-    fs.unlinkSync(routeFile);
+    safeUnlink(paramsFile);
+    safeUnlink(configFile);
+    safeUnlink(routeFile);
 
     if (result.error) {
       return res.status(500).json({ error: result.error.message });
@@ -95,12 +117,13 @@ app.post('/api/simulate', (req, res) => {
       return res.status(500).json({ error: 'Binary produced no output file', stderr });
     }
     const parsed = JSON.parse(fs.readFileSync(outFile, 'utf8'));
-    fs.unlinkSync(outFile);
+    safeUnlink(outFile);
     res.json(parsed);
   } catch (e) {
-    try { fs.unlinkSync(configFile); } catch (_) {}
-    try { fs.unlinkSync(routeFile); } catch (_) {}
-    try { fs.unlinkSync(outFile); } catch (_) {}
+    safeUnlink(paramsFile);
+    safeUnlink(configFile);
+    safeUnlink(routeFile);
+    safeUnlink(outFile);
     res.status(500).json({ error: e.message });
   }
 });

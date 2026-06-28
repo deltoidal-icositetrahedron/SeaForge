@@ -1,4 +1,4 @@
-use crate::{environment::OceanConditions, vessel::MaterialGrade};
+use crate::{environment::OceanConditions, vessel::MaterialModel};
 
 /// Seawater corrosion rate [mm/year] for a given material and ocean chemistry.
 ///
@@ -6,7 +6,7 @@ use crate::{environment::OceanConditions, vessel::MaterialGrade};
 /// Higher salinity increases ion concentration (up to ~35 ppt peak), warmer water
 /// accelerates reaction kinetics (Arrhenius), and lower pH dissolves passive oxide films.
 pub fn corrosion_rate_mm_yr(
-    material: MaterialGrade,
+    material: &MaterialModel,
     conditions: &OceanConditions,
     submerged: bool,
 ) -> f64 {
@@ -33,7 +33,7 @@ pub fn corrosion_rate_mm_yr(
 
 /// Thickness lost to corrosion over a time period [m].
 pub fn thickness_loss_m(
-    material: MaterialGrade,
+    material: &MaterialModel,
     conditions: &OceanConditions,
     submerged: bool,
     duration_h: f64,
@@ -48,7 +48,7 @@ pub fn thickness_loss_m(
 /// Corrosion pits act as local stress raisers, accelerating fatigue crack initiation.
 /// Returns a multiplier > 1.0 that scales Miner's damage when corrosion is present.
 pub fn corrosion_fatigue_multiplier(
-    material: MaterialGrade,
+    material: &MaterialModel,
     conditions: &OceanConditions,
     elapsed_h: f64,
 ) -> f64 {

@@ -7,5 +7,6 @@ pub mod vessel;
 pub use environment::{OceanConditions, RouteSegment, VoyageRoute};
 pub use sim::{run_voyage, SimOutcome};
 pub use vessel::{
-    HullGeometry, HullZone, MaterialGrade, PropulsionSpec, SealQuality, VesselConfig, WeldQuality,
+    HullGeometry, HullZone, MaterialConfig, MaterialGrade, MaterialModel, PropulsionSpec,
+    SealQuality, VesselConfig, WeldQuality,
 };

@@ -6,6 +6,8 @@ pub mod state;
 
 pub use config::{VesselConfig, ZoneSpec};
 pub use hull::{HullGeometry, HullZone};
-pub use materials::{MaterialGrade, MaterialSpec, SealQuality, WeldQuality};
+pub use materials::{
+    MaterialConfig, MaterialGrade, MaterialModel, MaterialSpec, SealQuality, WeldQuality,
+};
 pub use propulsion::PropulsionSpec;
 pub use state::{VesselState, ZoneState};

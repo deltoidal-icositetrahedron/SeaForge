@@ -5,7 +5,8 @@ use seaforge_v2::{
     environment::{GeoPoint, OceanConditions, RouteSegment, VoyageRoute},
     sim::run_voyage,
     vessel::{
-        HullGeometry, MaterialGrade, PropulsionSpec, SealQuality, VesselConfig, WeldQuality,
+        HullGeometry, MaterialGrade, MaterialModel, PropulsionSpec, SealQuality, VesselConfig,
+        WeldQuality, ZoneSpec,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -18,20 +19,32 @@ fn main() {
         Some("simulate") => {
             // seaforge_v2 simulate <vessel_config.json> <route.json> <output.json>
             let config_path = args.get(2).expect("missing vessel config path");
-            let route_path  = args.get(3).expect("missing route path");
-            let out_path    = args.get(4).map(|s| s.as_str()).unwrap_or("sim_output.json");
+            let route_path = args.get(3).expect("missing route path");
+            let out_path = args.get(4).map(|s| s.as_str()).unwrap_or("sim_output.json");
             cmd_simulate(config_path, route_path, out_path);
+        }
+        Some("simulate-params") => {
+            // seaforge_v2 simulate-params <params.json> <output.json>
+            let params_path = args.get(2).expect("missing simulation params path");
+            let out_path = args.get(3).map(|s| s.as_str()).unwrap_or("sim_output.json");
+            cmd_simulate_params(params_path, out_path);
         }
         Some("optimize") => {
             // seaforge_v2 optimize <search_space.json> <route.json> <output.json>
             let space_path = args.get(2).expect("missing search space path");
             let route_path = args.get(3).expect("missing route path");
-            let out_path   = args.get(4).map(|s| s.as_str()).unwrap_or("optimizer_output.json");
+            let out_path = args
+                .get(4)
+                .map(|s| s.as_str())
+                .unwrap_or("optimizer_output.json");
             cmd_optimize(space_path, route_path, out_path);
         }
         Some("demo") | None => {
             // Built-in demo: writes demo_output.json
-            let out_path = args.get(2).map(|s| s.as_str()).unwrap_or("demo_output.json");
+            let out_path = args
+                .get(2)
+                .map(|s| s.as_str())
+                .unwrap_or("demo_output.json");
             cmd_demo(out_path);
         }
         Some(cmd) => {
@@ -39,6 +52,7 @@ fn main() {
             eprintln!("Usage:");
             eprintln!("  seaforge_v2 demo [output.json]");
             eprintln!("  seaforge_v2 simulate <config.json> <route.json> [output.json]");
+            eprintln!("  seaforge_v2 simulate-params <params.json> [output.json]");
             eprintln!("  seaforge_v2 optimize <search_space.json> <route.json> [output.json]");
             process::exit(1);
         }
@@ -59,6 +73,19 @@ fn cmd_simulate(config_path: &str, route_path: &str, out_path: &str) {
     print_summary(&outcome);
 }
 
+fn cmd_simulate_params(params_path: &str, out_path: &str) {
+    let params: SimulationParams = load_json(params_path, "simulation params");
+    let (config, route) = params.into_config_and_route().unwrap_or_else(|message| {
+        eprintln!("Invalid simulation params: {}", message);
+        process::exit(1);
+    });
+    let outcome = run_voyage(&config, &route);
+    let envelope = build_output(&config, &route, &outcome, None);
+    write_json(out_path, &envelope);
+    println!("Simulation complete → {}", out_path);
+    print_summary(&outcome);
+}
+
 fn cmd_optimize(space_path: &str, route_path: &str, out_path: &str) {
     let space: SearchSpace = load_json(space_path, "search space");
     let route: VoyageRoute = load_json(route_path, "voyage route");
@@ -67,7 +94,8 @@ fn cmd_optimize(space_path: &str, route_path: &str, out_path: &str) {
     write_json(out_path, &envelope);
     println!("Optimizer complete → {}", out_path);
     if let Some(ref winner) = opt_result.cheapest_survivor {
-        println!("  Cheapest survivor: ${:.0}  ({} / {} / {} / {:.1}mm)",
+        println!(
+            "  Cheapest survivor: ${:.0}  ({} / {} / {} / {:.1}mm)",
             winner.cost_usd,
             winner.material,
             winner.weld_quality,
@@ -79,14 +107,395 @@ fn cmd_optimize(space_path: &str, route_path: &str, out_path: &str) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Compact single-run simulation parameters
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Default, Deserialize)]
+struct SimulationParams {
+    #[serde(default)]
+    hull: HullParams,
+    #[serde(default)]
+    propulsion: PropulsionParams,
+    #[serde(default)]
+    construction: ConstructionParams,
+    #[serde(default)]
+    zones: Option<Vec<ZoneSpec>>,
+    #[serde(default)]
+    route: RouteParams,
+    #[serde(default)]
+    conditions: ConditionsParams,
+}
+
+impl SimulationParams {
+    fn into_config_and_route(self) -> Result<(VesselConfig, VoyageRoute), String> {
+        let hull = self.hull.apply(default_sim_hull());
+        validate_hull(&hull)?;
+
+        let propulsion = self.propulsion.apply(default_sim_propulsion());
+        validate_propulsion(&propulsion)?;
+
+        let config = if let Some(zones) = self.zones {
+            if zones.is_empty() {
+                return Err("zones must not be empty when provided".into());
+            }
+            for zone in &zones {
+                if zone.thickness_m <= 0.0 {
+                    return Err(format!("zone {:?} thickness_m must be positive", zone.zone));
+                }
+            }
+            VesselConfig {
+                hull: hull.clone(),
+                zones,
+                propulsion: propulsion.clone(),
+            }
+        } else {
+            let construction = self.construction.apply(default_construction());
+            if construction.thickness_m <= 0.0 {
+                return Err("construction.thickness_m must be positive".into());
+            }
+            VesselConfig::uniform(
+                hull.clone(),
+                construction.material,
+                construction.thickness_m,
+                construction.weld_quality,
+                construction.seal_quality,
+                propulsion.clone(),
+            )
+        };
+
+        let route_params = self.route.apply(default_route());
+        if route_params.distance_nm <= 0.0 {
+            return Err("route.distance_nm must be positive".into());
+        }
+
+        let conditions = self.conditions.apply(default_open_atlantic_conditions());
+        validate_conditions(&conditions)?;
+
+        let route = VoyageRoute {
+            origin: route_params.origin,
+            destination: route_params.destination,
+            segments: vec![RouteSegment {
+                from: route_params.origin,
+                to: route_params.destination,
+                distance_nm: route_params.distance_nm,
+                heading_deg: route_params.heading_deg,
+                label: route_params.label,
+                conditions,
+            }],
+        };
+
+        Ok((config, route))
+    }
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+struct HullParams {
+    loa_m: Option<f64>,
+    beam_m: Option<f64>,
+    depth_m: Option<f64>,
+    draft_m: Option<f64>,
+    block_coeff: Option<f64>,
+    waterplane_coeff: Option<f64>,
+}
+
+impl HullParams {
+    fn apply(self, mut base: HullGeometry) -> HullGeometry {
+        if let Some(value) = self.loa_m {
+            base.loa_m = value;
+        }
+        if let Some(value) = self.beam_m {
+            base.beam_m = value;
+        }
+        if let Some(value) = self.depth_m {
+            base.depth_m = value;
+        }
+        if let Some(value) = self.draft_m {
+            base.draft_m = value;
+        }
+        if let Some(value) = self.block_coeff {
+            base.block_coeff = value;
+        }
+        if let Some(value) = self.waterplane_coeff {
+            base.waterplane_coeff = value;
+        }
+        base
+    }
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+struct PropulsionParams {
+    max_power_kw: Option<f64>,
+    fuel_capacity_kg: Option<f64>,
+    sfc_g_per_kwh: Option<f64>,
+    propulsive_efficiency: Option<f64>,
+    hull_drag_coeff: Option<f64>,
+}
+
+impl PropulsionParams {
+    fn apply(self, mut base: PropulsionSpec) -> PropulsionSpec {
+        if let Some(value) = self.max_power_kw {
+            base.max_power_kw = value;
+        }
+        if let Some(value) = self.fuel_capacity_kg {
+            base.fuel_capacity_kg = value;
+        }
+        if let Some(value) = self.sfc_g_per_kwh {
+            base.sfc_g_per_kwh = value;
+        }
+        if let Some(value) = self.propulsive_efficiency {
+            base.propulsive_efficiency = value;
+        }
+        if let Some(value) = self.hull_drag_coeff {
+            base.hull_drag_coeff = value;
+        }
+        base
+    }
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+struct ConstructionParams {
+    material: Option<MaterialModel>,
+    thickness_m: Option<f64>,
+    weld_quality: Option<WeldQuality>,
+    seal_quality: Option<SealQuality>,
+}
+
+impl ConstructionParams {
+    fn apply(self, mut base: UniformConstruction) -> UniformConstruction {
+        if let Some(value) = self.material {
+            base.material = value;
+        }
+        if let Some(value) = self.thickness_m {
+            base.thickness_m = value;
+        }
+        if let Some(value) = self.weld_quality {
+            base.weld_quality = value;
+        }
+        if let Some(value) = self.seal_quality {
+            base.seal_quality = value;
+        }
+        base
+    }
+}
+
+#[derive(Debug, Clone)]
+struct UniformConstruction {
+    material: MaterialModel,
+    thickness_m: f64,
+    weld_quality: WeldQuality,
+    seal_quality: SealQuality,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+struct RouteParams {
+    origin: Option<GeoPoint>,
+    destination: Option<GeoPoint>,
+    distance_nm: Option<f64>,
+    heading_deg: Option<f64>,
+    label: Option<String>,
+}
+
+impl RouteParams {
+    fn apply(self, mut base: SingleSegmentRoute) -> SingleSegmentRoute {
+        if let Some(value) = self.origin {
+            base.origin = value;
+        }
+        if let Some(value) = self.destination {
+            base.destination = value;
+        }
+        if let Some(value) = self.distance_nm {
+            base.distance_nm = value;
+        }
+        if let Some(value) = self.heading_deg {
+            base.heading_deg = value;
+        }
+        if let Some(value) = self.label {
+            base.label = value;
+        }
+        base
+    }
+}
+
+#[derive(Debug, Clone)]
+struct SingleSegmentRoute {
+    origin: GeoPoint,
+    destination: GeoPoint,
+    distance_nm: f64,
+    heading_deg: f64,
+    label: String,
+}
+
+#[derive(Debug, Clone, Default, Deserialize)]
+struct ConditionsParams {
+    hs_m: Option<f64>,
+    tp_s: Option<f64>,
+    jonswap_gamma: Option<f64>,
+    encounter_angle_deg: Option<f64>,
+    water_temp_c: Option<f64>,
+    salinity_ppt: Option<f64>,
+    ph: Option<f64>,
+    wind_speed_ms: Option<f64>,
+    slam_probability: Option<f64>,
+}
+
+impl ConditionsParams {
+    fn apply(self, mut base: OceanConditions) -> OceanConditions {
+        if let Some(value) = self.hs_m {
+            base.hs_m = value;
+        }
+        if let Some(value) = self.tp_s {
+            base.tp_s = value;
+        }
+        if let Some(value) = self.jonswap_gamma {
+            base.jonswap_gamma = value;
+        }
+        if let Some(value) = self.encounter_angle_deg {
+            base.encounter_angle_deg = value;
+        }
+        if let Some(value) = self.water_temp_c {
+            base.water_temp_c = value;
+        }
+        if let Some(value) = self.salinity_ppt {
+            base.salinity_ppt = value;
+        }
+        if let Some(value) = self.ph {
+            base.ph = value;
+        }
+        if let Some(value) = self.wind_speed_ms {
+            base.wind_speed_ms = value;
+        }
+        if let Some(value) = self.slam_probability {
+            base.slam_probability = value;
+        }
+        base
+    }
+}
+
+fn default_sim_hull() -> HullGeometry {
+    HullGeometry {
+        loa_m: 7.315,
+        beam_m: 2.5,
+        depth_m: 0.85,
+        draft_m: 0.40,
+        block_coeff: 0.44,
+        waterplane_coeff: 0.76,
+    }
+}
+
+fn default_sim_propulsion() -> PropulsionSpec {
+    PropulsionSpec {
+        max_power_kw: 300.0,
+        fuel_capacity_kg: 2000.0,
+        sfc_g_per_kwh: 220.0,
+        propulsive_efficiency: 0.72,
+        hull_drag_coeff: 0.007,
+    }
+}
+
+fn default_construction() -> UniformConstruction {
+    UniformConstruction {
+        material: MaterialModel::Grade(MaterialGrade::Ah36),
+        thickness_m: 0.005,
+        weld_quality: WeldQuality::Standard,
+        seal_quality: SealQuality::Marine,
+    }
+}
+
+fn default_route() -> SingleSegmentRoute {
+    SingleSegmentRoute {
+        origin: GeoPoint::new(35.00, -74.50),
+        destination: GeoPoint::new(32.30, -64.78),
+        distance_nm: 580.0,
+        heading_deg: 110.0,
+        label: "Cape Hatteras -> Bermuda (open Atlantic)".into(),
+    }
+}
+
+fn default_open_atlantic_conditions() -> OceanConditions {
+    OceanConditions {
+        hs_m: 3.2,
+        tp_s: 10.0,
+        jonswap_gamma: 3.5,
+        encounter_angle_deg: 15.0,
+        water_temp_c: 22.0,
+        salinity_ppt: 36.0,
+        ph: 8.1,
+        wind_speed_ms: 14.0,
+        slam_probability: 0.42,
+    }
+}
+
+fn validate_hull(hull: &HullGeometry) -> Result<(), String> {
+    if hull.loa_m <= 0.0 || hull.beam_m <= 0.0 || hull.depth_m <= 0.0 || hull.draft_m <= 0.0 {
+        return Err("hull loa_m, beam_m, depth_m, and draft_m must be positive".into());
+    }
+    if !(0.0..=1.0).contains(&hull.block_coeff) || hull.block_coeff == 0.0 {
+        return Err("hull.block_coeff must be within (0, 1]".into());
+    }
+    if !(0.0..=1.0).contains(&hull.waterplane_coeff) || hull.waterplane_coeff == 0.0 {
+        return Err("hull.waterplane_coeff must be within (0, 1]".into());
+    }
+    Ok(())
+}
+
+fn validate_propulsion(propulsion: &PropulsionSpec) -> Result<(), String> {
+    if propulsion.max_power_kw <= 0.0 {
+        return Err("propulsion.max_power_kw must be positive".into());
+    }
+    if propulsion.fuel_capacity_kg <= 0.0 {
+        return Err("propulsion.fuel_capacity_kg must be positive".into());
+    }
+    if propulsion.sfc_g_per_kwh <= 0.0 {
+        return Err("propulsion.sfc_g_per_kwh must be positive".into());
+    }
+    if !(0.0..=1.0).contains(&propulsion.propulsive_efficiency)
+        || propulsion.propulsive_efficiency == 0.0
+    {
+        return Err("propulsion.propulsive_efficiency must be within (0, 1]".into());
+    }
+    if propulsion.hull_drag_coeff <= 0.0 {
+        return Err("propulsion.hull_drag_coeff must be positive".into());
+    }
+    Ok(())
+}
+
+fn validate_conditions(conditions: &OceanConditions) -> Result<(), String> {
+    if conditions.hs_m < 0.0 {
+        return Err("conditions.hs_m must be non-negative".into());
+    }
+    if conditions.tp_s <= 0.0 {
+        return Err("conditions.tp_s must be positive".into());
+    }
+    if conditions.jonswap_gamma <= 0.0 {
+        return Err("conditions.jonswap_gamma must be positive".into());
+    }
+    if conditions.salinity_ppt < 0.0 {
+        return Err("conditions.salinity_ppt must be non-negative".into());
+    }
+    if !(0.0..=14.0).contains(&conditions.ph) {
+        return Err("conditions.ph must be within [0, 14]".into());
+    }
+    if conditions.wind_speed_ms < 0.0 {
+        return Err("conditions.wind_speed_ms must be non-negative".into());
+    }
+    if !(0.0..=1.0).contains(&conditions.slam_probability) {
+        return Err("conditions.slam_probability must be within [0, 1]".into());
+    }
+    Ok(())
+}
+
 fn cmd_demo(out_path: &str) {
     println!("╔══════════════════════════════════════════════════════════╗");
     println!("║           SeaForge v2 — Mission Voyage Simulator        ║");
     println!("╚══════════════════════════════════════════════════════════╝\n");
 
     let route = build_norfolk_to_brest();
-    println!("Mission: Norfolk, VA → Brest, France  ({:.0} nm, {} segments)\n",
-        route.total_distance_nm(), route.segments.len());
+    println!(
+        "Mission: Norfolk, VA → Brest, France  ({:.0} nm, {} segments)\n",
+        route.total_distance_nm(),
+        route.segments.len()
+    );
 
     let hull = HullGeometry::default();
     let propulsion = PropulsionSpec::default();
@@ -95,8 +504,12 @@ fn cmd_demo(out_path: &str) {
     // Demo: economy configuration — expected to fail
     // ------------------------------------------------------------------
     let economy = VesselConfig::uniform(
-        hull.clone(), MaterialGrade::MildSteelA, 0.005,
-        WeldQuality::Economy, SealQuality::Economy, propulsion.clone(),
+        hull.clone(),
+        MaterialModel::Grade(MaterialGrade::MildSteelA),
+        0.005,
+        WeldQuality::Economy,
+        SealQuality::Economy,
+        propulsion.clone(),
     );
     println!("─── Economy build (Mild Steel A / Economy welds / Economy seals) ───");
     let economy_outcome = run_voyage(&economy, &route);
@@ -106,10 +519,16 @@ fn cmd_demo(out_path: &str) {
     // Optimizer sweep
     // ------------------------------------------------------------------
     let space = SearchSpace::default_sweep(hull.clone(), propulsion.clone());
-    println!("─── Optimizer: {} configurations ───\n", space.config_count());
+    println!(
+        "─── Optimizer: {} configurations ───\n",
+        space.config_count()
+    );
     let opt = run_optimizer(&space, &route);
 
-    println!("Evaluated {}, {} survived.\n", opt.configs_tested, opt.survivors_found);
+    println!(
+        "Evaluated {}, {} survived.\n",
+        opt.configs_tested, opt.survivors_found
+    );
 
     if let Some(ref w) = opt.cheapest_survivor {
         println!("╔══════════════════════════════════════════╗");
@@ -152,8 +571,11 @@ impl SearchSpace {
             hull,
             propulsion,
             materials: vec![
-                "MildSteelA".into(), "MildSteelE".into(),
-                "Ah36".into(), "Dh36".into(), "Aluminum5083".into(),
+                "MildSteelA".into(),
+                "MildSteelE".into(),
+                "Ah36".into(),
+                "Dh36".into(),
+                "Aluminum5083".into(),
             ],
             weld_qualities: vec!["Economy".into(), "Standard".into(), "Premium".into()],
             seal_qualities: vec!["Economy".into(), "Commercial".into(), "Marine".into()],
@@ -207,25 +629,38 @@ impl OptimizerResult {
 
 fn run_optimizer(space: &SearchSpace, route: &VoyageRoute) -> OptimizerResult {
     let mut survivors: Vec<SurvivorEntry> = Vec::new();
-    let mut failure_counts: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    let mut failure_counts: std::collections::HashMap<String, usize> =
+        std::collections::HashMap::new();
     let mut tested = 0usize;
 
     for mat_str in &space.materials {
-        let Some(material) = parse_material(mat_str) else { continue };
+        let Some(material) = parse_material(mat_str) else {
+            continue;
+        };
         for weld_str in &space.weld_qualities {
-            let Some(weld) = parse_weld(weld_str) else { continue };
+            let Some(weld) = parse_weld(weld_str) else {
+                continue;
+            };
             for seal_str in &space.seal_qualities {
-                let Some(seal) = parse_seal(seal_str) else { continue };
+                let Some(seal) = parse_seal(seal_str) else {
+                    continue;
+                };
                 for &thick in &space.thicknesses_m {
                     let config = VesselConfig::uniform(
-                        space.hull.clone(), material, thick, weld, seal,
+                        space.hull.clone(),
+                        MaterialModel::Grade(material),
+                        thick,
+                        weld,
+                        seal,
                         space.propulsion.clone(),
                     );
                     let outcome = run_voyage(&config, route);
                     tested += 1;
 
                     if outcome.survived() {
-                        let worst_fatigue = outcome.zone_summaries.iter()
+                        let worst_fatigue = outcome
+                            .zone_summaries
+                            .iter()
                             .map(|z| z.fatigue_consumed)
                             .fold(0.0_f64, f64::max);
                         survivors.push(SurvivorEntry {
@@ -239,7 +674,9 @@ fn run_optimizer(space: &SearchSpace, route: &VoyageRoute) -> OptimizerResult {
                             worst_zone_fatigue: worst_fatigue,
                         });
                     } else if let Some(ref diag) = outcome.failure {
-                        *failure_counts.entry(diag.mode.label().to_string()).or_insert(0) += 1;
+                        *failure_counts
+                            .entry(diag.mode.label().to_string())
+                            .or_insert(0) += 1;
                     }
                 }
             }
@@ -283,36 +720,50 @@ fn build_output(
         })
     });
 
-    let zone_json: Vec<Value> = outcome.zone_summaries.iter().map(|z| {
-        serde_json::json!({
-            "zone": z.zone.label(),
-            "fatigue_consumed": z.fatigue_consumed,
-            "corrosion_depth_mm": z.corrosion_depth_mm,
-            "crack_half_length_mm": z.crack_half_length_mm,
-            "peak_stress_mpa": z.peak_stress_mpa,
+    let zone_json: Vec<Value> = outcome
+        .zone_summaries
+        .iter()
+        .map(|z| {
+            serde_json::json!({
+                "zone": z.zone.label(),
+                "fatigue_consumed": z.fatigue_consumed,
+                "corrosion_depth_mm": z.corrosion_depth_mm,
+                "crack_half_length_mm": z.crack_half_length_mm,
+                "peak_stress_mpa": z.peak_stress_mpa,
+            })
         })
-    }).collect();
+        .collect();
 
-    let ticks_json: Vec<Value> = outcome.ticks.iter().map(|t| {
-        let zones: Vec<Value> = t.zones.iter().map(|z| serde_json::json!({
-            "zone": z.zone.label(),
-            "fatigue_consumed": z.fatigue_consumed,
-            "corrosion_depth_mm": z.corrosion_depth_mm,
-            "crack_half_length_mm": z.crack_half_length_mm,
-            "peak_stress_mpa": z.peak_stress_mpa,
-        })).collect();
-        serde_json::json!({
-            "segment_index": t.segment_index,
-            "segment_label": t.segment_label,
-            "distance_completed_nm": t.distance_completed_nm,
-            "elapsed_h": t.elapsed_h,
-            "speed_kts": t.speed_kts,
-            "fuel_remaining_kg": t.fuel_remaining_kg,
-            "gm_m": t.gm_m,
-            "zones": zones,
-            "failure": t.failure,
+    let ticks_json: Vec<Value> = outcome
+        .ticks
+        .iter()
+        .map(|t| {
+            let zones: Vec<Value> = t
+                .zones
+                .iter()
+                .map(|z| {
+                    serde_json::json!({
+                        "zone": z.zone.label(),
+                        "fatigue_consumed": z.fatigue_consumed,
+                        "corrosion_depth_mm": z.corrosion_depth_mm,
+                        "crack_half_length_mm": z.crack_half_length_mm,
+                        "peak_stress_mpa": z.peak_stress_mpa,
+                    })
+                })
+                .collect();
+            serde_json::json!({
+                "segment_index": t.segment_index,
+                "segment_label": t.segment_label,
+                "distance_completed_nm": t.distance_completed_nm,
+                "elapsed_h": t.elapsed_h,
+                "speed_kts": t.speed_kts,
+                "fuel_remaining_kg": t.fuel_remaining_kg,
+                "gm_m": t.gm_m,
+                "zones": zones,
+                "failure": t.failure,
+            })
         })
-    }).collect();
+        .collect();
 
     let breakdown = CostBreakdown::for_config(config);
 
@@ -352,10 +803,10 @@ fn build_output(
 // ---------------------------------------------------------------------------
 
 fn build_norfolk_to_brest() -> VoyageRoute {
-    let norfolk   = GeoPoint::new(36.85, -76.30);
-    let azores    = GeoPoint::new(38.72, -27.22);
+    let norfolk = GeoPoint::new(36.85, -76.30);
+    let azores = GeoPoint::new(38.72, -27.22);
     let bay_biscay = GeoPoint::new(46.00, -8.00);
-    let brest     = GeoPoint::new(48.39, -4.49);
+    let brest = GeoPoint::new(48.39, -4.49);
 
     VoyageRoute {
         origin: norfolk,
@@ -424,33 +875,23 @@ fn build_norfolk_to_brest() -> VoyageRoute {
 // ---------------------------------------------------------------------------
 
 fn parse_material(s: &str) -> Option<MaterialGrade> {
-    Some(match s {
-        "MildSteelA"  => MaterialGrade::MildSteelA,
-        "MildSteelE"  => MaterialGrade::MildSteelE,
-        "Ah36"        => MaterialGrade::Ah36,
-        "Dh36"        => MaterialGrade::Dh36,
-        "Eh36"        => MaterialGrade::Eh36,
-        "Aluminum5083" => MaterialGrade::Aluminum5083,
-        "GrpEGlass"   => MaterialGrade::GrpEGlass,
-        "CfrpEpoxy"   => MaterialGrade::CfrpEpoxy,
-        _ => return None,
-    })
+    MaterialGrade::from_key(s)
 }
 
 fn parse_weld(s: &str) -> Option<WeldQuality> {
     Some(match s {
-        "Premium"  => WeldQuality::Premium,
+        "Premium" => WeldQuality::Premium,
         "Standard" => WeldQuality::Standard,
-        "Economy"  => WeldQuality::Economy,
+        "Economy" => WeldQuality::Economy,
         _ => return None,
     })
 }
 
 fn parse_seal(s: &str) -> Option<SealQuality> {
     Some(match s {
-        "Marine"     => SealQuality::Marine,
+        "Marine" => SealQuality::Marine,
         "Commercial" => SealQuality::Commercial,
-        "Economy"    => SealQuality::Economy,
+        "Economy" => SealQuality::Economy,
         _ => return None,
     })
 }
@@ -460,31 +901,45 @@ fn parse_seal(s: &str) -> Option<SealQuality> {
 // ---------------------------------------------------------------------------
 
 fn load_json<T: for<'de> Deserialize<'de>>(path: &str, label: &str) -> T {
-    let text = fs::read_to_string(path)
-        .unwrap_or_else(|e| { eprintln!("Cannot read {} '{}': {}", label, path, e); process::exit(1); });
-    serde_json::from_str(&text)
-        .unwrap_or_else(|e| { eprintln!("Invalid JSON in {} '{}': {}", label, path, e); process::exit(1); })
+    let text = fs::read_to_string(path).unwrap_or_else(|e| {
+        eprintln!("Cannot read {} '{}': {}", label, path, e);
+        process::exit(1);
+    });
+    serde_json::from_str(&text).unwrap_or_else(|e| {
+        eprintln!("Invalid JSON in {} '{}': {}", label, path, e);
+        process::exit(1);
+    })
 }
 
 fn write_json(path: &str, value: &serde_json::Value) {
     let text = serde_json::to_string_pretty(value).expect("serialisation failed");
-    fs::write(path, text)
-        .unwrap_or_else(|e| { eprintln!("Cannot write '{}': {}", path, e); process::exit(1); });
+    fs::write(path, text).unwrap_or_else(|e| {
+        eprintln!("Cannot write '{}': {}", path, e);
+        process::exit(1);
+    });
 }
 
 fn print_summary(outcome: &seaforge_v2::SimOutcome) {
     match &outcome.failure {
         None => {
-            println!("  ✓ SURVIVED  {:.0}/{:.0} nm  ({:.1}h)  fuel left {:.0} kg  cost ${:.0}",
-                outcome.distance_completed_nm, outcome.total_distance_nm,
-                outcome.time_elapsed_h, outcome.fuel_remaining_kg,
-                outcome.total_config_cost_usd);
+            println!(
+                "  ✓ SURVIVED  {:.0}/{:.0} nm  ({:.1}h)  fuel left {:.0} kg  cost ${:.0}",
+                outcome.distance_completed_nm,
+                outcome.total_distance_nm,
+                outcome.time_elapsed_h,
+                outcome.fuel_remaining_kg,
+                outcome.total_config_cost_usd
+            );
         }
         Some(d) => {
             let (why, fix) = d.mode.diagnosis();
-            println!("  ✗ FAILED — {} at segment {} ({:.0} nm, {:.1}h)",
-                d.mode.label(), d.segment_index + 1,
-                d.distance_completed_nm, d.elapsed_h);
+            println!(
+                "  ✗ FAILED — {} at segment {} ({:.0} nm, {:.1}h)",
+                d.mode.label(),
+                d.segment_index + 1,
+                d.distance_completed_nm,
+                d.elapsed_h
+            );
             println!("    Why: {}", why);
             println!("    Fix: {}", fix);
         }

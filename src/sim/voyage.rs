@@ -99,7 +99,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
             let elapsed_h_snapshot = state.elapsed_h;
             for zone_spec in &config.zones {
                 let zone = zone_spec.zone;
-                let material = zone_spec.material;
+                let material = &zone_spec.material;
                 let mat_spec = material.spec();
                 let zone_state = state.zone_mut(zone);
 
@@ -134,7 +134,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                     conditions,
                     zone,
                     zone_spec,
-                    mat_spec,
+                    &mat_spec,
                     step_s,
                 );
                 zone_state.fatigue_consumed += base_damage * corr_multiplier;
@@ -162,7 +162,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                     delta_stress,
                     zone_state.crack_half_length_m.max(1e-6),
                 );
-                let da_per_cycle = paris_crack_growth_per_cycle(dk, mat_spec);
+                let da_per_cycle = paris_crack_growth_per_cycle(dk, &mat_spec);
                 zone_state.crack_half_length_m += da_per_cycle * n_cycles;
 
                 let k_applied =

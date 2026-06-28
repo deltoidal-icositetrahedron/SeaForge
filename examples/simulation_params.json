@@ -1,0 +1,64 @@
+{
+  "route": {
+    "origin": { "lat_deg": 35.0, "lon_deg": -74.5 },
+    "destination": { "lat_deg": 32.3, "lon_deg": -64.78 },
+    "distance_nm": 580.0,
+    "heading_deg": 110.0,
+    "label": "Cape Hatteras -> Bermuda (open Atlantic)"
+  },
+  "hull": {
+    "loa_m": 7.315,
+    "beam_m": 2.5,
+    "depth_m": 0.85,
+    "draft_m": 0.4,
+    "block_coeff": 0.44,
+    "waterplane_coeff": 0.76
+  },
+  "propulsion": {
+    "max_power_kw": 300.0,
+    "fuel_capacity_kg": 2000.0,
+    "sfc_g_per_kwh": 220.0,
+    "propulsive_efficiency": 0.72,
+    "hull_drag_coeff": 0.007
+  },
+  "construction": {
+    "material": {
+      "grade": "AH36",
+      "label": "AH36 Steel",
+      "strength_index": 0.52,
+      "cost": 1.5,
+      "cost_unit": "USD/kg",
+      "heat_threshold_c": 600.0,
+      "cold_threshold_c": 0.0,
+      "dust_coeff": 24.0,
+      "humidity_coeff": 1.28,
+      "salinity_coeff": 0.15,
+      "uv_coeff": null,
+      "density_kg_m3": 7850.0,
+      "yield_mpa": 355.0,
+      "uts_mpa": 490.0,
+      "e_gpa": 206.0,
+      "k_ic_mpa_sqrtm": 105.0,
+      "min_temp_c": 0.0,
+      "sn_slope": 3.0,
+      "sn_ref_stress_mpa": 80.0,
+      "sn_ref_cycles": 2000000,
+      "cost_per_kg_usd": 1.5,
+      "base_corrosion_rate_mm_yr": 0.14
+    },
+    "thickness_m": 0.005,
+    "weld_quality": "Standard",
+    "seal_quality": "Marine"
+  },
+  "conditions": {
+    "hs_m": 3.2,
+    "tp_s": 10.0,
+    "jonswap_gamma": 3.5,
+    "encounter_angle_deg": 15.0,
+    "water_temp_c": 22.0,
+    "salinity_ppt": 36.0,
+    "ph": 8.1,
+    "wind_speed_ms": 14.0,
+    "slam_probability": 0.42
+  }
+}

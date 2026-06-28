@@ -53,7 +53,7 @@ pub fn segment_fatigue_damage(
     conditions: &OceanConditions,
     zone: HullZone,
     zone_spec: &ZoneSpec,
-    material: MaterialSpec,
+    material: &MaterialSpec,
     duration_s: f64,
 ) -> f64 {
     let sigma_sig = significant_stress_mpa(hull, conditions, zone, zone_spec);
@@ -87,10 +87,7 @@ pub fn stress_intensity_factor(stress_mpa: f64, crack_half_length_m: f64) -> f64
 
 /// Paris-law crack growth increment [m/cycle] given ΔK and material constants.
 /// Uses generic Paris exponents; C and n are embedded per material category.
-pub fn paris_crack_growth_per_cycle(
-    delta_k_mpa_sqrtm: f64,
-    material: MaterialSpec,
-) -> f64 {
+pub fn paris_crack_growth_per_cycle(delta_k_mpa_sqrtm: f64, material: &MaterialSpec) -> f64 {
     // Paris-law exponent and coefficient depend on material family
     let (c_paris, n_paris) = paris_constants(material.e_gpa);
     if delta_k_mpa_sqrtm <= 0.0 {
@@ -114,8 +111,8 @@ fn gamma_1_plus_m_half(m: f64) -> f64 {
     let x = 1.0 + m / 2.0;
     // Exact values for common cases
     match (m * 2.0).round() as u32 {
-        6  => 1.3293, // m=3:  Γ(2.5)
-        8  => 2.0000, // m=4:  Γ(3.0)
+        6 => 1.3293,  // m=3:  Γ(2.5)
+        8 => 2.0000,  // m=4:  Γ(3.0)
         10 => 3.3234, // m=5:  Γ(3.5)
         12 => 6.0000, // m=6:  Γ(4.0)
         20 => 120.00, // m=10: Γ(6.0)

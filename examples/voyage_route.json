@@ -1,25 +1,7 @@
 {
-  "origin":      { "lat_deg": 36.93, "lon_deg": -76.33 },
+  "origin":      { "lat_deg": 35.00, "lon_deg": -74.50 },
   "destination": { "lat_deg": 32.30, "lon_deg": -64.78 },
   "segments": [
-    {
-      "from":         { "lat_deg": 36.93, "lon_deg": -76.33 },
-      "to":           { "lat_deg": 35.00, "lon_deg": -74.50 },
-      "distance_nm":  190.0,
-      "heading_deg":  145.0,
-      "label":        "Naval Station Norfolk → Cape Hatteras",
-      "conditions": {
-        "hs_m":                1.5,
-        "tp_s":                7.0,
-        "jonswap_gamma":       2.8,
-        "encounter_angle_deg": 30.0,
-        "water_temp_c":        20.0,
-        "salinity_ppt":        34.0,
-        "ph":                  8.1,
-        "wind_speed_ms":       8.0,
-        "slam_probability":    0.18
-      }
-    },
     {
       "from":         { "lat_deg": 35.00, "lon_deg": -74.50 },
       "to":           { "lat_deg": 32.30, "lon_deg": -64.78 },

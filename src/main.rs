@@ -190,6 +190,7 @@ impl SimulationParams {
                 from: route_params.origin,
                 to: route_params.destination,
                 distance_nm: route_params.distance_nm,
+                duration_scale: 1.0,
                 heading_deg: route_params.heading_deg,
                 label: route_params.label,
                 conditions,
@@ -1018,6 +1019,7 @@ fn cmd_brief(brief_path: &str, out_path: &str, tier: &str) {
             from: *from,
             to: *to,
             distance_nm: dist,
+            duration_scale: 1.0,
             heading_deg: heading,
             label: format!("{} → {}", from_name, to_name),
             conditions,
@@ -1031,6 +1033,15 @@ fn cmd_brief(brief_path: &str, out_path: &str, tier: &str) {
         let scale = brief.distance_nm / haversine_total;
         for seg in &mut segments {
             seg.distance_nm *= scale;
+        }
+    }
+
+    if brief.primary_stressor == "corrosion_crack_cascade" && brief.expected_duration_days > 0.0 {
+        let target_duration_h = brief.expected_duration_days * 24.0;
+        let nominal_duration_h = brief.distance_nm / 24.0;
+        let duration_scale = (target_duration_h / nominal_duration_h.max(1.0)).clamp(1.0, 8.0);
+        for seg in &mut segments {
+            seg.duration_scale = duration_scale;
         }
     }
 
@@ -1551,6 +1562,7 @@ fn build_norfolk_to_brest() -> VoyageRoute {
                 from: norfolk,
                 to: azores,
                 distance_nm: 1900.0,
+                duration_scale: 1.0,
                 heading_deg: 75.0,
                 label: "Norfolk → Azores (North Atlantic crossing)".into(),
                 conditions: OceanConditions {
@@ -1569,6 +1581,7 @@ fn build_norfolk_to_brest() -> VoyageRoute {
                 from: azores,
                 to: bay_biscay,
                 distance_nm: 1100.0,
+                duration_scale: 1.0,
                 heading_deg: 55.0,
                 label: "Azores → Bay of Biscay (North Atlantic storm belt)".into(),
                 conditions: OceanConditions {
@@ -1587,6 +1600,7 @@ fn build_norfolk_to_brest() -> VoyageRoute {
                 from: bay_biscay,
                 to: brest,
                 distance_nm: 250.0,
+                duration_scale: 1.0,
                 heading_deg: 30.0,
                 label: "Bay of Biscay → Brest (coastal approach)".into(),
                 conditions: OceanConditions {

@@ -27,6 +27,7 @@
 
   "primary_stressor": "combined",
   "failure_modes_under_test": ["capsize", "sink", "breaks_in_half"],
+  "objective": "Run a combined-stressor South China Sea transit that tests the full configuration against fatigue, corrosion, slamming, and stability failures at once.",
 
   "environmental_profile": {
     "wave_height_m": { "avg": 2.4, "max": 7.5 },

@@ -52,6 +52,13 @@ function responseErrorMessage(data, fallback) {
   return details || fallback;
 }
 
+function formatElapsedDayLabel(elapsedH) {
+  const safeElapsedH = Math.max(0, Number(elapsedH) || 0);
+  const day = Math.floor(safeElapsedH / 24);
+  const hour = Math.floor(safeElapsedH % 24);
+  return `Day ${day} ${String(hour).padStart(2, '0')}h`;
+}
+
 function sortCampaignsByCreatedAt(campaigns) {
   return [...campaigns].sort((a, b) => {
     const bTime = Date.parse(b.created_at);
@@ -83,6 +90,7 @@ export default function App() {
   const heldDirectionRef = useRef(0);
   const frameRef = useRef(null);
   const lastFrameTimeRef = useRef(null);
+  const stoppingGeminiRef = useRef(false);
 
   const setDisplayedTickPosition = useCallback((nextPosition) => {
     tickPositionRef.current = nextPosition;
@@ -233,6 +241,7 @@ export default function App() {
       setError('Select a mission brief before running Gemini.');
       return;
     }
+    stoppingGeminiRef.current = false;
     setRunningGemini(true);
     setGeminiDotCount(0);
     setLoading(true);
@@ -267,15 +276,33 @@ export default function App() {
         }
       })
       .catch(e => {
-        setError(e.message);
+        if (!stoppingGeminiRef.current) {
+          setError(e.message);
+        }
         setLoading(false);
       })
       .finally(() => {
+        stoppingGeminiRef.current = false;
         setRunningGemini(false);
         setRunningCampaignId(null);
         setRunningCampaignStartedAt(null);
       });
   }, [loadSavedSimulation, refreshSimulations, selectedMission]);
+
+  const stopGeminiSimulations = useCallback(() => {
+    stoppingGeminiRef.current = true;
+    fetch('/api/gemini/stop', { method: 'POST' })
+      .then(() => {
+        setRunningGemini(false);
+        setRunningCampaignId(null);
+        setRunningCampaignStartedAt(null);
+        setLoading(false);
+        refreshSimulations();
+      })
+      .catch(e => {
+        setError(e.message);
+      });
+  }, [refreshSimulations]);
 
   const selectCampaign = useCallback((campaignId) => {
     setSelectedCampaignId(campaignId);
@@ -326,6 +353,26 @@ export default function App() {
     ? Math.max(0, Math.min(tickCount - 1, Math.round(clampedTickPosition)))
     : 0;
   const activeTick = tickCount > 0 ? ticks[activeTickIndex] : null;
+  const interpolatedElapsedH = (() => {
+    if (tickCount <= 0) return 0;
+    const averageElapsedPerTickH = tickCount > 1
+      ? Number(ticks[tickCount - 1]?.elapsed_h ?? 0) / (tickCount - 1)
+      : 1;
+    const elapsedAt = (index) => {
+      if (index >= tickCount) {
+        return Number(ticks[tickCount - 1]?.elapsed_h ?? 0)
+          + (index - tickCount + 1) * averageElapsedPerTickH;
+      }
+      return Number(ticks[Math.max(0, index)]?.elapsed_h ?? 0);
+    };
+    const fromIndex = Math.floor(clampedTickPosition);
+    const toIndex = Math.min(playbackTickCount - 1, fromIndex + 1);
+    const t = clampedTickPosition - fromIndex;
+    const fromElapsed = elapsedAt(fromIndex);
+    const toElapsed = elapsedAt(toIndex);
+    return fromElapsed + (toElapsed - fromElapsed) * t;
+  })();
+  const activeDayLabel = formatElapsedDayLabel(interpolatedElapsedH);
   const activeRouteSegment = simResult?.voyage?.route_segments?.[activeTick?.segment_index ?? 0] ?? null;
   const activeConditions = activeRouteSegment?.conditions ?? null;
   const config = simResult?.configuration ?? null;
@@ -662,6 +709,7 @@ export default function App() {
               {missionBrief || selectedSimulation ? (
                 <>
                   {renderPanelRow('Mission', missionBrief?.name ?? selectedSimulation?.id, { wrap: true })}
+                  {missionBrief?.objective ? renderPanelRow('Objective', missionBrief.objective, { wrap: true }) : null}
                   {missionBrief ? renderPanelRow('Physics', missionBrief.primary_stressor?.replaceAll('_', ' '), { wrap: true }) : null}
                   {missionBrief ? renderPanelRow('Failure', (missionBrief.failure_modes_under_test ?? []).join(', ') || '—', { wrap: true }) : null}
                   {renderPanelRow('Waves', activeConditions
@@ -837,10 +885,13 @@ export default function App() {
                 {selectedSimulation ? renderPanelRow('Status', displayStatus(selectedSimulation.status)) : null}
                 {Number.isFinite(selectedSimulation?.eval?.score_pct) ? renderPanelRow('Eval', `${selectedSimulation.eval.score_pct}%`) : null}
                 {selectedSimulation?.assessment?.model_used ? renderPanelRow('Model', selectedSimulation.assessment.model_used, { wrap: true }) : null}
-                {selectedSimulation?.assessment?.assessment ? renderPanelRow('AI', selectedSimulation.assessment.assessment, { wrap: true }) : null}
-                {selectedSimulation?.assessment?.failed_part ? renderPanelRow('AI Part', selectedSimulation.assessment.failed_part, { wrap: true }) : null}
-                {selectedSimulation?.assessment?.failed_metric ? renderPanelRow('AI Metric', selectedSimulation.assessment.failed_metric, { wrap: true }) : null}
-                {selectedSimulation?.assessment?.root_cause ? renderPanelRow('AI Cause', selectedSimulation.assessment.root_cause, { wrap: true }) : null}
+                {selectedSimulation?.assessment?.assessment ? renderPanelRow('Thoughts', selectedSimulation.assessment.assessment, { wrap: true }) : null}
+                {selectedSimulation?.assessment?.failed_part ? renderPanelRow('Part', selectedSimulation.assessment.failed_part, { wrap: true }) : null}
+                {selectedSimulation?.assessment?.failed_metric ? renderPanelRow('Metric', selectedSimulation.assessment.failed_metric, { wrap: true }) : null}
+                {selectedSimulation?.assessment?.root_cause ? renderPanelRow('Cause', selectedSimulation.assessment.root_cause, { wrap: true }) : null}
+                {selectedSimulation?.assessment?.changes?.length
+                  ? renderPanelRow('Solution', selectedSimulation.assessment.changes.join('; '), { wrap: true })
+                  : null}
                 {simResult?.failure ? renderPanelRow('Failed', failureDetail, { wrap: true }) : null}
               </>
             ) : (
@@ -912,6 +963,7 @@ export default function App() {
               boxSizing: 'border-box',
               background: '#C3C4CA',
               borderTop: '1px solid rgba(0,0,0,0.12)',
+              display: 'flex',
             }}
           >
             <button
@@ -919,7 +971,7 @@ export default function App() {
               onClick={runGeminiSimulations}
               disabled={runningGemini || !selectedMission}
               style={{
-                width: '100%',
+                width: runningGemini ? '63%' : '100%',
                 height: 40,
                 fontFamily: "'Courier New', monospace",
                 fontSize: 11,
@@ -942,6 +994,29 @@ export default function App() {
                 </>
               ) : 'Run Gemini'}
             </button>
+            {runningGemini ? (
+              <button
+                type="button"
+                onClick={stopGeminiSimulations}
+                style={{
+                  width: '37%',
+                  height: 40,
+                  marginLeft: -1,
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  textAlign: 'center',
+                  cursor: 'pointer',
+                  color: 'rgba(120,0,0,0.82)',
+                  background: 'rgba(180,0,0,0.08)',
+                  border: '1px solid rgba(120,0,0,0.24)',
+                }}
+              >
+                Stop
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -954,55 +1029,73 @@ export default function App() {
         left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
         userSelect: 'none',
       }}>
-        <button
-          onClick={stepBack}
-          disabled={!canStepBack}
-          aria-label="Step back"
-          style={{
-            ...cell,
-            width: 36,
-            marginRight: -1,
-            fontSize: 13,
-            fontWeight: 700,
-            color: 'rgba(0,0,0,0.76)',
-            cursor: canStepBack ? 'pointer' : 'default',
-            opacity: canStepBack ? 1 : 0.22,
-          }}
-        >
-          &#x276E;
-        </button>
-
         <div style={{
           ...cell,
-          width: 36,
+          width: 108,
+          height: 28,
+          marginBottom: -1,
           fontSize: 10,
           fontWeight: 700,
           letterSpacing: '0.06em',
-          color: 'rgba(0,0,0,0.38)',
           textTransform: 'uppercase',
+          color: 'rgba(0,0,0,0.38)',
         }}>
-          ×{stepSpeed}
+          {activeDayLabel}
         </div>
 
-        <button
-          onClick={stepForward}
-          disabled={!canStepForward}
-          aria-label="Step forward"
-          style={{
+        <div style={{ display: 'flex', width: 108 }}>
+          <button
+            onClick={stepBack}
+            disabled={!canStepBack}
+            aria-label="Step back"
+            style={{
+              ...cell,
+              width: 36,
+              marginRight: -1,
+              fontSize: 13,
+              fontWeight: 700,
+              color: 'rgba(0,0,0,0.76)',
+              cursor: canStepBack ? 'pointer' : 'default',
+              opacity: canStepBack ? 1 : 0.22,
+            }}
+          >
+            &#x276E;
+          </button>
+
+          <div style={{
             ...cell,
             width: 36,
-            marginLeft: -1,
-            fontSize: 13,
+            fontSize: 10,
             fontWeight: 700,
-            color: 'rgba(0,0,0,0.76)',
-            cursor: canStepForward ? 'pointer' : 'default',
-            opacity: canStepForward ? 1 : 0.22,
-          }}
-        >
-          &#x276F;
-        </button>
+            letterSpacing: '0.06em',
+            color: 'rgba(0,0,0,0.38)',
+            textTransform: 'uppercase',
+          }}>
+            ×{stepSpeed}
+          </div>
+
+          <button
+            onClick={stepForward}
+            disabled={!canStepForward}
+            aria-label="Step forward"
+            style={{
+              ...cell,
+              width: 36,
+              marginLeft: -1,
+              fontSize: 13,
+              fontWeight: 700,
+              color: 'rgba(0,0,0,0.76)',
+              cursor: canStepForward ? 'pointer' : 'default',
+              opacity: canStepForward ? 1 : 0.22,
+            }}
+          >
+            &#x276F;
+          </button>
+        </div>
       </div>
     </div>
   );

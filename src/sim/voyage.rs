@@ -16,6 +16,7 @@ use crate::{
 };
 
 const STEP_H: f64 = 1.0;
+const SIMULATED_TIME_MULTIPLIER: f64 = 100.0;
 const DAMAGE_RATE_MULTIPLIER: f64 = 3.4;
 const CRACK_GROWTH_MULTIPLIER: f64 = 0.12;
 const CORROSION_RATE_MULTIPLIER: f64 = 5.0;
@@ -83,7 +84,8 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
         let speed_ms = equilibrium_speed_ms(config, current_mass, conditions);
         let speed_kts = speed_ms * 1.944;
         state.speed_kts = speed_kts;
-        let seg_duration_h = segment.distance_nm / speed_kts.max(0.1);
+        let seg_duration_h = (segment.distance_nm / speed_kts.max(0.1))
+            * segment.duration_scale.max(0.05);
 
         // ----------------------------------------------------------------
         // Inner time loop — hourly steps through the segment
@@ -92,7 +94,8 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
 
         while seg_elapsed_h < seg_duration_h {
             let step_h = (seg_duration_h - seg_elapsed_h).min(STEP_H);
-            let step_s = step_h * 3600.0;
+            let exposure_step_h = step_h * SIMULATED_TIME_MULTIPLIER;
+            let exposure_step_s = exposure_step_h * 3600.0;
             let step_distance_nm = segment.distance_nm * (step_h / seg_duration_h);
 
             let step_mass = (config.total_mass_kg()
@@ -104,22 +107,32 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
             if fuel_burned >= state.fuel_kg {
                 let distance_on_remaining =
                     state.fuel_kg / fuel_burned.max(1.0) * step_distance_nm;
+                let step_fraction = if step_distance_nm > 0.0 {
+                    (distance_on_remaining / step_distance_nm).clamp(0.0, 1.0)
+                } else {
+                    0.0
+                };
+                state.distance_nm =
+                    (state.distance_nm + distance_on_remaining).min(total_distance_nm);
+                state.elapsed_h += exposure_step_h * step_fraction;
                 let mode = FailureMode::FuelExhaustion {
                     distance_remaining_nm: total_distance_nm
                         - state.distance_nm
-                        - distance_on_remaining,
                 };
                 ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label())));
                 return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
             }
             state.fuel_kg -= fuel_burned;
+            state.distance_nm = (state.distance_nm + step_distance_nm).min(total_distance_nm);
+            state.elapsed_h += exposure_step_h;
+            seg_elapsed_h += step_h;
 
             // ----------------------------------------------------------------
             // Spray-ice accretion (sub-4°C water → topside ice raises KG)
             // ----------------------------------------------------------------
             let ice_rate = spray_icing_rate_kg_per_h(&config.hull, conditions);
             if ice_rate > 0.0 {
-                state.ice_mass_kg += ice_rate * step_h;
+                state.ice_mass_kg += ice_rate * exposure_step_h;
                 let kg = estimate_kg(config, state.fuel_kg);
                 let base_gm = metacentric_height_m(&config.hull, step_mass, kg);
                 state.gm_m = gm_with_ice(base_gm, &config.hull, step_mass, kg, state.ice_mass_kg);
@@ -152,7 +165,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                 }
 
                 let submerged = zone.is_submerged();
-                let new_loss = thickness_loss_m(material, conditions, submerged, step_h)
+                let new_loss = thickness_loss_m(material, conditions, submerged, exposure_step_h)
                     * CORROSION_RATE_MULTIPLIER;
                 zone_state.corrosion_depth_m += new_loss;
 
@@ -185,7 +198,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                     zone,
                     zone_spec,
                     &mat_spec,
-                    step_s,
+                    exposure_step_s,
                 );
                 zone_state.fatigue_consumed +=
                     base_damage * corr_multiplier * weakening_multiplier * DAMAGE_RATE_MULTIPLIER;
@@ -210,7 +223,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
 
                 let delta_stress = sig_stress * 2.0;
                 let tz = conditions.zero_crossing_period_s();
-                let n_cycles = step_s / tz.max(0.5);
+                let n_cycles = exposure_step_s / tz.max(0.5);
                 let dk = stress_intensity_factor(
                     delta_stress,
                     zone_state.crack_half_length_m.max(1e-6),
@@ -237,11 +250,6 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                 }
             }
 
-            // Advance state for this step
-            state.distance_nm = (state.distance_nm + step_distance_nm).min(total_distance_nm);
-            state.elapsed_h += step_h;
-            seg_elapsed_h += step_h;
-
             ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, None));
         }
 
@@ -251,7 +259,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
         for zone_spec in &config.zones {
             let zone = zone_spec.zone;
             let hourly_survival = zone_spec.seal_quality.hourly_survival_prob();
-            let seal_survival = hourly_survival.powf(seg_duration_h);
+            let seal_survival = hourly_survival.powf(seg_duration_h * SIMULATED_TIME_MULTIPLIER);
             if seal_survival < 0.50 {
                 let mode = FailureMode::SealBreachFlooding {
                     zone,

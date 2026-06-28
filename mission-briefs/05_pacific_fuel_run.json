@@ -25,6 +25,7 @@
 
   "primary_stressor": "fuel_exhaustion",
   "failure_modes_under_test": ["sink"],
+  "objective": "Reach Hawaii across open Pacific range without fuel exhaustion, proving propulsion efficiency and fuel capacity are adequate for the configured hull.",
 
   "environmental_profile": {
     "wave_height_m": { "avg": 2.1, "max": 5.0 },

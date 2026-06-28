@@ -22,12 +22,19 @@ pub struct RouteSegment {
     pub to: GeoPoint,
     /// Great-circle distance [nautical miles]
     pub distance_nm: f64,
+    /// Multiplier on transit duration without changing route distance.
+    #[serde(default = "default_duration_scale")]
+    pub duration_scale: f64,
     /// Vessel heading for this leg [degrees true]
     pub heading_deg: f64,
     /// Ocean conditions representative of this leg
     pub conditions: OceanConditions,
     /// Label for reporting
     pub label: String,
+}
+
+fn default_duration_scale() -> f64 {
+    1.0
 }
 
 /// Complete voyage definition from origin to destination.

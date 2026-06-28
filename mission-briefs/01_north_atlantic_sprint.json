@@ -25,6 +25,7 @@
 
   "primary_stressor": "sustained_structural_fatigue",
   "failure_modes_under_test": ["breaks_in_half", "sink"],
+  "objective": "Cross the North Atlantic fast enough to test whether the hull can survive sustained head-sea fatigue and repeated slamming without cracking open.",
 
   "environmental_profile": {
     "wave_height_m": { "avg": 4.8, "max": 13.5 },

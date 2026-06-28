@@ -734,6 +734,26 @@ fn build_output(
         })
         .collect();
 
+    let route_segments_json: Vec<Value> = route
+        .segments
+        .iter()
+        .map(|segment| {
+            serde_json::json!({
+                "from": {
+                    "lat_deg": segment.from.lat_deg,
+                    "lon_deg": segment.from.lon_deg,
+                },
+                "to": {
+                    "lat_deg": segment.to.lat_deg,
+                    "lon_deg": segment.to.lon_deg,
+                },
+                "distance_nm": segment.distance_nm,
+                "heading_deg": segment.heading_deg,
+                "label": segment.label,
+            })
+        })
+        .collect();
+
     let ticks_json: Vec<Value> = outcome
         .ticks
         .iter()
@@ -773,6 +793,15 @@ fn build_output(
         "voyage": {
             "total_distance_nm": route.total_distance_nm(),
             "segments": route.segments.len(),
+            "origin": {
+                "lat_deg": route.origin.lat_deg,
+                "lon_deg": route.origin.lon_deg,
+            },
+            "destination": {
+                "lat_deg": route.destination.lat_deg,
+                "lon_deg": route.destination.lon_deg,
+            },
+            "route_segments": route_segments_json,
         },
         "result": {
             "distance_completed_nm": outcome.distance_completed_nm,

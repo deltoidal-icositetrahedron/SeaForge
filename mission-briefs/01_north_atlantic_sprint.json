@@ -1,0 +1,39 @@
+{
+  "id": "01_north_atlantic_sprint",
+  "name": "North Atlantic Sprint",
+  "classification": "ENDURANCE / STRUCTURAL",
+
+  "origin": {
+    "name": "New York Harbor, USA",
+    "lat_deg": 40.65,
+    "lon_deg": -74.03
+  },
+  "destination": {
+    "name": "Southampton, UK",
+    "lat_deg": 50.9,
+    "lon_deg": -1.4
+  },
+
+  "waypoints": [
+    { "name": "Nova Scotia shelf",     "lat_deg": 44.0,  "lon_deg": -60.0 },
+    { "name": "Mid-Atlantic apex",     "lat_deg": 52.0,  "lon_deg": -35.0 },
+    { "name": "Western Approaches",   "lat_deg": 50.5,  "lon_deg": -11.0 }
+  ],
+
+  "distance_nm": 3260,
+  "expected_duration_days": 9,
+
+  "primary_stressor": "sustained_structural_fatigue",
+  "failure_modes_under_test": ["breaks_in_half", "sink"],
+
+  "environmental_profile": {
+    "wave_height_m": { "avg": 3.8, "max": 9.5 },
+    "wave_period_s": { "avg": 10, "max": 16 },
+    "slamming_probability": "high",
+    "water_temp_c": { "avg": 12, "min": 6 },
+    "salinity_ppt": 35,
+    "ice_accretion_risk": "low"
+  },
+
+  "rationale": "The North Atlantic is the world's busiest and most unforgiving ocean crossing. Nine days of sustained head-seas with regular slamming events will progressively accumulate fatigue in the keel, bilge strake welds, and bow flare. A vessel that can't distribute stress across its hull geometry will crack long before Southampton. Primary kill chain: slamming -> weld fatigue -> crack propagation -> hull breach."
+}

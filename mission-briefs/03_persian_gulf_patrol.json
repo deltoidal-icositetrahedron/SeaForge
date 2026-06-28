@@ -1,0 +1,43 @@
+{
+  "id": "03_persian_gulf_patrol",
+  "name": "Persian Gulf Patrol",
+  "classification": "CORROSION / MATERIAL DEGRADATION",
+
+  "origin": {
+    "name": "Manama, Bahrain",
+    "lat_deg": 26.21,
+    "lon_deg": 50.59
+  },
+  "destination": {
+    "name": "Muscat, Oman",
+    "lat_deg": 23.61,
+    "lon_deg": 58.59
+  },
+
+  "waypoints": [
+    { "name": "Persian Gulf center, north Qatar", "lat_deg": 25.5,  "lon_deg": 52.0  },
+    { "name": "Persian Gulf center, off UAE",     "lat_deg": 25.8,  "lon_deg": 54.5  },
+    { "name": "Strait of Hormuz shipping lane",   "lat_deg": 26.35, "lon_deg": 56.6  },
+    { "name": "Gulf of Oman entry",               "lat_deg": 24.8,  "lon_deg": 57.8  },
+    { "name": "Gulf of Oman approach",            "lat_deg": 23.9,  "lon_deg": 58.2  }
+  ],
+
+  "distance_nm": 620,
+  "expected_duration_days": 3,
+
+  "primary_stressor": "corrosion_crack_cascade",
+  "failure_modes_under_test": ["sink"],
+
+  "environmental_profile": {
+    "wave_height_m": { "avg": 1.1, "max": 2.8 },
+    "wave_period_s": { "avg": 6, "max": 9 },
+    "slamming_probability": "low",
+    "water_temp_c": { "avg": 32, "max": 36 },
+    "salinity_ppt": 42,
+    "ice_accretion_risk": "none",
+    "ph": 7.9,
+    "notes": "Highest salinity open-water body on earth. Thermal cycling between night and day accelerates seal degradation."
+  },
+
+  "rationale": "The Persian Gulf is calm but chemically brutal. Salinity of 42 ppt combined with 32°C water temperatures creates an aggressive electrochemical corrosion environment. The kill chain is slow: high salinity -> accelerated corrosion -> pitting -> fatigue crack initiation -> hull breach."
+}

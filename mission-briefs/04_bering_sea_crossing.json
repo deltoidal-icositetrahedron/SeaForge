@@ -1,0 +1,41 @@
+{
+  "id": "04_bering_sea_crossing",
+  "name": "Bering Sea Crossing",
+  "classification": "ICE ACCRETION / COLD FATIGUE",
+
+  "origin": {
+    "name": "Dutch Harbor, Alaska, USA",
+    "lat_deg": 53.88,
+    "lon_deg": -166.54
+  },
+  "destination": {
+    "name": "Petropavlovsk-Kamchatsky, Russia",
+    "lat_deg": 53.01,
+    "lon_deg": 158.65
+  },
+
+  "waypoints": [
+    { "name": "Bering Sea center",          "lat_deg": 55.5,  "lon_deg": -175.0 },
+    { "name": "International Date Line",    "lat_deg": 54.5,  "lon_deg": 179.0  },
+    { "name": "Kamchatka approach",         "lat_deg": 53.5,  "lon_deg": 163.0  }
+  ],
+
+  "distance_nm": 980,
+  "expected_duration_days": 4,
+
+  "primary_stressor": "ice_accretion_cold_embrittlement",
+  "failure_modes_under_test": ["capsize", "breaks_in_half"],
+
+  "environmental_profile": {
+    "wave_height_m": { "avg": 4.5, "max": 12.0 },
+    "wave_period_s": { "avg": 11, "max": 17 },
+    "slamming_probability": "high",
+    "water_temp_c": { "avg": 3, "min": -1 },
+    "air_temp_c": { "avg": -8, "min": -22 },
+    "salinity_ppt": 32,
+    "ice_accretion_risk": "very_high",
+    "notes": "Sustained icing conditions expected. Ice load shifts GM rapidly."
+  },
+
+  "rationale": "Ice accretion is the silent killer. In the Bering Sea in winter, spray freezes on every surface — topside superstructure weight climbs fast, raising the center of gravity and compressing the GM margin toward capsize. Simultaneously, steel at -20°C becomes brittle: crack propagation rates increase by an order of magnitude compared to tropical conditions. A vessel must prove it can shed ice load or tolerate the added weight without capsizing, while welds that would hold at 20°C fracture in the cold. Primary kill chains: ice accumulation -> GM collapse -> capsize; cold embrittlement -> weld fracture -> breaks in half."
+}

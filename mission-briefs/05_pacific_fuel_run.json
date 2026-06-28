@@ -1,0 +1,40 @@
+{
+  "id": "05_pacific_fuel_run",
+  "name": "Pacific Fuel Run",
+  "classification": "RANGE / FUEL ENDURANCE",
+
+  "origin": {
+    "name": "San Diego, California, USA",
+    "lat_deg": 32.72,
+    "lon_deg": -117.17
+  },
+  "destination": {
+    "name": "Pearl Harbor, Hawaii, USA",
+    "lat_deg": 21.35,
+    "lon_deg": -157.97
+  },
+
+  "waypoints": [
+    { "name": "California Current exit",    "lat_deg": 30.0,  "lon_deg": -120.0 },
+    { "name": "Pacific open water",         "lat_deg": 26.0,  "lon_deg": -135.0 },
+    { "name": "North Hawaiian Ridge",       "lat_deg": 23.0,  "lon_deg": -150.0 }
+  ],
+
+  "distance_nm": 2215,
+  "expected_duration_days": 7,
+
+  "primary_stressor": "fuel_exhaustion",
+  "failure_modes_under_test": ["sink"],
+
+  "environmental_profile": {
+    "wave_height_m": { "avg": 2.1, "max": 5.0 },
+    "wave_period_s": { "avg": 9, "max": 13 },
+    "slamming_probability": "low",
+    "water_temp_c": { "avg": 24, "min": 20 },
+    "salinity_ppt": 34,
+    "ice_accretion_risk": "none",
+    "notes": "Conditions are benign. This brief is entirely about range. No rescue, no port of refuge."
+  },
+
+  "rationale": "The eastern Pacific is relatively calm — this brief doesn't kill you with weather. It kills you with distance. 2,215 nm of open ocean with no fallback position: if the vessel runs dry at mile 1800, it drifts. This tests whether the hull geometry and propulsion efficiency actually match the spec sheet's claimed fuel consumption figures. Head currents and slight sea states will erode the margin. The simulation should expose configurations where material weight optimizations (going thinner to save money) paradoxically increase hydrodynamic drag and push fuel consumption over the edge. Primary kill chain: hull drag mismatch -> fuel overconsumption -> dead in the water."
+}

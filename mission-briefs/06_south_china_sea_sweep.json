@@ -1,0 +1,42 @@
+{
+  "id": "06_south_china_sea_sweep",
+  "name": "South China Sea Sweep",
+  "classification": "COMBINED / ALL FAILURE MODES",
+
+  "origin": {
+    "name": "Singapore",
+    "lat_deg": 1.29,
+    "lon_deg": 103.85
+  },
+  "destination": {
+    "name": "Manila, Philippines",
+    "lat_deg": 14.58,
+    "lon_deg": 120.98
+  },
+
+  "waypoints": [
+    { "name": "Singapore Strait east exit",   "lat_deg": 1.5,   "lon_deg": 105.5  },
+    { "name": "South China Sea open water",   "lat_deg": 5.0,   "lon_deg": 109.5  },
+    { "name": "South China Sea center",       "lat_deg": 10.0,  "lon_deg": 114.0  },
+    { "name": "West of Palawan",              "lat_deg": 12.5,  "lon_deg": 118.0  },
+    { "name": "Mindoro Strait approach",      "lat_deg": 13.5,  "lon_deg": 120.0  }
+  ],
+
+  "distance_nm": 1310,
+  "expected_duration_days": 5,
+
+  "primary_stressor": "combined",
+  "failure_modes_under_test": ["capsize", "sink", "breaks_in_half"],
+
+  "environmental_profile": {
+    "wave_height_m": { "avg": 2.4, "max": 7.5 },
+    "wave_period_s": { "avg": 7, "max": 12 },
+    "slamming_probability": "moderate",
+    "water_temp_c": { "avg": 29, "max": 31 },
+    "salinity_ppt": 33,
+    "ice_accretion_risk": "none",
+    "notes": "Short steep chop. Typhoon residual swell intersects with monsoon wind-waves at oblique angles. Shallow continental shelf amplifies wave height."
+  },
+
+  "rationale": "The South China Sea tests everything at once. Short-period steep chop accumulates fatigue faster than big Southern Ocean swells. Warm high-salinity water runs corrosion in parallel. Residual typhoon cross-swell attacks stability from oblique angles. The weakest link in the configuration fails first."
+}

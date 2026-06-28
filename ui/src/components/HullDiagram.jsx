@@ -281,24 +281,108 @@ function orientObjectOnGlobe(object, unit, forward) {
   object.quaternion.setFromRotationMatrix(matrix);
 }
 
-function placeShipOnRoute(shipGroup, routeFrame, progress) {
-  const unit = routeUnitAt(routeFrame, progress);
+function buildRoute(routeGeo) {
+  const allPoints = [routeGeo.origin, ...(routeGeo.waypoints ?? []), routeGeo.destination];
+  const legs = [];
+  let totalAngle = 0;
+
+  for (let i = 0; i < allPoints.length - 1; i++) {
+    const frame = buildRouteFrame({ origin: allPoints[i], destination: allPoints[i + 1] });
+    const legAngle = Math.acos(clamp(frame.originUnit.dot(frame.destinationUnit), -1, 1));
+    legs.push({ frame, startAngle: totalAngle, angle: legAngle });
+    totalAngle += legAngle;
+  }
+
+  const safeTotal = totalAngle > 0 ? totalAngle : 1;
+  legs.forEach((leg) => {
+    leg.startProgress = leg.startAngle / safeTotal;
+    leg.endProgress = (leg.startAngle + leg.angle) / safeTotal;
+  });
+
+  function legAt(progress) {
+    const p = clamp(progress, 0, 1);
+    for (let i = 0; i < legs.length - 1; i++) {
+      if (p < legs[i].endProgress) return legs[i];
+    }
+    return legs[legs.length - 1];
+  }
+
+  function toLocal(leg, progress) {
+    const span = leg.endProgress - leg.startProgress;
+    return span < 1e-10 ? 0 : clamp((progress - leg.startProgress) / span, 0, 1);
+  }
+
+  const firstFrame = legs[0].frame;
+  const lastFrame = legs[legs.length - 1].frame;
+  const midLeg = legAt(0.5);
+  const midUnit = routeUnitAt(midLeg.frame, toLocal(midLeg, 0.5));
+
+  return {
+    legs,
+    originUnit: firstFrame.originUnit,
+    destinationUnit: lastFrame.destinationUnit,
+    midpointUnit: midUnit,
+    midpoint: midUnit.clone().multiplyScalar(GLOBE_RADIUS),
+
+    unitAt(progress) {
+      const leg = legAt(progress);
+      return routeUnitAt(leg.frame, toLocal(leg, progress));
+    },
+
+    tangentAt(progress) {
+      const leg = legAt(progress);
+      const unit = routeUnitAt(leg.frame, toLocal(leg, progress));
+      return routeTangentAt(leg.frame, unit);
+    },
+
+    pointAt(progress, radius = GLOBE_ROUTE_RADIUS) {
+      return this.unitAt(progress).clone().multiplyScalar(radius);
+    },
+
+    arcPoints(start, end, radius = GLOBE_ROUTE_RADIUS) {
+      const from = clamp(start, 0, 1);
+      const to = clamp(end, 0, 1);
+      if (from >= to) return [];
+      const points = [];
+
+      for (let i = 0; i < legs.length; i++) {
+        const leg = legs[i];
+        if (leg.endProgress <= from || leg.startProgress >= to) continue;
+        const span = leg.endProgress - leg.startProgress;
+        const legFrom = span > 1e-10 ? clamp((from - leg.startProgress) / span, 0, 1) : 0;
+        const legTo = span > 1e-10 ? clamp((to - leg.startProgress) / span, 0, 1) : 1;
+        const steps = Math.max(1, Math.ceil(GLOBE_ROUTE_SEGMENTS * (legTo - legFrom)));
+        const startIdx = points.length === 0 ? 0 : 1;
+
+        for (let s = startIdx; s <= steps; s++) {
+          const t = legFrom + (legTo - legFrom) * (s / steps);
+          points.push(routePointAt(leg.frame, t, radius));
+        }
+      }
+
+      return points;
+    },
+  };
+}
+
+function placeShipOnRoute(shipGroup, route, progress) {
+  const unit = route.unitAt(progress);
   const position = unit.clone().multiplyScalar(GLOBE_SHIP_RADIUS);
-  const tangent = routeTangentAt(routeFrame, unit);
+  const tangent = route.tangentAt(progress);
   shipGroup.position.copy(position);
   orientObjectOnGlobe(shipGroup, unit, tangent);
 }
 
-function placeLocalGridOnRoute(gridGroup, routeFrame, progress) {
-  const unit = routeUnitAt(routeFrame, progress);
-  const tangent = routeTangentAt(routeFrame, unit);
+function placeLocalGridOnRoute(gridGroup, route, progress) {
+  const unit = route.unitAt(progress);
+  const tangent = route.tangentAt(progress);
   gridGroup.position.copy(unit).multiplyScalar(GLOBE_RADIUS + LOCAL_GRID_SURFACE_OFFSET);
   orientObjectOnGlobe(gridGroup, unit, tangent);
 }
 
-function shipCameraPositionFor(routeFrame, progress, target) {
-  const up = routeUnitAt(routeFrame, progress);
-  const forward = routeTangentAt(routeFrame, up);
+function shipCameraPositionFor(route, progress, target) {
+  const up = route.unitAt(progress);
+  const forward = route.tangentAt(progress);
   const right = up.clone().cross(forward).normalize();
 
   return target.clone()
@@ -1347,19 +1431,20 @@ function updateGridDetail({ cam, controls, globeGridLevels, localGridGroup }) {
   setOpacityScale(localGridGroup, opacityScales.local);
 }
 
-export default function HullDiagram({ simResult, progress: tickProgress = null, activeTick = null }) {
+export default function HullDiagram({ simResult, progress: tickProgress = null, activeTick = null, routeGeo: routeGeoProp = null }) {
   const mountRef = useRef(null);
   const stateRef = useRef({});
   const [zoneOverlay, setZoneOverlay] = useState(emptyZoneOverlay());
   const [zoneOverlayActive, setZoneOverlayActive] = useState(false);
-  const routeGeo = getRouteGeo(simResult);
+  const routeGeo = routeGeoProp ?? getRouteGeo(simResult);
   const routeGeoKey = [
     routeGeo.origin.lat_deg,
     routeGeo.origin.lon_deg,
+    ...(routeGeo.waypoints ?? []).flatMap((w) => [w.lat_deg, w.lon_deg]),
     routeGeo.destination.lat_deg,
     routeGeo.destination.lon_deg,
   ].join(',');
-  const routeFrame = buildRouteFrame(routeGeo);
+  const route = buildRoute(routeGeo);
   const progress = Number.isFinite(tickProgress)
     ? Math.max(0, Math.min(tickProgress, 1))
     : Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
@@ -1429,10 +1514,10 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
         console.warn(error);
       });
 
-    const shipFocus = routePointAt(routeFrame, progress, GLOBE_SHIP_RADIUS);
+    const shipFocus = route.pointAt(progress, GLOBE_SHIP_RADIUS);
     const cam = new THREE.PerspectiveCamera(32, el.clientWidth / el.clientHeight, CAMERA_NEAR, CAMERA_FAR);
-    cam.up.copy(routeUnitAt(routeFrame, progress));
-    cam.position.copy(shipCameraPositionFor(routeFrame, progress, shipFocus));
+    cam.up.copy(route.unitAt(progress));
+    cam.position.copy(shipCameraPositionFor(route, progress, shipFocus));
     cam.lookAt(shipFocus);
 
     const controls = new OrbitControls(cam, renderer.domElement);
@@ -1458,7 +1543,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     scene.add(new THREE.AmbientLight('#ffffff', 0.95));
     scene.add(new THREE.HemisphereLight('#f5f8fb', '#b8c0c8', 0.42));
     const sun = new THREE.DirectionalLight('#ffffff', 2.8);
-    sun.position.copy(routeFrame.midpointUnit).multiplyScalar(GLOBE_RADIUS * 2.2);
+    sun.position.copy(route.midpointUnit).multiplyScalar(GLOBE_RADIUS * 2.2);
     sun.position.y += GLOBE_RADIUS * 0.9;
     sun.target.position.copy(GLOBE_CENTER);
     scene.add(sun.target);
@@ -1485,36 +1570,36 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
 
     const localGridGroup = createLocalGrid();
     collectOpacityMaterials(localGridGroup);
-    placeLocalGridOnRoute(localGridGroup, routeFrame, progress);
+    placeLocalGridOnRoute(localGridGroup, route, progress);
     scene.add(localGridGroup);
     updateGridDetail({ cam, controls, globeGridLevels, localGridGroup });
 
     // Route line: traversed portion is black; remaining route is blue.
     const remainingRouteLine = createRouteRibbon(
-      buildRouteArcPoints(routeFrame, Math.min(progress, 0.999), 1),
+      route.arcPoints(Math.min(progress, 0.999), 1),
       ROUTE_REMAINING_COLOR,
     );
     remainingRouteLine.visible = progress < 0.999;
     scene.add(remainingRouteLine);
     const traversedRouteLine = createRouteRibbon(
-      buildRouteArcPoints(routeFrame, 0, Math.max(progress, 0.001)),
+      route.arcPoints(0, Math.max(progress, 0.001)),
       ROUTE_TRAVERSED_COLOR,
     );
     traversedRouteLine.visible = progress > 0.001;
     scene.add(traversedRouteLine);
 
-    // Waypoint dots
+    // Endpoint dots
     const dotGeo = new THREE.SphereGeometry(0.4, 12, 12);
     const dotA = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_TRAVERSED_COLOR, opacity: 0.4, transparent: true }));
-    dotA.position.copy(routePointAt(routeFrame, 0, GLOBE_ROUTE_RADIUS));
+    dotA.position.copy(route.pointAt(0, GLOBE_ROUTE_RADIUS));
     scene.add(dotA);
     const dotB = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_REMAINING_COLOR, opacity: 0.4, transparent: true }));
-    dotB.position.copy(routePointAt(routeFrame, 1, GLOBE_ROUTE_RADIUS));
+    dotB.position.copy(route.pointAt(1, GLOBE_ROUTE_RADIUS));
     scene.add(dotB);
 
     // Ship group (placeholder until STL loads)
     const shipGroup = new THREE.Group();
-    placeShipOnRoute(shipGroup, routeFrame, progress);
+    placeShipOnRoute(shipGroup, route, progress);
     scene.add(shipGroup);
 
     const raycaster = new THREE.Raycaster();
@@ -1660,7 +1745,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       localGridGroup,
       traversedRouteLine,
       remainingRouteLine,
-      routeFrame,
+      route,
     };
 
     // Resize
@@ -1710,23 +1795,20 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       localGridGroup,
       traversedRouteLine,
       remainingRouteLine,
-      routeFrame: currentRouteFrame,
+      route: currentRoute,
     } = stateRef.current;
-    if (!shipGroup || !currentRouteFrame) return;
+    if (!shipGroup || !currentRoute) return;
 
     const routeProgress = Math.max(0, Math.min(progress, 1));
-    placeShipOnRoute(shipGroup, currentRouteFrame, routeProgress);
-    if (localGridGroup) {
-      placeLocalGridOnRoute(localGridGroup, currentRouteFrame, routeProgress);
-    }
-    const nextShipFocus = routePointAt(currentRouteFrame, routeProgress, GLOBE_SHIP_RADIUS);
+    placeShipOnRoute(shipGroup, currentRoute, routeProgress);
+    const nextShipFocus = currentRoute.pointAt(routeProgress, GLOBE_SHIP_RADIUS);
 
     if (traversedRouteLine && remainingRouteLine) {
       const nextTraversedGeometry = createRouteRibbonGeometry(
-        buildRouteArcPoints(currentRouteFrame, 0, Math.max(routeProgress, 0.001)),
+        currentRoute.arcPoints(0, Math.max(routeProgress, 0.001)),
       );
       const nextRemainingGeometry = createRouteRibbonGeometry(
-        buildRouteArcPoints(currentRouteFrame, Math.min(routeProgress, 0.999), 1),
+        currentRoute.arcPoints(Math.min(routeProgress, 0.999), 1),
       );
       traversedRouteLine.geometry.dispose();
       traversedRouteLine.geometry = nextTraversedGeometry;

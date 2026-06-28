@@ -1,0 +1,42 @@
+{
+  "id": "02_cape_horn_transit",
+  "name": "Cape Horn Transit",
+  "classification": "EXTREME SEA STATE / STABILITY",
+
+  "origin": {
+    "name": "Valparaíso, Chile",
+    "lat_deg": -33.03,
+    "lon_deg": -71.63
+  },
+  "destination": {
+    "name": "Stanley, Falkland Islands",
+    "lat_deg": -51.69,
+    "lon_deg": -57.85
+  },
+
+  "waypoints": [
+    { "name": "Offshore Pacific, central Chile",   "lat_deg": -35.0, "lon_deg": -74.5 },
+    { "name": "Offshore Pacific, Patagonia",       "lat_deg": -46.0, "lon_deg": -78.0 },
+    { "name": "Offshore Pacific, Tierra del Fuego","lat_deg": -54.5, "lon_deg": -75.0 },
+    { "name": "Drake Passage, Cape Horn south",    "lat_deg": -57.0, "lon_deg": -67.5 },
+    { "name": "Drake Passage, NE of Horn",         "lat_deg": -54.0, "lon_deg": -61.0 }
+  ],
+
+  "distance_nm": 1480,
+  "expected_duration_days": 5,
+
+  "primary_stressor": "capsize_stability",
+  "failure_modes_under_test": ["capsize", "breaks_in_half"],
+
+  "environmental_profile": {
+    "wave_height_m": { "avg": 6.2, "max": 18.0 },
+    "wave_period_s": { "avg": 14, "max": 22 },
+    "slamming_probability": "extreme",
+    "water_temp_c": { "avg": 5, "min": 2 },
+    "salinity_ppt": 34,
+    "ice_accretion_risk": "moderate",
+    "sea_state_descriptor": "Drake Passage confused cross-swell"
+  },
+
+  "rationale": "The Drake Passage is the most violent body of water on earth. Unobstructed Southern Ocean swells combine with Antarctic katabatic winds to produce confused cross-seas that attack the vessel from multiple angles simultaneously. GM margin gets hammered by beam seas while the bow flare takes catastrophic slamming loads going south. Primary kill chains: beam sea -> GM collapse -> capsize; bow slam -> keel crack -> breaks in half."
+}

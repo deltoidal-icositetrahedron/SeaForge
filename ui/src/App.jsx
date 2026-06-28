@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import HullDiagram from './components/HullDiagram.jsx';
+import { MISSIONS } from './missions.js';
 
 const TICK_STEP_MS = 1000;
 const MIN_STEP_SPEED = 1;
@@ -11,6 +12,7 @@ export default function App() {
   const [error, setError]         = useState(null);
   const [tickPosition, setTickPosition] = useState(0);
   const [stepSpeed, setStepSpeed] = useState(1);
+  const [selectedMission, setSelectedMission] = useState(null);
   const tickPositionRef = useRef(0);
   const stepSpeedRef = useRef(1);
   const heldDirectionRef = useRef(0);
@@ -210,7 +212,79 @@ export default function App() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#C3C4CA', position: 'relative' }}>
-      <HullDiagram simResult={simResult} loading={loading} progress={tickProgress} activeTick={activeTick} />
+      <HullDiagram
+        simResult={simResult}
+        loading={loading}
+        progress={tickProgress}
+        activeTick={activeTick}
+        routeGeo={selectedMission ? { origin: selectedMission.origin, waypoints: selectedMission.waypoints ?? [], destination: selectedMission.destination } : null}
+      />
+
+      {/* Left side panel */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          height: '100%',
+          width: 20,
+          background: '#C3C4CA',
+          borderRight: '1px solid rgba(0,0,0,0.13)',
+          transition: 'width 200ms ease',
+          overflow: 'hidden',
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+        onMouseEnter={e => e.currentTarget.style.width = '280px'}
+        onMouseLeave={e => e.currentTarget.style.width = '20px'}
+      >
+        {/* Mission brief section */}
+        <div style={{ flexShrink: 0 }}>
+          <div style={{
+            padding: '10px 14px 8px',
+            fontFamily: "'Courier New', monospace",
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            color: 'rgba(0,0,0,0.35)',
+            whiteSpace: 'nowrap',
+            borderBottom: '1px solid rgba(0,0,0,0.08)',
+          }}>
+            Mission Brief
+          </div>
+          {MISSIONS.map((m) => {
+            const isSelected = selectedMission?.id === m.id;
+            return (
+              <div
+                key={m.id}
+                onClick={() => setSelectedMission(isSelected ? null : m)}
+                style={{
+                  padding: '7px 14px',
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: 10,
+                  letterSpacing: '0.02em',
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  color: isSelected ? 'rgba(0,0,0,0.82)' : 'rgba(0,0,0,0.55)',
+                  background: isSelected ? 'rgba(0,0,0,0.06)' : 'transparent',
+                  borderBottom: '1px solid rgba(0,0,0,0.06)',
+                  display: 'flex',
+                  alignItems: 'baseline',
+                  gap: 8,
+                }}
+              >
+                <span style={{ color: 'rgba(0,0,0,0.25)', fontSize: 9 }}>
+                  {m.id.split('_')[0]}
+                </span>
+                {m.name}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
 
       {/* Floating transport controls */}
       <div style={{

@@ -19,6 +19,7 @@ const GRID_LINE_OPACITY = 0.095;
 // const GRID_SHADOW_OPACITY = 0.045;
 const GRID_SHADOW_OPACITY = 0.015;
 export const DEFAULT_GRID_ROTATION_DEG = 67;
+const ROUTE_LINE_Y = 0.035;
 
 function createShipShadowTexture() {
   const size = 512;
@@ -228,20 +229,28 @@ export default function HullDiagram({ simResult, gridRotationDeg = DEFAULT_GRID_
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Route line
-    const routeGeo = new THREE.BufferGeometry().setFromPoints([NORFOLK.clone(), BERMUDA.clone()]);
-    const routeLine = new THREE.Line(routeGeo,
-      new THREE.LineDashedMaterial({ color: 0x000000, opacity: 0.1, transparent: true, dashSize: 2, gapSize: 1.5 }),
+    // Route line: traversed portion is black; remaining route is yellow.
+    const routeStart = NORFOLK.clone();
+    routeStart.y = ROUTE_LINE_Y;
+    const routeEnd = BERMUDA.clone();
+    routeEnd.y = ROUTE_LINE_Y;
+    const remainingRouteLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([routeStart.clone(), routeEnd.clone()]),
+      new THREE.LineBasicMaterial({ color: 0xFF0000, opacity: 0.85, transparent: true }),
     );
-    routeLine.computeLineDistances();
-    scene.add(routeLine);
+    scene.add(remainingRouteLine);
+    const traversedRouteLine = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints([routeStart.clone(), routeStart.clone()]),
+      new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.85, transparent: true }),
+    );
+    scene.add(traversedRouteLine);
 
     // Waypoint dots
     const dotGeo = new THREE.SphereGeometry(0.4, 12, 12);
-    const dotA = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.25, transparent: true }));
+    const dotA = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0.4, transparent: true }));
     dotA.position.copy(NORFOLK);
     scene.add(dotA);
-    const dotB = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0x008844, opacity: 0.35, transparent: true }));
+    const dotB = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xFF0000, opacity: 0.4, transparent: true }));
     dotB.position.copy(BERMUDA);
     scene.add(dotB);
 
@@ -308,7 +317,7 @@ export default function HullDiagram({ simResult, gridRotationDeg = DEFAULT_GRID_
 
     stateRef.current = {
       ...stateRef.current,
-      renderer, scene, cam, controls, shipGroup, shipFocus, gridGroup,
+      renderer, scene, cam, controls, shipGroup, shipFocus, gridGroup, traversedRouteLine, remainingRouteLine,
     };
 
     // Resize
@@ -349,11 +358,21 @@ export default function HullDiagram({ simResult, gridRotationDeg = DEFAULT_GRID_
 
   // Update ship position on progress change
   useEffect(() => {
-    const { shipGroup, controls, cam, shipFocus } = stateRef.current;
+    const { shipGroup, controls, cam, shipFocus, traversedRouteLine, remainingRouteLine } = stateRef.current;
     if (!shipGroup) return;
 
     const pos = NORFOLK.clone().lerp(BERMUDA, progress);
     shipGroup.position.set(pos.x, 0, pos.z);
+    const routePos = pos.clone();
+    routePos.y = ROUTE_LINE_Y;
+    const routeStart = NORFOLK.clone();
+    routeStart.y = ROUTE_LINE_Y;
+    const routeEnd = BERMUDA.clone();
+    routeEnd.y = ROUTE_LINE_Y;
+    if (traversedRouteLine && remainingRouteLine) {
+      traversedRouteLine.geometry.setFromPoints([routeStart, routePos]);
+      remainingRouteLine.geometry.setFromPoints([routePos, routeEnd]);
+    }
     if (controls && cam && shipFocus) {
       const delta = pos.clone().sub(shipFocus);
       cam.position.add(delta);

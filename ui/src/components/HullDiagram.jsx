@@ -114,7 +114,7 @@ const ZONE_DAMAGE_SHAPES = {
   'Bulkhead Frame': { x: 0.68, y: 0.38, z: 0.72 },
 };
 
-const DEFAULT_ROUTE_GEO = {
+const IDLE_SHIP_ROUTE_GEO = {
   origin: { lat_deg: 35.0, lon_deg: -74.5 },
   destination: { lat_deg: 32.3, lon_deg: -64.78 },
 };
@@ -1026,10 +1026,17 @@ function validGeoPoint(point) {
 function getRouteGeo(simResult) {
   const origin = simResult?.voyage?.origin;
   const destination = simResult?.voyage?.destination;
+  const segments = Array.isArray(simResult?.voyage?.route_segments)
+    ? simResult.voyage.route_segments
+    : [];
   if (validGeoPoint(origin) && validGeoPoint(destination)) {
-    return { origin, destination };
+    const waypoints = segments
+      .slice(0, -1)
+      .map((segment) => segment.to)
+      .filter(validGeoPoint);
+    return { origin, waypoints, destination };
   }
-  return DEFAULT_ROUTE_GEO;
+  return null;
 }
 
 function geoJsonPolygons(geoJson) {
@@ -1550,14 +1557,17 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
   const [zoneOverlay, setZoneOverlay] = useState(emptyZoneOverlay());
   const [zoneOverlayActive, setZoneOverlayActive] = useState(false);
   const routeGeo = routeGeoProp ?? getRouteGeo(simResult);
-  const routeGeoKey = [
-    routeGeo.origin.lat_deg,
-    routeGeo.origin.lon_deg,
-    ...(routeGeo.waypoints ?? []).flatMap((w) => [w.lat_deg, w.lon_deg]),
-    routeGeo.destination.lat_deg,
-    routeGeo.destination.lon_deg,
-  ].join(',');
-  const route = buildRoute(routeGeo);
+  const hasMissionRoute = Boolean(routeGeo);
+  const routeGeoKey = hasMissionRoute
+    ? [
+      routeGeo.origin.lat_deg,
+      routeGeo.origin.lon_deg,
+      ...(routeGeo.waypoints ?? []).flatMap((w) => [w.lat_deg, w.lon_deg]),
+      routeGeo.destination.lat_deg,
+      routeGeo.destination.lon_deg,
+    ].join(',')
+    : 'idle-ship';
+  const route = buildRoute(routeGeo ?? IDLE_SHIP_ROUTE_GEO);
   const progress = Number.isFinite(tickProgress)
     ? Math.max(0, Math.min(tickProgress, 1))
     : Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
@@ -1724,28 +1734,34 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     scene.add(localGridGroup);
     updateGridDetail({ cam, controls, globeGridLevels, localGridGroup });
 
-    // Route line: traversed portion is black; remaining route is blue.
-    const remainingRouteLine = createRouteRibbon(
-      route.arcPoints(Math.min(progress, 0.999), 1),
-      ROUTE_REMAINING_COLOR,
-    );
-    remainingRouteLine.visible = progress < 0.999;
-    scene.add(remainingRouteLine);
-    const traversedRouteLine = createRouteRibbon(
-      route.arcPoints(0, Math.max(progress, 0.001)),
-      ROUTE_TRAVERSED_COLOR,
-    );
-    traversedRouteLine.visible = progress > 0.001;
-    scene.add(traversedRouteLine);
+    let remainingRouteLine = null;
+    let traversedRouteLine = null;
+    let dotA = null;
+    let dotB = null;
+    if (hasMissionRoute) {
+      // Route line: traversed portion is black; remaining route is blue.
+      remainingRouteLine = createRouteRibbon(
+        route.arcPoints(Math.min(progress, 0.999), 1),
+        ROUTE_REMAINING_COLOR,
+      );
+      remainingRouteLine.visible = progress < 0.999;
+      scene.add(remainingRouteLine);
+      traversedRouteLine = createRouteRibbon(
+        route.arcPoints(0, Math.max(progress, 0.001)),
+        ROUTE_TRAVERSED_COLOR,
+      );
+      traversedRouteLine.visible = progress > 0.001;
+      scene.add(traversedRouteLine);
 
-    // Endpoint dots
-    const dotGeo = new THREE.SphereGeometry(0.4, 12, 12);
-    const dotA = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_TRAVERSED_COLOR, opacity: 0.4, transparent: true }));
-    dotA.position.copy(route.pointAt(0, GLOBE_ROUTE_RADIUS));
-    scene.add(dotA);
-    const dotB = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_REMAINING_COLOR, opacity: 0.4, transparent: true }));
-    dotB.position.copy(route.pointAt(1, GLOBE_ROUTE_RADIUS));
-    scene.add(dotB);
+      // Endpoint dots
+      const dotGeo = new THREE.SphereGeometry(0.4, 12, 12);
+      dotA = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_TRAVERSED_COLOR, opacity: 0.4, transparent: true }));
+      dotA.position.copy(route.pointAt(0, GLOBE_ROUTE_RADIUS));
+      scene.add(dotA);
+      dotB = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_REMAINING_COLOR, opacity: 0.4, transparent: true }));
+      dotB.position.copy(route.pointAt(1, GLOBE_ROUTE_RADIUS));
+      scene.add(dotB);
+    }
 
     // Ship group (placeholder until STL loads)
     const shipGroup = new THREE.Group();

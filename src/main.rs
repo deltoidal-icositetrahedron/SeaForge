@@ -855,6 +855,13 @@ fn build_output(
             "seal_quality": zone.seal_quality,
             "seal_label": zone.seal_quality.label(),
             "shell_mass_kg": config.shell_mass_kg(),
+            "propulsion": {
+                "max_power_kw": config.propulsion.max_power_kw,
+                "fuel_capacity_kg": config.propulsion.fuel_capacity_kg,
+                "sfc_g_per_kwh": config.propulsion.sfc_g_per_kwh,
+                "propulsive_efficiency": config.propulsion.propulsive_efficiency,
+                "hull_drag_coeff": config.propulsion.hull_drag_coeff,
+            },
             "zones": config.zones.iter().map(|z| serde_json::json!({
                 "zone": z.zone.label(),
                 "zone_key": format!("{:?}", z.zone),
@@ -897,6 +904,7 @@ fn build_output(
                 "material_usd": breakdown.material_usd,
                 "weld_usd": breakdown.weld_usd,
                 "seal_usd": breakdown.seal_usd,
+                "fuel_capacity_usd": breakdown.fuel_capacity_usd,
             },
         },
         "configuration": configuration_json,
@@ -933,6 +941,8 @@ struct MissionBrief {
     environmental_profile: EnvProfile,
     #[serde(default)]
     zones: Option<Vec<ZoneSpec>>,
+    #[serde(default)]
+    propulsion: PropulsionParams,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -1032,7 +1042,11 @@ fn cmd_brief(brief_path: &str, out_path: &str, tier: &str) {
 
     // Vessel config by tier
     let hull = default_sim_hull();
-    let propulsion = default_sim_propulsion();
+    let propulsion = brief.propulsion.clone().apply(default_sim_propulsion());
+    if let Err(err) = validate_propulsion(&propulsion) {
+        eprintln!("mission brief propulsion invalid: {}", err);
+        process::exit(1);
+    }
     if let Some(zones) = brief.zones.clone() {
         if zones.is_empty() {
             eprintln!("mission brief zones cannot be empty");

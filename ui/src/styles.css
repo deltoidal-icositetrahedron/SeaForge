@@ -329,3 +329,11 @@ td {
 .transition-all {
   transition: all 0.2s ease;
 }
+
+/* Hide scrollbars while keeping scroll */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}

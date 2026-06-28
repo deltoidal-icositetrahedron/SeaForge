@@ -28,6 +28,13 @@ function formatFailureDetail(failure) {
   return `${zone} ${metric} ${value}`;
 }
 
+function responseErrorMessage(data, fallback) {
+  const details = [data?.error, data?.stderr, data?.stdout]
+    .filter(Boolean)
+    .join('\n');
+  return details || fallback;
+}
+
 export default function App() {
   const [simResult, setSimResult] = useState(null);
   const [loading, setLoading]     = useState(false);
@@ -35,6 +42,10 @@ export default function App() {
   const [tickPosition, setTickPosition] = useState(0);
   const [stepSpeed, setStepSpeed] = useState(1);
   const [selectedMission, setSelectedMission] = useState(null);
+  const [simulations, setSimulations] = useState([]);
+  const [selectedSimulationId, setSelectedSimulationId] = useState(null);
+  const [runningGemini, setRunningGemini] = useState(false);
+  const [panelOpen, setPanelOpen] = useState(false);
   const tickPositionRef = useRef(0);
   const stepSpeedRef = useRef(1);
   const heldDirectionRef = useRef(0);
@@ -51,33 +62,85 @@ export default function App() {
     setStepSpeed(nextSpeed);
   }, []);
 
+  const refreshSimulations = useCallback(() => {
+    fetch('/api/simulations')
+      .then(r => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      .then(data => setSimulations(Array.isArray(data.simulations) ? data.simulations : []))
+      .catch(() => setSimulations([]));
+  }, []);
+
+  useEffect(() => {
+    refreshSimulations();
+  }, [refreshSimulations]);
+
   useEffect(() => {
     if (!selectedMission) {
-      setSimResult(null);
+      if (!selectedSimulationId) {
+        setSimResult(null);
+      }
       setError(null);
       return;
     }
-    setLoading(true);
     setError(null);
     setSimResult(null);
-    fetch('/api/brief', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ brief: selectedMission, tier: 'lowest' }),
-    })
+    setSelectedSimulationId(null);
+    setLoading(false);
+  }, [selectedMission, selectedSimulationId]);
+
+  const loadSavedSimulation = useCallback((id) => {
+    setLoading(true);
+    setError(null);
+    fetch(`/api/simulation?id=${encodeURIComponent(id)}`)
       .then(r => {
-        if (!r.ok) return r.json().then(d => Promise.reject(new Error(d.error || `HTTP ${r.status}`)));
+        if (!r.ok) return r.json().then(d => Promise.reject(new Error(responseErrorMessage(d, `HTTP ${r.status}`))));
         return r.json();
       })
       .then(data => {
-        setSimResult(data);
+        setSelectedMission(null);
+        setSelectedSimulationId(id);
+        setSimResult(data.result);
         setLoading(false);
       })
       .catch(e => {
         setError(e.message);
         setLoading(false);
       });
-  }, [selectedMission]);
+  }, []);
+
+  const runGeminiSimulations = useCallback(() => {
+    if (!selectedMission) {
+      setError('Select a mission brief before running Gemini.');
+      return;
+    }
+    setRunningGemini(true);
+    setLoading(true);
+    setError(null);
+    setSimulations([]);
+    setSelectedSimulationId(null);
+    fetch('/api/gemini/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mission_id: selectedMission.id, tier: 'lowest' }),
+    })
+      .then(r => {
+        if (!r.ok) return r.json().then(d => Promise.reject(new Error(responseErrorMessage(d, `HTTP ${r.status}`))));
+        return r.json();
+      })
+      .then(manifest => {
+        refreshSimulations();
+        const last = Array.isArray(manifest.iterations) ? manifest.iterations.at(-1) : null;
+        if (last?.id) {
+          loadSavedSimulation(last.id);
+        } else {
+          setLoading(false);
+        }
+      })
+      .catch(e => {
+        setError(e.message);
+        setLoading(false);
+      })
+      .finally(() => setRunningGemini(false));
+  }, [loadSavedSimulation, refreshSimulations, selectedMission]);
 
   useEffect(() => {
     heldDirectionRef.current = 0;
@@ -91,6 +154,7 @@ export default function App() {
 
   const ticks = Array.isArray(simResult?.ticks) ? simResult.ticks : [];
   const tickCount = ticks.length;
+  const isViewingSimulation = Boolean(simResult) && tickCount > 0;
   const completedDistanceNm = simResult?.result?.distance_completed_nm;
   const completedPct = simResult?.result?.distance_completed_pct;
   const totalDistanceFromPct = completedDistanceNm > 0 && completedPct > 0
@@ -127,6 +191,7 @@ export default function App() {
   const config = simResult?.configuration ?? null;
   const displayedZones = config?.zones ?? [];
   const failureDetail = formatFailureDetail(simResult?.failure);
+  const selectedSimulation = simulations.find((sim) => sim.id === selectedSimulationId) ?? null;
   const tickProgress = (() => {
     if (playbackTickCount <= 0 || totalDistanceNm <= 0) {
       return Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
@@ -159,7 +224,7 @@ export default function App() {
 
     const stepFrame = (now) => {
       const direction = heldDirectionRef.current;
-      if (!direction || playbackTickCount <= 1) {
+      if (!direction || !isViewingSimulation || playbackTickCount <= 1) {
         stopHeldStep();
         return;
       }
@@ -185,7 +250,7 @@ export default function App() {
     };
 
     const startHeldStep = (direction) => {
-      if (playbackTickCount <= 1) return;
+      if (!isViewingSimulation || playbackTickCount <= 1) return;
       if (heldDirectionRef.current === direction) return;
       stopHeldStep();
       heldDirectionRef.current = direction;
@@ -236,10 +301,10 @@ export default function App() {
       window.removeEventListener('blur', stopHeldStep);
       stopHeldStep();
     };
-  }, [playbackMaxPosition, playbackTickCount, setDisplayedStepSpeed, setDisplayedTickPosition]);
+  }, [isViewingSimulation, playbackMaxPosition, playbackTickCount, setDisplayedStepSpeed, setDisplayedTickPosition]);
 
-  const canStepBack = playbackTickCount > 1 && clampedTickPosition > 0;
-  const canStepForward = playbackTickCount > 1 && clampedTickPosition < playbackMaxPosition;
+  const canStepBack = isViewingSimulation && playbackTickCount > 1 && clampedTickPosition > 0;
+  const canStepForward = isViewingSimulation && playbackTickCount > 1 && clampedTickPosition < playbackMaxPosition;
 
   const stepBack = useCallback(() => {
     if (!canStepBack) return;
@@ -299,6 +364,19 @@ export default function App() {
       <span style={panelValue}>{value ?? '—'}</span>
     </div>
   );
+  const panelColumnWidth = 280;
+  const expandedPanelWidth = panelColumnWidth * 2;
+  const panelHeaderStyle = {
+    padding: '10px 14px 8px',
+    fontFamily: "'Courier New', monospace",
+    fontSize: 9,
+    fontWeight: 700,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    color: 'rgba(0,0,0,0.35)',
+    whiteSpace: 'nowrap',
+    borderBottom: '1px solid rgba(0,0,0,0.08)',
+  };
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#C3C4CA', position: 'relative' }}>
@@ -310,163 +388,271 @@ export default function App() {
         routeGeo={selectedMission ? { origin: selectedMission.origin, waypoints: selectedMission.waypoints ?? [], destination: selectedMission.destination } : null}
       />
 
-      {/* Left side panel */}
+      {/* Left panel — hamburger cell that expands on hover */}
       <div
         style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          height: '100%',
-          width: 20,
+          top: panelOpen ? 0 : 12,
+          left: panelOpen ? 0 : 12,
+          width: panelOpen ? expandedPanelWidth : 36,
+          height: panelOpen ? '100vh' : 28,
           background: '#C3C4CA',
-          borderRight: '1px solid rgba(0,0,0,0.13)',
-          transition: 'width 200ms ease',
+          border: '1px solid rgba(0,0,0,0.13)',
           overflow: 'hidden',
           zIndex: 10,
-          display: 'flex',
-          flexDirection: 'column',
+          transition: 'top 220ms ease, left 220ms ease, width 220ms ease, height 220ms ease',
         }}
-        onMouseEnter={e => e.currentTarget.style.width = '280px'}
-        onMouseLeave={e => e.currentTarget.style.width = '20px'}
+        onMouseEnter={() => setPanelOpen(true)}
+        onMouseLeave={() => setPanelOpen(false)}
       >
-        {/* Mission brief section */}
-        <div style={{ flexShrink: 0 }}>
-          <div style={{
-            padding: '10px 14px 8px',
-            fontFamily: "'Courier New', monospace",
-            fontSize: 9,
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            color: 'rgba(0,0,0,0.35)',
-            whiteSpace: 'nowrap',
-            borderBottom: '1px solid rgba(0,0,0,0.08)',
-          }}>
-            Mission Brief
+        {/* Hamburger icon — fades out when expanded */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: 36,
+          height: 28,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: panelOpen ? 0 : 1,
+          transition: 'opacity 120ms ease',
+          pointerEvents: 'none',
+        }}>
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+            <rect y="0"    width="14" height="1.5" rx="0.75" fill="rgba(0,0,0,0.52)"/>
+            <rect y="4.25" width="14" height="1.5" rx="0.75" fill="rgba(0,0,0,0.52)"/>
+            <rect y="8.5"  width="14" height="1.5" rx="0.75" fill="rgba(0,0,0,0.52)"/>
+          </svg>
+        </div>
+
+        {/* Panel content — fades in when expanded */}
+        <div
+          style={{
+            opacity: panelOpen ? 1 : 0,
+            transition: 'opacity 160ms ease 60ms',
+            width: expandedPanelWidth,
+            height: '100%',
+            display: 'grid',
+            gridTemplateColumns: `${panelColumnWidth}px ${panelColumnWidth}px`,
+          }}
+        >
+          <div className="no-scrollbar" style={{ minWidth: 0, overflowY: 'auto' }}>
+            {/* Mission brief section */}
+            <div style={{ flexShrink: 0 }}>
+              <div style={panelHeaderStyle}>Mission Brief</div>
+              {MISSIONS.map((m) => {
+                const isSelected = selectedMission?.id === m.id;
+                return (
+                  <div
+                    key={m.id}
+                    onClick={() => {
+                      setSelectedSimulationId(null);
+                      setSelectedMission(isSelected ? null : m);
+                    }}
+                    style={{
+                      padding: '7px 14px',
+                      fontFamily: "'Courier New', monospace",
+                      fontSize: 10,
+                      letterSpacing: '0.02em',
+                      whiteSpace: 'nowrap',
+                      cursor: 'pointer',
+                      color: isSelected ? 'rgba(0,0,0,0.82)' : 'rgba(0,0,0,0.55)',
+                      background: isSelected ? 'rgba(0,0,0,0.06)' : 'transparent',
+                      borderBottom: '1px solid rgba(0,0,0,0.06)',
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      gap: 8,
+                    }}
+                  >
+                    <span style={{ color: 'rgba(0,0,0,0.25)', fontSize: 9 }}>
+                      {m.id.split('_')[0]}
+                    </span>
+                    {m.name}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+              <div style={panelSectionTitle}>Mission Environment</div>
+              {selectedMission || selectedSimulation ? (
+                <>
+                  {renderPanelRow('Mission', selectedMission?.name ?? selectedSimulation?.id)}
+                  {selectedMission ? renderPanelRow('Physics', selectedMission.primary_stressor?.replaceAll('_', ' ')) : null}
+                  {selectedMission ? renderPanelRow('Failure', (selectedMission.failure_modes_under_test ?? []).join(', ') || '—') : null}
+                  {selectedSimulation ? renderPanelRow('Status', selectedSimulation.status) : null}
+                  {Number.isFinite(selectedSimulation?.eval?.score_pct) ? renderPanelRow('Eval', `${selectedSimulation.eval.score_pct}%`) : null}
+                  {selectedSimulation?.assessment?.model_used ? renderPanelRow('Model', selectedSimulation.assessment.model_used) : null}
+                  {selectedSimulation?.assessment?.assessment ? renderPanelRow('AI', selectedSimulation.assessment.assessment) : null}
+                  {selectedSimulation?.assessment?.failed_part ? renderPanelRow('AI Part', selectedSimulation.assessment.failed_part) : null}
+                  {selectedSimulation?.assessment?.failed_metric ? renderPanelRow('AI Metric', selectedSimulation.assessment.failed_metric) : null}
+                  {selectedSimulation?.assessment?.root_cause ? renderPanelRow('AI Cause', selectedSimulation.assessment.root_cause) : null}
+                  {simResult?.failure ? renderPanelRow('Failed', failureDetail) : null}
+                  {renderPanelRow('Leg', activeRouteSegment?.label ?? '—')}
+                  {renderPanelRow('Waves', activeConditions
+                    ? `${fmtNumber(activeConditions.hs_m)}m Hs / ${fmtNumber(activeConditions.tp_s)}s Tp`
+                    : fmtRange(env?.wave_height_m, 'm'))}
+                  {renderPanelRow('Wind', activeConditions
+                    ? `${fmtNumber(activeConditions.wind_speed_ms)} m/s`
+                    : '—')}
+                  {renderPanelRow('Slamming', activeConditions
+                    ? `${fmtNumber((activeConditions.slam_probability ?? 0) * 100, 0)}%`
+                    : (env?.slamming_probability ?? '—'))}
+                  {renderPanelRow('Water', activeConditions
+                    ? `${fmtNumber(activeConditions.water_temp_c)}°C`
+                    : fmtRange(env?.water_temp_c, '°C'))}
+                  {renderPanelRow('Ice', env?.ice_accretion_risk ?? '—')}
+                  {renderPanelRow('Salinity', activeConditions
+                    ? `${fmtNumber(activeConditions.salinity_ppt)} ppt`
+                    : `${fmtNumber(env?.salinity_ppt)} ppt`)}
+                  {renderPanelRow('pH', activeConditions
+                    ? fmtNumber(activeConditions.ph, 2)
+                    : fmtNumber(env?.ph, 2))}
+                </>
+              ) : (
+                <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
+                  Select a mission brief.
+                </div>
+              )}
+            </div>
           </div>
-          {MISSIONS.map((m) => {
-            const isSelected = selectedMission?.id === m.id;
-            return (
-              <div
-                key={m.id}
-                onClick={() => setSelectedMission(isSelected ? null : m)}
+
+          <div className="no-scrollbar" style={{ minWidth: 0, overflowY: 'auto', borderLeft: '1px solid rgba(0,0,0,0.10)' }}>
+            {/* Simulation history section */}
+            <div style={{ flexShrink: 0 }}>
+              <div style={panelHeaderStyle}>Simulation Runs</div>
+              <button
+                type="button"
+                onClick={runGeminiSimulations}
+                disabled={runningGemini || !selectedMission}
                 style={{
+                  width: '100%',
                   padding: '7px 14px',
                   fontFamily: "'Courier New', monospace",
                   fontSize: 10,
-                  letterSpacing: '0.02em',
-                  whiteSpace: 'nowrap',
-                  cursor: 'pointer',
-                  color: isSelected ? 'rgba(0,0,0,0.82)' : 'rgba(0,0,0,0.55)',
-                  background: isSelected ? 'rgba(0,0,0,0.06)' : 'transparent',
+                  textAlign: 'left',
+                  cursor: runningGemini || !selectedMission ? 'default' : 'pointer',
+                  color: runningGemini || !selectedMission ? 'rgba(0,0,0,0.34)' : 'rgba(0,0,0,0.72)',
+                  background: 'transparent',
+                  border: 0,
                   borderBottom: '1px solid rgba(0,0,0,0.06)',
-                  display: 'flex',
-                  alignItems: 'baseline',
-                  gap: 8,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <span style={{ color: 'rgba(0,0,0,0.25)', fontSize: 9 }}>
-                  {m.id.split('_')[0]}
-                </span>
-                {m.name}
-              </div>
-            );
-          })}
-        </div>
-
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            minWidth: 280,
-            borderTop: '1px solid rgba(0,0,0,0.08)',
-          }}
-        >
-          <div style={panelSectionTitle}>Mission Environment</div>
-          {selectedMission ? (
-            <>
-              {renderPanelRow('Mission', selectedMission.name)}
-              {renderPanelRow('Physics', selectedMission.primary_stressor?.replaceAll('_', ' '))}
-              {renderPanelRow('Failure', (selectedMission.failure_modes_under_test ?? []).join(', ') || '—')}
-              {simResult?.failure ? renderPanelRow('Failed', failureDetail) : null}
-              {renderPanelRow('Leg', activeRouteSegment?.label ?? '—')}
-              {renderPanelRow('Waves', activeConditions
-                ? `${fmtNumber(activeConditions.hs_m)}m Hs / ${fmtNumber(activeConditions.tp_s)}s Tp`
-                : fmtRange(env?.wave_height_m, 'm'))}
-              {renderPanelRow('Wind', activeConditions
-                ? `${fmtNumber(activeConditions.wind_speed_ms)} m/s`
-                : '—')}
-              {renderPanelRow('Slamming', activeConditions
-                ? `${fmtNumber((activeConditions.slam_probability ?? 0) * 100, 0)}%`
-                : (env?.slamming_probability ?? '—'))}
-              {renderPanelRow('Water', activeConditions
-                ? `${fmtNumber(activeConditions.water_temp_c)}°C`
-                : fmtRange(env?.water_temp_c, '°C'))}
-              {renderPanelRow('Ice', env?.ice_accretion_risk ?? '—')}
-              {renderPanelRow('Salinity', activeConditions
-                ? `${fmtNumber(activeConditions.salinity_ppt)} ppt`
-                : `${fmtNumber(env?.salinity_ppt)} ppt`)}
-              {renderPanelRow('pH', activeConditions
-                ? fmtNumber(activeConditions.ph, 2)
-                : fmtNumber(env?.ph, 2))}
-            </>
-          ) : (
-            <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
-              Select a mission brief.
-            </div>
-          )}
-
-          <div style={{ ...panelSectionTitle, marginTop: 8 }}>Material Configuration</div>
-          {config ? (
-            <>
-              {renderPanelRow('Shell mass', `${fmtNumber(config.shell_mass_kg, 0)} kg`)}
-              {renderPanelRow('Cost', simResult?.result?.total_config_cost_usd
-                ? `$${simResult.result.total_config_cost_usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
-                : '—')}
-              {displayedZones.map((zone, index) => (
-                <div
-                  key={`${zone.zone_key ?? zone.zone}-${index}`}
-                  style={{
-                    padding: '6px 14px 7px',
-                    borderTop: '1px solid rgba(0,0,0,0.07)',
+                {runningGemini ? 'Running Gemini...' : 'Run Gemini'}
+              </button>
+              <div className="no-scrollbar" style={{ maxHeight: 170, overflowY: 'auto', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+                {simulations.length === 0 ? (
+                  <div style={{
+                    padding: '7px 14px',
                     fontFamily: "'Courier New', monospace",
                     fontSize: 10,
-                    lineHeight: 1.25,
-                    color: 'rgba(0,0,0,0.70)',
-                  }}
-                >
-                  <div style={{
-                    color: 'rgba(0,0,0,0.74)',
-                    marginBottom: 3,
+                    color: 'rgba(0,0,0,0.42)',
                     whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
                   }}>
-                    {zone.zone ?? 'Component'}
+                    No saved simulations.
                   </div>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '70px 1fr',
-                    gap: 6,
-                    color: 'rgba(0,0,0,0.48)',
-                  }}>
-                    <span>MAT</span>
-                    <span style={panelValue}>{zone.material_label ?? zone.material ?? '—'}</span>
-                    <span>THK</span>
-                    <span style={panelValue}>{fmtNumber(zone.thickness_mm)} mm</span>
-                    <span>WLD</span>
-                    <span style={panelValue}>{zone.weld_label ?? zone.weld_quality ?? '—'}</span>
-                    <span>SEL</span>
-                    <span style={panelValue}>{zone.seal_label ?? zone.seal_quality ?? '—'}</span>
-                  </div>
-                </div>
-              ))}
-            </>
-          ) : (
-            <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
-              Run a mission to load configuration.
+                ) : simulations.map((sim) => {
+                  const isSelected = selectedSimulationId === sim.id;
+                  const failure = sim.failure?.mode ?? sim.status;
+                  const evalScore = Number.isFinite(sim.eval?.score_pct) ? `${sim.eval.score_pct}%` : '—';
+                  return (
+                    <div
+                      key={sim.id}
+                      onClick={() => loadSavedSimulation(sim.id)}
+                      style={{
+                        padding: '6px 14px',
+                        fontFamily: "'Courier New', monospace",
+                        fontSize: 10,
+                        cursor: 'pointer',
+                        color: isSelected ? 'rgba(0,0,0,0.82)' : 'rgba(0,0,0,0.55)',
+                        background: isSelected ? 'rgba(0,0,0,0.06)' : 'transparent',
+                        borderBottom: '1px solid rgba(0,0,0,0.05)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr auto',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}
+                    >
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ color: 'rgba(0,0,0,0.28)' }}>
+                          {String(sim.iteration).padStart(2, '0')}
+                        </span>
+                        {' '}
+                        {failure}
+                      </span>
+                      <span style={{
+                        color: isSelected ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.42)',
+                        fontWeight: 700,
+                        minWidth: 34,
+                        textAlign: 'right',
+                      }}>
+                        {evalScore}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          )}
+
+            <div style={{ ...panelSectionTitle, marginTop: 8 }}>Parameter Configuration</div>
+            {config ? (
+              <>
+                {renderPanelRow('Shell mass', `${fmtNumber(config.shell_mass_kg, 0)} kg`)}
+                {config.propulsion ? renderPanelRow('Fuel cap', `${fmtNumber(config.propulsion.fuel_capacity_kg, 0)} kg`) : null}
+                {config.propulsion ? renderPanelRow('Efficiency', fmtNumber(config.propulsion.propulsive_efficiency, 2)) : null}
+                {config.propulsion ? renderPanelRow('Drag coeff', fmtNumber(config.propulsion.hull_drag_coeff, 4)) : null}
+                {renderPanelRow('Cost', simResult?.result?.total_config_cost_usd
+                  ? `$${simResult.result.total_config_cost_usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                  : '—')}
+                {displayedZones.map((zone, index) => (
+                  <div
+                    key={`${zone.zone_key ?? zone.zone}-${index}`}
+                    style={{
+                      padding: '6px 14px 7px',
+                      borderTop: '1px solid rgba(0,0,0,0.07)',
+                      fontFamily: "'Courier New', monospace",
+                      fontSize: 10,
+                      lineHeight: 1.25,
+                      color: 'rgba(0,0,0,0.70)',
+                    }}
+                  >
+                    <div style={{
+                      color: 'rgba(0,0,0,0.74)',
+                      marginBottom: 3,
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>
+                      {zone.zone ?? 'Component'}
+                    </div>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '70px 1fr',
+                      gap: 6,
+                      color: 'rgba(0,0,0,0.48)',
+                    }}>
+                      <span>MAT</span>
+                      <span style={panelValue}>{zone.material_label ?? zone.material ?? '—'}</span>
+                      <span>THK</span>
+                      <span style={panelValue}>{fmtNumber(zone.thickness_mm)} mm</span>
+                      <span>WLD</span>
+                      <span style={panelValue}>{zone.weld_label ?? zone.weld_quality ?? '—'}</span>
+                      <span>SEL</span>
+                      <span style={panelValue}>{zone.seal_label ?? zone.seal_quality ?? '—'}</span>
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
+                Run a mission to load configuration.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

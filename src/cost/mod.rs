@@ -2,10 +2,14 @@ use crate::vessel::{HullZone, VesselConfig};
 
 const BASE_WELD_COST_PER_M_USD: f64 = 45.0;
 const BASE_SEAL_COST_PER_M_USD: f64 = 18.0;
+const FUEL_CAPACITY_COST_PER_KG_USD: f64 = 1.15;
 
 /// Total material + fabrication cost [USD] for a vessel configuration.
 pub fn total_config_cost_usd(config: &VesselConfig) -> f64 {
-    material_cost_usd(config) + weld_cost_usd(config) + seal_cost_usd(config)
+    material_cost_usd(config)
+        + weld_cost_usd(config)
+        + seal_cost_usd(config)
+        + fuel_capacity_cost_usd(config)
 }
 
 /// Raw material cost [USD]: mass × cost_per_kg, summed across zones.
@@ -63,11 +67,17 @@ pub fn seal_cost_usd(config: &VesselConfig) -> f64 {
     seal_perimeter * BASE_SEAL_COST_PER_M_USD * seal_factor
 }
 
+/// Fuel storage + carried fuel allowance cost [USD].
+pub fn fuel_capacity_cost_usd(config: &VesselConfig) -> f64 {
+    config.propulsion.fuel_capacity_kg * FUEL_CAPACITY_COST_PER_KG_USD
+}
+
 /// Break down cost into material, weld, and seal components.
 pub struct CostBreakdown {
     pub material_usd: f64,
     pub weld_usd: f64,
     pub seal_usd: f64,
+    pub fuel_capacity_usd: f64,
     pub total_usd: f64,
 }
 
@@ -76,11 +86,13 @@ impl CostBreakdown {
         let material_usd = material_cost_usd(config);
         let weld_usd = weld_cost_usd(config);
         let seal_usd = seal_cost_usd(config);
+        let fuel_capacity_usd = fuel_capacity_cost_usd(config);
         Self {
             material_usd,
             weld_usd,
             seal_usd,
-            total_usd: material_usd + weld_usd + seal_usd,
+            fuel_capacity_usd,
+            total_usd: material_usd + weld_usd + seal_usd + fuel_capacity_usd,
         }
     }
 }

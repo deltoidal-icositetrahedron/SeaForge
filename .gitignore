@@ -10,6 +10,12 @@ ui/.vite/
 /result.json
 /sim_output.json
 ui/*_output.json
+/simulations/*
+!/simulations/.gitkeep
+
+# Local secrets
+.env
+.env.*
 
 # Local captures/media exports
 *.mov

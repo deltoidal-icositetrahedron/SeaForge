@@ -12,6 +12,7 @@ ui/.vite/
 ui/*_output.json
 /simulations/*
 !/simulations/.gitkeep
+/gemini_runner/design_memory.json
 
 # Local secrets
 .env

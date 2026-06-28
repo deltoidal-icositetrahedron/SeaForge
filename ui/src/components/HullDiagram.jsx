@@ -13,6 +13,7 @@ const GLOBE_ROUTE_RADIUS = GLOBE_RADIUS + 0.11;
 const GLOBE_SHIP_RADIUS = GLOBE_RADIUS + 0.12;
 const GLOBE_ROUTE_SEGMENTS = 96;
 const GLOBE_GRID_SEGMENTS = 144;
+const ROUTE_TANGENT_SMOOTH_PROGRESS = 0.014;
 const SHIP_MODEL_LENGTH = 4.2;
 const GRID_LINE_OPACITY = 0.105;
 const GRID_SHADOW_OPACITY = 0.025;
@@ -330,8 +331,17 @@ function buildRoute(routeGeo) {
     },
 
     tangentAt(progress) {
-      const leg = legAt(progress);
-      const unit = routeUnitAt(leg.frame, toLocal(leg, progress));
+      const p = clamp(progress, 0, 1);
+      const unit = this.unitAt(p);
+      const before = this.unitAt(Math.max(0, p - ROUTE_TANGENT_SMOOTH_PROGRESS));
+      const after = this.unitAt(Math.min(1, p + ROUTE_TANGENT_SMOOTH_PROGRESS));
+      const tangent = after.sub(before).projectOnPlane(unit);
+
+      if (tangent.lengthSq() > 1e-10) {
+        return tangent.normalize();
+      }
+
+      const leg = legAt(p);
       return routeTangentAt(leg.frame, unit);
     },
 
@@ -389,6 +399,25 @@ function shipCameraPositionFor(route, progress, target) {
     .addScaledVector(right, SHIP_CAMERA_LOCAL_OFFSET.x)
     .addScaledVector(up, SHIP_CAMERA_LOCAL_OFFSET.y)
     .addScaledVector(forward, SHIP_CAMERA_LOCAL_OFFSET.z);
+}
+
+function cameraFollowShipOnRoute(cam, controls, route, previousFocus, previousProgress, nextFocus, nextProgress) {
+  const previousUp = route.unitAt(previousProgress);
+  const previousForward = route.tangentAt(previousProgress).projectOnPlane(previousUp).normalize();
+  const previousRight = previousUp.clone().cross(previousForward).normalize();
+  const offset = cam.position.clone().sub(previousFocus);
+
+  const nextUp = route.unitAt(nextProgress);
+  const nextForward = route.tangentAt(nextProgress).projectOnPlane(nextUp).normalize();
+  const nextRight = nextUp.clone().cross(nextForward).normalize();
+
+  cam.position.copy(nextFocus)
+    .addScaledVector(nextRight, offset.dot(previousRight))
+    .addScaledVector(nextUp, offset.dot(previousUp))
+    .addScaledVector(nextForward, offset.dot(previousForward));
+  cam.up.copy(nextUp);
+  controls.target.copy(nextFocus);
+  cam.lookAt(nextFocus);
 }
 
 function projectWorldToScreen(point, camera, element) {
@@ -1746,6 +1775,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       traversedRouteLine,
       remainingRouteLine,
       route,
+      shipProgress: progress,
     };
 
     // Resize
@@ -1796,6 +1826,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       traversedRouteLine,
       remainingRouteLine,
       route: currentRoute,
+      shipProgress: previousRouteProgress = 0,
     } = stateRef.current;
     if (!shipGroup || !currentRoute) return;
 
@@ -1820,10 +1851,17 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       remainingRouteLine.geometry.computeBoundingSphere();
     }
     if (controls && cam && shipFocus) {
-      const delta = nextShipFocus.clone().sub(shipFocus);
-      cam.position.add(delta);
-      controls.target.copy(nextShipFocus);
+      cameraFollowShipOnRoute(
+        cam,
+        controls,
+        currentRoute,
+        shipFocus,
+        previousRouteProgress,
+        nextShipFocus,
+        routeProgress,
+      );
       shipFocus.copy(nextShipFocus);
+      stateRef.current.shipProgress = routeProgress;
       controls.update();
       updateGridDetail({ cam, controls, globeGridLevels, localGridGroup });
     }

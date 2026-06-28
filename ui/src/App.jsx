@@ -6,9 +6,31 @@ const TICK_STEP_MS = 1000;
 const MIN_STEP_SPEED = 1;
 const MAX_STEP_SPEED = 64;
 
+function fmtNumber(value, digits = 1, fallback = '—') {
+  return Number.isFinite(value) ? value.toFixed(digits) : fallback;
+}
+
+function fmtRange(range, unit = '', digits = 1) {
+  if (!range) return '—';
+  const parts = [];
+  if (Number.isFinite(range.avg)) parts.push(`avg ${fmtNumber(range.avg, digits)}${unit}`);
+  if (Number.isFinite(range.min)) parts.push(`min ${fmtNumber(range.min, digits)}${unit}`);
+  if (Number.isFinite(range.max)) parts.push(`max ${fmtNumber(range.max, digits)}${unit}`);
+  return parts.length ? parts.join(' / ') : '—';
+}
+
+function formatFailureDetail(failure) {
+  const detail = failure?.detail;
+  if (!detail) return failure?.mode ?? '—';
+  const zone = detail.failed_zone ?? 'Component';
+  const metric = detail.failed_metric ?? failure?.mode ?? 'failure';
+  const value = detail.failed_value ?? 'failed';
+  return `${zone} ${metric} ${value}`;
+}
+
 export default function App() {
   const [simResult, setSimResult] = useState(null);
-  const [loading, setLoading]     = useState(true);
+  const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState(null);
   const [tickPosition, setTickPosition] = useState(0);
   const [stepSpeed, setStepSpeed] = useState(1);
@@ -29,30 +51,33 @@ export default function App() {
     setStepSpeed(nextSpeed);
   }, []);
 
-  const loadResult = useCallback(async () => {
+  useEffect(() => {
+    if (!selectedMission) {
+      setSimResult(null);
+      setError(null);
+      return;
+    }
     setLoading(true);
     setError(null);
-    try {
-      const res  = await fetch('/api/result');
-      if (res.status === 404) {
-        setError('no result — run: npm run sim');
-        setSimResult(null);
-      } else if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        setError(d.error || `HTTP ${res.status}`);
-        setSimResult(null);
-      } else {
-        setSimResult(await res.json());
-      }
-    } catch (e) {
-      setError(e.message);
-      setSimResult(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { loadResult(); }, [loadResult]);
+    setSimResult(null);
+    fetch('/api/brief', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ brief: selectedMission, tier: 'lowest' }),
+    })
+      .then(r => {
+        if (!r.ok) return r.json().then(d => Promise.reject(new Error(d.error || `HTTP ${r.status}`)));
+        return r.json();
+      })
+      .then(data => {
+        setSimResult(data);
+        setLoading(false);
+      })
+      .catch(e => {
+        setError(e.message);
+        setLoading(false);
+      });
+  }, [selectedMission]);
 
   useEffect(() => {
     heldDirectionRef.current = 0;
@@ -66,13 +91,6 @@ export default function App() {
 
   const ticks = Array.isArray(simResult?.ticks) ? simResult.ticks : [];
   const tickCount = ticks.length;
-  const clampedTickPosition = tickCount > 0
-    ? Math.max(0, Math.min(tickPosition, tickCount - 1))
-    : 0;
-  const activeTickIndex = tickCount > 0
-    ? Math.max(0, Math.min(tickCount - 1, Math.round(clampedTickPosition)))
-    : 0;
-  const activeTick = tickCount > 0 ? ticks[activeTickIndex] : null;
   const completedDistanceNm = simResult?.result?.distance_completed_nm;
   const completedPct = simResult?.result?.distance_completed_pct;
   const totalDistanceFromPct = completedDistanceNm > 0 && completedPct > 0
@@ -82,16 +100,50 @@ export default function App() {
     ?? completedDistanceNm
     ?? ticks[tickCount - 1]?.distance_completed_nm
     ?? 0;
+  const finalTickDistanceNm = ticks[tickCount - 1]?.distance_completed_nm ?? 0;
+  const simulationFailed = simResult?.status === 'failed' || Boolean(simResult?.failure);
+  const needsSyntheticDestinationTicks = tickCount > 0
+    && !simulationFailed
+    && totalDistanceNm > 0
+    && finalTickDistanceNm < totalDistanceNm * 0.995;
+  const averageTickDistanceNm = tickCount > 1
+    ? Math.max(finalTickDistanceNm / (tickCount - 1), totalDistanceNm / 120, 1)
+    : Math.max(totalDistanceNm / 120, 1);
+  const syntheticDestinationTickCount = needsSyntheticDestinationTicks
+    ? Math.max(1, Math.ceil((totalDistanceNm - finalTickDistanceNm) / averageTickDistanceNm))
+    : 0;
+  const playbackTickCount = tickCount + syntheticDestinationTickCount;
+  const playbackMaxPosition = Math.max(0, playbackTickCount - 1);
+  const clampedTickPosition = tickCount > 0
+    ? Math.max(0, Math.min(tickPosition, playbackMaxPosition))
+    : 0;
+  const activeTickIndex = tickCount > 0
+    ? Math.max(0, Math.min(tickCount - 1, Math.round(clampedTickPosition)))
+    : 0;
+  const activeTick = tickCount > 0 ? ticks[activeTickIndex] : null;
+  const activeRouteSegment = simResult?.voyage?.route_segments?.[activeTick?.segment_index ?? 0] ?? null;
+  const activeConditions = activeRouteSegment?.conditions ?? null;
+  const env = selectedMission?.environmental_profile ?? null;
+  const config = simResult?.configuration ?? null;
+  const displayedZones = config?.zones ?? [];
+  const failureDetail = formatFailureDetail(simResult?.failure);
   const tickProgress = (() => {
-    if (tickCount <= 0 || totalDistanceNm <= 0) {
+    if (playbackTickCount <= 0 || totalDistanceNm <= 0) {
       return Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
     }
 
     const fromIndex = Math.floor(clampedTickPosition);
-    const toIndex = Math.min(tickCount - 1, fromIndex + 1);
+    const toIndex = Math.min(playbackTickCount - 1, fromIndex + 1);
     const t = clampedTickPosition - fromIndex;
-    const fromDistance = ticks[fromIndex]?.distance_completed_nm ?? 0;
-    const toDistance = ticks[toIndex]?.distance_completed_nm ?? fromDistance;
+    const distanceAt = (index) => (
+      index >= tickCount
+        ? finalTickDistanceNm
+          + (totalDistanceNm - finalTickDistanceNm)
+            * Math.min((index - tickCount + 1) / syntheticDestinationTickCount, 1)
+        : (ticks[index]?.distance_completed_nm ?? 0)
+    );
+    const fromDistance = distanceAt(fromIndex);
+    const toDistance = distanceAt(toIndex);
     return Math.min((fromDistance + (toDistance - fromDistance) * t) / totalDistanceNm, 1);
   })();
 
@@ -107,7 +159,7 @@ export default function App() {
 
     const stepFrame = (now) => {
       const direction = heldDirectionRef.current;
-      if (!direction || tickCount <= 1) {
+      if (!direction || playbackTickCount <= 1) {
         stopHeldStep();
         return;
       }
@@ -117,12 +169,12 @@ export default function App() {
       const deltaTicks = ((now - previousTime) / TICK_STEP_MS) * stepSpeedRef.current;
       const nextPosition = Math.max(
         0,
-        Math.min(tickCount - 1, tickPositionRef.current + direction * deltaTicks),
+        Math.min(playbackMaxPosition, tickPositionRef.current + direction * deltaTicks),
       );
       setDisplayedTickPosition(nextPosition);
 
       if (
-        (direction > 0 && nextPosition >= tickCount - 1)
+        (direction > 0 && nextPosition >= playbackMaxPosition)
         || (direction < 0 && nextPosition <= 0)
       ) {
         stopHeldStep();
@@ -133,7 +185,7 @@ export default function App() {
     };
 
     const startHeldStep = (direction) => {
-      if (tickCount <= 1) return;
+      if (playbackTickCount <= 1) return;
       if (heldDirectionRef.current === direction) return;
       stopHeldStep();
       heldDirectionRef.current = direction;
@@ -184,10 +236,10 @@ export default function App() {
       window.removeEventListener('blur', stopHeldStep);
       stopHeldStep();
     };
-  }, [setDisplayedStepSpeed, setDisplayedTickPosition, tickCount]);
+  }, [playbackMaxPosition, playbackTickCount, setDisplayedStepSpeed, setDisplayedTickPosition]);
 
-  const canStepBack = tickCount > 1 && clampedTickPosition > 0;
-  const canStepForward = tickCount > 1 && clampedTickPosition < tickCount - 1;
+  const canStepBack = playbackTickCount > 1 && clampedTickPosition > 0;
+  const canStepForward = playbackTickCount > 1 && clampedTickPosition < playbackMaxPosition;
 
   const stepBack = useCallback(() => {
     if (!canStepBack) return;
@@ -196,8 +248,8 @@ export default function App() {
 
   const stepForward = useCallback(() => {
     if (!canStepForward) return;
-    setDisplayedTickPosition(Math.min(tickCount - 1, Math.round(tickPositionRef.current) + 1));
-  }, [canStepForward, setDisplayedTickPosition, tickCount]);
+    setDisplayedTickPosition(Math.min(playbackMaxPosition, Math.round(tickPositionRef.current) + 1));
+  }, [canStepForward, playbackMaxPosition, setDisplayedTickPosition]);
 
   const cell = {
     fontFamily: "'Courier New', monospace",
@@ -209,6 +261,44 @@ export default function App() {
     height: 28,
     lineHeight: 1,
   };
+  const panelSectionTitle = {
+    padding: '10px 14px 6px',
+    fontFamily: "'Courier New', monospace",
+    fontSize: 8.5,
+    fontWeight: 700,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    color: 'rgba(0,0,0,0.36)',
+    whiteSpace: 'nowrap',
+  };
+  const panelRow = {
+    display: 'grid',
+    gridTemplateColumns: '86px 1fr',
+    gap: 8,
+    padding: '3px 14px',
+    fontFamily: "'Courier New', monospace",
+    fontSize: 10,
+    lineHeight: 1.25,
+    color: 'rgba(0,0,0,0.70)',
+  };
+  const panelLabel = {
+    color: 'rgba(0,0,0,0.38)',
+    textTransform: 'uppercase',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  };
+  const panelValue = {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  };
+  const renderPanelRow = (label, value) => (
+    <div style={panelRow}>
+      <span style={panelLabel}>{label}</span>
+      <span style={panelValue}>{value ?? '—'}</span>
+    </div>
+  );
 
   return (
     <div style={{ width: '100vw', height: '100vh', overflow: 'hidden', background: '#C3C4CA', position: 'relative' }}>
@@ -282,6 +372,101 @@ export default function App() {
               </div>
             );
           })}
+        </div>
+
+        <div
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            minWidth: 280,
+            borderTop: '1px solid rgba(0,0,0,0.08)',
+          }}
+        >
+          <div style={panelSectionTitle}>Mission Environment</div>
+          {selectedMission ? (
+            <>
+              {renderPanelRow('Mission', selectedMission.name)}
+              {renderPanelRow('Physics', selectedMission.primary_stressor?.replaceAll('_', ' '))}
+              {renderPanelRow('Failure', (selectedMission.failure_modes_under_test ?? []).join(', ') || '—')}
+              {simResult?.failure ? renderPanelRow('Failed', failureDetail) : null}
+              {renderPanelRow('Leg', activeRouteSegment?.label ?? '—')}
+              {renderPanelRow('Waves', activeConditions
+                ? `${fmtNumber(activeConditions.hs_m)}m Hs / ${fmtNumber(activeConditions.tp_s)}s Tp`
+                : fmtRange(env?.wave_height_m, 'm'))}
+              {renderPanelRow('Wind', activeConditions
+                ? `${fmtNumber(activeConditions.wind_speed_ms)} m/s`
+                : '—')}
+              {renderPanelRow('Slamming', activeConditions
+                ? `${fmtNumber((activeConditions.slam_probability ?? 0) * 100, 0)}%`
+                : (env?.slamming_probability ?? '—'))}
+              {renderPanelRow('Water', activeConditions
+                ? `${fmtNumber(activeConditions.water_temp_c)}°C`
+                : fmtRange(env?.water_temp_c, '°C'))}
+              {renderPanelRow('Ice', env?.ice_accretion_risk ?? '—')}
+              {renderPanelRow('Salinity', activeConditions
+                ? `${fmtNumber(activeConditions.salinity_ppt)} ppt`
+                : `${fmtNumber(env?.salinity_ppt)} ppt`)}
+              {renderPanelRow('pH', activeConditions
+                ? fmtNumber(activeConditions.ph, 2)
+                : fmtNumber(env?.ph, 2))}
+            </>
+          ) : (
+            <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
+              Select a mission brief.
+            </div>
+          )}
+
+          <div style={{ ...panelSectionTitle, marginTop: 8 }}>Material Configuration</div>
+          {config ? (
+            <>
+              {renderPanelRow('Shell mass', `${fmtNumber(config.shell_mass_kg, 0)} kg`)}
+              {renderPanelRow('Cost', simResult?.result?.total_config_cost_usd
+                ? `$${simResult.result.total_config_cost_usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                : '—')}
+              {displayedZones.map((zone, index) => (
+                <div
+                  key={`${zone.zone_key ?? zone.zone}-${index}`}
+                  style={{
+                    padding: '6px 14px 7px',
+                    borderTop: '1px solid rgba(0,0,0,0.07)',
+                    fontFamily: "'Courier New', monospace",
+                    fontSize: 10,
+                    lineHeight: 1.25,
+                    color: 'rgba(0,0,0,0.70)',
+                  }}
+                >
+                  <div style={{
+                    color: 'rgba(0,0,0,0.74)',
+                    marginBottom: 3,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}>
+                    {zone.zone ?? 'Component'}
+                  </div>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '70px 1fr',
+                    gap: 6,
+                    color: 'rgba(0,0,0,0.48)',
+                  }}>
+                    <span>MAT</span>
+                    <span style={panelValue}>{zone.material_label ?? zone.material ?? '—'}</span>
+                    <span>THK</span>
+                    <span style={panelValue}>{fmtNumber(zone.thickness_mm)} mm</span>
+                    <span>WLD</span>
+                    <span style={panelValue}>{zone.weld_label ?? zone.weld_quality ?? '—'}</span>
+                    <span>SEL</span>
+                    <span style={panelValue}>{zone.seal_label ?? zone.seal_quality ?? '—'}</span>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
+              Run a mission to load configuration.
+            </div>
+          )}
         </div>
       </div>
 

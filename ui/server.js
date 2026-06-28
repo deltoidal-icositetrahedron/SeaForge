@@ -128,6 +128,47 @@ app.post('/api/simulate', (req, res) => {
   }
 });
 
+// POST /api/brief — run the brief command with a mission JSON and optional tier
+app.post('/api/brief', (req, res) => {
+  const { brief, tier = 'cheapest', zones = null } = req.body;
+  if (!brief) {
+    return res.status(400).json({ error: 'POST /api/brief requires { brief, tier?, zones? }' });
+  }
+
+  const ts = Date.now();
+  const briefFile = path.join(os.tmpdir(), `seaforge_brief_${ts}.json`);
+  const outFile   = path.join(os.tmpdir(), `seaforge_brief_out_${ts}.json`);
+
+  try {
+    const briefPayload = zones ? { ...brief, zones } : brief;
+    fs.writeFileSync(briefFile, JSON.stringify(briefPayload, null, 2));
+
+    const result = spawnSync(
+      BINARY,
+      ['brief', briefFile, outFile, `--tier=${tier}`],
+      { encoding: 'utf8', timeout: 60000 },
+    );
+
+    safeUnlink(briefFile);
+
+    if (result.error) {
+      return res.status(500).json({ error: result.error.message });
+    }
+    if (!fs.existsSync(outFile)) {
+      const stderr = result.stderr ? result.stderr.toString() : '';
+      return res.status(500).json({ error: 'Binary produced no output file', stderr });
+    }
+
+    const parsed = JSON.parse(fs.readFileSync(outFile, 'utf8'));
+    safeUnlink(outFile);
+    res.json(parsed);
+  } catch (e) {
+    safeUnlink(briefFile);
+    safeUnlink(outFile);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // POST /api/optimize
 app.post('/api/optimize', (req, res) => {
   const ts = Date.now();

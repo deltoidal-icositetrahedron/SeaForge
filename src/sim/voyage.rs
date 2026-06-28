@@ -3,6 +3,7 @@ use crate::{
     environment::VoyageRoute,
     physics::{
         corrosion::{corrosion_fatigue_multiplier, thickness_loss_m},
+        ice::{gm_with_ice, spray_icing_rate_kg_per_h},
         resistance::{equilibrium_speed_ms, fuel_burned_kg},
         stability::{capsize_risk, estimate_kg, gm_minimum, metacentric_height_m},
         structural::{
@@ -15,6 +16,9 @@ use crate::{
 };
 
 const STEP_H: f64 = 1.0;
+const DAMAGE_RATE_MULTIPLIER: f64 = 2.4;
+const CRACK_GROWTH_MULTIPLIER: f64 = 0.08;
+const CORROSION_RATE_MULTIPLIER: f64 = 5.0;
 
 pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
     let total_distance_nm = route.total_distance_nm();
@@ -23,7 +27,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
     let zone_states: Vec<ZoneState> = config
         .zones
         .iter()
-        .map(|z| ZoneState::new(z.zone))
+        .map(|z| ZoneState::new(z.zone, z.weld_quality.initial_crack_m() * 0.25))
         .collect();
 
     let initial_mass = config.total_mass_kg();
@@ -66,7 +70,11 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
         let gm_min = gm_minimum(&config.hull);
 
         if capsize_risk(state.gm_m, &config.hull, conditions.hs_m, conditions.encounter_angle_deg) {
-            let mode = FailureMode::Capsize { gm_m: state.gm_m, gm_required_m: gm_min };
+            // Report the effective dynamic threshold, not just the static floor
+            let beam_component = (conditions.encounter_angle_deg.to_radians().sin()).abs();
+            let gm_effective_min = (gm_min + 0.015 * conditions.hs_m.powi(2) * beam_component)
+                .max(gm_min);
+            let mode = FailureMode::Capsize { gm_m: state.gm_m, gm_required_m: gm_effective_min };
             ticks.push(snapshot_at(&state, seg_idx, &segment.label, state.speed_kts, &peak_stress, config, Some(mode.label())));
             return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
         }
@@ -106,6 +114,25 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
             }
             state.fuel_kg -= fuel_burned;
 
+            // ----------------------------------------------------------------
+            // Spray-ice accretion (sub-4°C water → topside ice raises KG)
+            // ----------------------------------------------------------------
+            let ice_rate = spray_icing_rate_kg_per_h(&config.hull, conditions);
+            if ice_rate > 0.0 {
+                state.ice_mass_kg += ice_rate * step_h;
+                let kg = estimate_kg(config, state.fuel_kg);
+                let base_gm = metacentric_height_m(&config.hull, step_mass, kg);
+                state.gm_m = gm_with_ice(base_gm, &config.hull, step_mass, kg, state.ice_mass_kg);
+                if capsize_risk(state.gm_m, &config.hull, conditions.hs_m, conditions.encounter_angle_deg) {
+                    let gm_min = gm_minimum(&config.hull);
+                    let beam_component = (conditions.encounter_angle_deg.to_radians().sin()).abs();
+                    let gm_effective_min = (gm_min + 0.015 * conditions.hs_m.powi(2) * beam_component).max(gm_min);
+                    let mode = FailureMode::Capsize { gm_m: state.gm_m, gm_required_m: gm_effective_min };
+                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label())));
+                    return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
+                }
+            }
+
             // Per-zone structural assessment for this step
             let elapsed_h_snapshot = state.elapsed_h;
             for zone_spec in &config.zones {
@@ -125,11 +152,23 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                 }
 
                 let submerged = zone.is_submerged();
-                let new_loss = thickness_loss_m(material, conditions, submerged, step_h);
+                let new_loss = thickness_loss_m(material, conditions, submerged, step_h)
+                    * CORROSION_RATE_MULTIPLIER;
                 zone_state.corrosion_depth_m += new_loss;
 
                 let net_t = zone_state.net_thickness_m(zone_spec.thickness_m);
-                if net_t < 0.0005 {
+                let thickness_ratio = (zone_spec.thickness_m / net_t.max(0.0005)).clamp(1.0, 8.0);
+                let fatigue_softening = 1.0 + zone_state.fatigue_consumed.clamp(0.0, 0.64) * 1.8;
+                let crack_softening =
+                    1.0 + (zone_state.crack_half_length_m / zone_spec.thickness_m.max(0.001))
+                        .sqrt()
+                        .clamp(0.0, 1.5);
+                let weakening_multiplier =
+                    (thickness_ratio.powf(2.2) * fatigue_softening * crack_softening)
+                        .clamp(1.0, 18.0);
+
+                if net_t < zone_spec.thickness_m * 0.35 {
+                    zone_state.fatigue_consumed = 1.0;
                     let mode = FailureMode::FatigueFailure {
                         zone,
                         damage_accumulated: zone_state.fatigue_consumed,
@@ -148,16 +187,19 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                     &mat_spec,
                     step_s,
                 );
-                zone_state.fatigue_consumed += base_damage * corr_multiplier;
+                zone_state.fatigue_consumed +=
+                    base_damage * corr_multiplier * weakening_multiplier * DAMAGE_RATE_MULTIPLIER;
 
                 let sig_stress =
-                    significant_stress_mpa(&config.hull, conditions, zone, zone_spec);
+                    significant_stress_mpa(&config.hull, conditions, zone, zone_spec)
+                        * weakening_multiplier;
                 let entry = peak_stress.entry(zone).or_insert(0.0);
                 if sig_stress > *entry {
                     *entry = sig_stress;
                 }
 
                 if zone_state.is_fatigued() {
+                    zone_state.fatigue_consumed = 1.0;
                     let mode = FailureMode::FatigueFailure {
                         zone,
                         damage_accumulated: zone_state.fatigue_consumed,
@@ -174,7 +216,8 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                     zone_state.crack_half_length_m.max(1e-6),
                 );
                 let da_per_cycle = paris_crack_growth_per_cycle(dk, &mat_spec);
-                zone_state.crack_half_length_m += da_per_cycle * n_cycles;
+                zone_state.crack_half_length_m +=
+                    da_per_cycle * n_cycles * CRACK_GROWTH_MULTIPLIER * weakening_multiplier.sqrt();
 
                 let k_applied =
                     stress_intensity_factor(sig_stress, zone_state.crack_half_length_m);

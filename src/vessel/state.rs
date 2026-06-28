@@ -15,12 +15,12 @@ pub struct ZoneState {
 }
 
 impl ZoneState {
-    pub fn new(zone: HullZone) -> Self {
+    pub fn new(zone: HullZone, initial_crack_half_length_m: f64) -> Self {
         Self {
             zone,
             fatigue_consumed: 0.0,
             corrosion_depth_m: 0.0,
-            crack_half_length_m: 0.0,
+            crack_half_length_m: initial_crack_half_length_m,
         }
     }
 
@@ -31,7 +31,7 @@ impl ZoneState {
 
     /// True when Miner's cumulative damage has reached the failure threshold.
     pub fn is_fatigued(&self) -> bool {
-        self.fatigue_consumed >= 1.0
+        self.fatigue_consumed >= 0.75
     }
 }
 
@@ -50,6 +50,9 @@ pub struct VesselState {
     pub speed_kts: f64,
     /// Structural state per zone
     pub zones: Vec<ZoneState>,
+    /// Ice accumulated on topsides from spray icing [kg]
+    #[serde(default)]
+    pub ice_mass_kg: f64,
 }
 
 impl VesselState {
@@ -61,6 +64,7 @@ impl VesselState {
             gm_m,
             speed_kts: 0.0,
             zones,
+            ice_mass_kg: 0.0,
         }
     }
 

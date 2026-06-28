@@ -30,12 +30,16 @@ pub fn weld_cost_usd(config: &VesselConfig) -> f64 {
     let frame_count = (h.loa_m / 0.4).ceil() as f64;
     let total_weld_m = perimeter + frame_count * (h.beam_m + h.depth_m * 2.0);
 
-    // Use the first zone's weld quality as representative (uniform-hull common case)
-    let weld_factor = config
-        .zones
-        .first()
-        .map(|z| z.weld_quality.cost_factor())
-        .unwrap_or(1.0);
+    let weld_factor = if config.zones.is_empty() {
+        1.0
+    } else {
+        config
+            .zones
+            .iter()
+            .map(|z| z.weld_quality.cost_factor())
+            .sum::<f64>()
+            / config.zones.len() as f64
+    };
 
     total_weld_m * BASE_WELD_COST_PER_M_USD * weld_factor
 }
@@ -45,11 +49,16 @@ pub fn seal_cost_usd(config: &VesselConfig) -> f64 {
     let h = &config.hull;
     let seal_perimeter = 2.0 * h.loa_m + 2.0 * h.beam_m;
 
-    let seal_factor = config
-        .zones
-        .first()
-        .map(|z| z.seal_quality.cost_factor())
-        .unwrap_or(1.0);
+    let seal_factor = if config.zones.is_empty() {
+        1.0
+    } else {
+        config
+            .zones
+            .iter()
+            .map(|z| z.seal_quality.cost_factor())
+            .sum::<f64>()
+            / config.zones.len() as f64
+    };
 
     seal_perimeter * BASE_SEAL_COST_PER_M_USD * seal_factor
 }

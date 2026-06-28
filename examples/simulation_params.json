@@ -23,10 +23,10 @@
   },
   "construction": {
     "material": {
-      "grade": "AH36",
-      "label": "AH36 Steel",
-      "strength_index": 0.52,
-      "cost": 1.5,
+      "grade": "MildSteelA",
+      "label": "Mild Steel A",
+      "strength_index": 0.28,
+      "cost": 0.85,
       "cost_unit": "USD/kg",
       "heat_threshold_c": 600.0,
       "cold_threshold_c": 0.0,
@@ -35,20 +35,20 @@
       "salinity_coeff": 0.15,
       "uv_coeff": null,
       "density_kg_m3": 7850.0,
-      "yield_mpa": 355.0,
-      "uts_mpa": 490.0,
+      "yield_mpa": 235.0,
+      "uts_mpa": 400.0,
       "e_gpa": 206.0,
-      "k_ic_mpa_sqrtm": 105.0,
+      "k_ic_mpa_sqrtm": 80.0,
       "min_temp_c": 0.0,
       "sn_slope": 3.0,
-      "sn_ref_stress_mpa": 80.0,
+      "sn_ref_stress_mpa": 71.0,
       "sn_ref_cycles": 2000000,
-      "cost_per_kg_usd": 1.5,
-      "base_corrosion_rate_mm_yr": 0.14
+      "cost_per_kg_usd": 0.85,
+      "base_corrosion_rate_mm_yr": 0.18
     },
-    "thickness_m": 0.005,
-    "weld_quality": "Standard",
-    "seal_quality": "Marine"
+    "thickness_m": 0.004,
+    "weld_quality": "Economy",
+    "seal_quality": "Economy"
   },
   "conditions": {
     "hs_m": 3.2,

@@ -62,6 +62,8 @@ const ZONE_LABEL_MIN_DIAGONAL_Y_PX = 6;
 const ZONE_LEADER_COMPONENT_OVERLAP_PX = 7;
 const ZONE_LABEL_VIEWPORT_MARGIN = 12;
 const ZONE_LABEL_BORDER_COLOR = 'rgba(0,0,0,0.13)';
+const ZONE_FAILURE_COLOR = '#B42318';
+const ZONE_FAILURE_FILL = 'rgba(180,35,24,0.10)';
 const ZONE_OVERLAY_ANIMATION_MS = 140;
 const ZONE_OVERLAY_HIDDEN_OFFSET_PX = 3;
 const CAMERA_NEAR = 1;
@@ -805,7 +807,7 @@ function addLeaderGeometry(labels, elementWidth) {
   });
 }
 
-function buildZoneOverlay(tick, shipGroup, camera, element, shipHitTargets = []) {
+function buildZoneOverlay(tick, shipGroup, camera, element, shipHitTargets = [], failedZoneName = null) {
   const zones = Array.isArray(tick?.zones) ? tick.zones : [];
   if (!zones.length || !shipGroup || !camera || !element) {
     return emptyZoneOverlay();
@@ -855,6 +857,7 @@ function buildZoneOverlay(tick, shipGroup, camera, element, shipHitTargets = [])
   const labelsBySide = { left: [], right: [], top: [], bottom: [] };
   zones.forEach((zone, index) => {
     const name = zone.zone || `Zone ${index + 1}`;
+    const failed = Boolean(failedZoneName && name === failedZoneName && tick?.failure);
     const { stats, statsKey } = getZoneStats(zone);
     const anchorConfig = getZoneAnchor(name, index, zones.length);
     const anchorLocal = new THREE.Vector3(...anchorConfig.anchor);
@@ -884,6 +887,7 @@ function buildZoneOverlay(tick, shipGroup, camera, element, shipHitTargets = [])
       anchorY: anchorScreen.y,
       stats,
       statsKey,
+      failed,
     });
   });
 
@@ -931,6 +935,7 @@ function overlayStateMatches(current, next) {
       && Math.abs(label.bendY - other.bendY) < 0.5
       && Math.abs(label.anchorX - other.anchorX) < 0.5
       && Math.abs(label.anchorY - other.anchorY) < 0.5
+      && label.failed === other.failed
       && label.statsKey === other.statsKey;
   });
 }
@@ -1477,10 +1482,46 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
   const progress = Number.isFinite(tickProgress)
     ? Math.max(0, Math.min(tickProgress, 1))
     : Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
+  const failedZoneName = simResult?.failure?.detail?.failed_zone ?? null;
 
   useEffect(() => {
     stateRef.current.activeTick = activeTick;
-  }, [activeTick]);
+    if (!activeTick?.failure) {
+      if (!stateRef.current.isHoveringShip) {
+        setZoneOverlay((current) => (current.visible ? emptyZoneOverlay() : current));
+        return;
+      }
+      const { shipGroup, cam, renderer, shipHitTargets } = stateRef.current;
+      const element = renderer?.domElement;
+      if (!shipGroup || !cam || !element) return;
+      const overlay = buildZoneOverlay(
+        activeTick,
+        shipGroup,
+        cam,
+        element,
+        shipHitTargets,
+        failedZoneName,
+      );
+      setZoneOverlay((current) => (overlayStateMatches(current, overlay) ? current : overlay));
+      return;
+    }
+    const { shipGroup, cam, renderer, shipHitTargets } = stateRef.current;
+    const element = renderer?.domElement;
+    if (!shipGroup || !cam || !element) return;
+    const overlay = buildZoneOverlay(
+      activeTick,
+      shipGroup,
+      cam,
+      element,
+      shipHitTargets,
+      failedZoneName,
+    );
+    setZoneOverlay((current) => (overlayStateMatches(current, overlay) ? current : overlay));
+  }, [activeTick, failedZoneName]);
+
+  useEffect(() => {
+    stateRef.current.failedZoneName = failedZoneName;
+  }, [failedZoneName]);
 
   useEffect(() => {
     if (!zoneOverlay.visible || zoneOverlay.labels.length === 0) {
@@ -1645,7 +1686,8 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     };
 
     const updateZoneOverlay = () => {
-      if (!isHoveringShip) {
+      stateRef.current.isHoveringShip = isHoveringShip;
+      if (!isHoveringShip && !stateRef.current.activeTick?.failure) {
         syncZoneOverlay(emptyZoneOverlay());
         return;
       }
@@ -1656,6 +1698,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
         cam,
         el,
         stateRef.current.shipHitTargets,
+        stateRef.current.failedZoneName,
       );
       syncZoneOverlay(overlay);
     };
@@ -1686,6 +1729,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       const nextHover = testShipHover(event);
       if (nextHover !== isHoveringShip) {
         isHoveringShip = nextHover;
+        stateRef.current.isHoveringShip = isHoveringShip;
       }
       renderer.domElement.style.cursor = isDragging
         ? 'grabbing'
@@ -1695,6 +1739,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     const onPointerLeave = () => {
       isDragging = false;
       isHoveringShip = false;
+      stateRef.current.isHoveringShip = false;
       renderer.domElement.style.cursor = 'grab';
       syncZoneOverlay(emptyZoneOverlay());
     };
@@ -1901,8 +1946,8 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
                 key={`${label.id}-line`}
                 points={label.leaderPoints.map(([x, y]) => `${x},${y}`).join(' ')}
                 fill="none"
-                stroke={ZONE_LABEL_BORDER_COLOR}
-                strokeWidth="1.15"
+                stroke={label.failed ? ZONE_FAILURE_COLOR : ZONE_LABEL_BORDER_COLOR}
+                strokeWidth={label.failed ? '1.8' : '1.15'}
                 strokeLinecap="square"
                 strokeLinejoin="miter"
               />
@@ -1937,9 +1982,9 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
                 boxSizing: 'border-box',
                 pointerEvents: 'none',
                 zIndex: 1,
-                color: 'rgba(0,0,0,0.76)',
-                background: '#C3C4CA',
-                border: `1px solid ${ZONE_LABEL_BORDER_COLOR}`,
+                color: label.failed ? ZONE_FAILURE_COLOR : 'rgba(0,0,0,0.76)',
+                background: label.failed ? ZONE_FAILURE_FILL : '#C3C4CA',
+                border: `1px solid ${label.failed ? ZONE_FAILURE_COLOR : ZONE_LABEL_BORDER_COLOR}`,
                 fontFamily: "'Courier New', monospace",
                 fontSize: 10,
                 lineHeight: 1,
@@ -1968,7 +2013,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
                   columnGap: 8,
                   rowGap: 3,
                   fontSize: 8.5,
-                  color: 'rgba(0,0,0,0.62)',
+                  color: label.failed ? 'rgba(180,35,24,0.78)' : 'rgba(0,0,0,0.62)',
                 }}
               >
                 {label.stats.map((stat) => (
@@ -1982,10 +2027,10 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
                       gap: 4,
                     }}
                   >
-                    <span style={{ color: 'rgba(0,0,0,0.42)' }}>{stat.label}</span>
+                    <span style={{ color: label.failed ? 'rgba(180,35,24,0.62)' : 'rgba(0,0,0,0.42)' }}>{stat.label}</span>
                     <span
                       style={{
-                        color: 'rgba(0,0,0,0.72)',
+                        color: label.failed ? ZONE_FAILURE_COLOR : 'rgba(0,0,0,0.72)',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',

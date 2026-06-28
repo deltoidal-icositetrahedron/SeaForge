@@ -3,27 +3,42 @@ import * as THREE from 'three';
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
-// Route in Three.js world space (point A -> point B)
-const NORFOLK = new THREE.Vector3(0, 0, 0);
-const BERMUDA = new THREE.Vector3(48, 0, -62);
-const ROUTE_DIR = BERMUDA.clone().sub(NORFOLK).normalize();
-const HEADING = Math.atan2(ROUTE_DIR.x, ROUTE_DIR.z);
-const ROUTE_MIDPOINT = NORFOLK.clone().lerp(BERMUDA, 0.5);
-const ROUTE_RIGHT = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), HEADING);
-
-const GRID_SIZE = 180;
-const GRID_DIVISIONS = 40;
-const GRID_LINE_WIDTH = 0.04;
-const GRID_SHADOW_LINE_WIDTH = 0.13;
-const GRID_LINE_OPACITY = 0.095;
-// const GRID_SHADOW_OPACITY = 0.045;
-const GRID_SHADOW_OPACITY = 0.015;
-export const DEFAULT_GRID_ROTATION_DEG = 67;
-const ROUTE_LINE_Y = 0.035;
+const GLOBE_CENTER = new THREE.Vector3(0, 0, 0);
+const GLOBE_RADIUS = 160;
+const GLOBE_LAND_RADIUS = GLOBE_RADIUS + 0.1;
+const GLOBE_COAST_RADIUS = GLOBE_RADIUS + 0.22;
+const GLOBE_GRID_RADIUS = GLOBE_RADIUS + 0.38;
+const GLOBE_GRID_SHADOW_RADIUS = GLOBE_RADIUS + 0.28;
+const GLOBE_ROUTE_RADIUS = GLOBE_RADIUS + 0.75;
+const GLOBE_SHIP_RADIUS = GLOBE_RADIUS + 1.05;
+const GLOBE_ROUTE_SEGMENTS = 96;
+const GLOBE_GRID_SEGMENTS = 144;
+const LAND_TRIANGLE_MAX_ANGLE_DEG = 4.5;
+const LAND_TRIANGLE_MAX_SUBDIVISIONS = 8;
+const SHIP_MODEL_LENGTH = 4.2;
+const GRID_LINE_OPACITY = 0.105;
+const GRID_SHADOW_OPACITY = 0.025;
+const LOCAL_GRID_SIZE = 180;
+const LOCAL_GRID_DIVISIONS = 40;
+const LOCAL_GRID_LINE_WIDTH = 0.04;
+const LOCAL_GRID_SHADOW_LINE_WIDTH = 0.13;
+const LOCAL_GRID_LINE_OPACITY = 0.095;
+const LOCAL_GRID_SHADOW_OPACITY = 0.015;
+const LOCAL_GRID_SHADOW_OFFSET = -0.6;
+const LOCAL_GRID_SURFACE_OFFSET = 0.82;
+const LOCAL_GRID_SHADOW_Y = 0.008;
+const LOCAL_GRID_LINE_Y = 0.01;
+const LOCAL_GRID_ROTATION_DEG = 105;
+const LOCAL_GRID_CURVE_SEGMENTS = 96;
+const GLOBE_GRID_LEVELS = [
+  { key: 'coarse', name: 'globe-grid-coarse', latStep: 30, lonStep: 30, lineOpacity: 0.07, shadowOpacity: 0.014 },
+  { key: 'medium', name: 'globe-grid-medium', latStep: 15, lonStep: 15, lineOpacity: GRID_LINE_OPACITY, shadowOpacity: GRID_SHADOW_OPACITY },
+  { key: 'fine', name: 'globe-grid-fine', latStep: 5, lonStep: 5, lineOpacity: 0.055, shadowOpacity: 0.01 },
+];
 const ROUTE_TRAVERSED_COLOR = 0x000000;
 const ROUTE_REMAINING_COLOR = 0x0000FF;
 const ROUTE_LINE_OPACITY = 0.68;
-const LAND_Y = 0.004;
+const SHIP_SHADOW_Y = 0.022;
 const LAND_GEOJSON_URL = '/ne_110m_admin_0_countries.geojson';
 const ZONE_LABEL_WIDTH = 166;
 const ZONE_LABEL_HEIGHT = 52;
@@ -37,7 +52,11 @@ const ZONE_LABEL_VIEWPORT_MARGIN = 12;
 const ZONE_LABEL_BORDER_COLOR = 'rgba(0,0,0,0.13)';
 const ZONE_OVERLAY_ANIMATION_MS = 140;
 const ZONE_OVERLAY_HIDDEN_OFFSET_PX = 3;
+const CAMERA_NEAR = 1;
+const CAMERA_FAR = 6000;
 const CAMERA_MIN_DISTANCE = 24;
+const CAMERA_MAX_DISTANCE = GLOBE_RADIUS * 5.2;
+const SHIP_CAMERA_LOCAL_OFFSET = new THREE.Vector3(-55, 65, -43);
 
 const SHIP_SCREEN_BOUNDS_POINTS = [
   [-1.08, 0.08, -2.9],
@@ -69,6 +88,125 @@ const DEFAULT_ROUTE_GEO = {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function smoothstep(edge0, edge1, value) {
+  const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function rangeFade(value, fadeInStart, fadeInEnd, fadeOutStart, fadeOutEnd) {
+  return smoothstep(fadeInStart, fadeInEnd, value) * (1 - smoothstep(fadeOutStart, fadeOutEnd, value));
+}
+
+function geoToUnitVector(lonDeg, latDeg) {
+  const lon = THREE.MathUtils.degToRad(lonDeg);
+  const lat = THREE.MathUtils.degToRad(latDeg);
+  const cosLat = Math.cos(lat);
+  return new THREE.Vector3(
+    cosLat * Math.sin(lon),
+    Math.sin(lat),
+    cosLat * Math.cos(lon),
+  ).normalize();
+}
+
+function globePoint(lonDeg, latDeg, radius = GLOBE_RADIUS) {
+  return geoToUnitVector(lonDeg, latDeg).multiplyScalar(radius).add(GLOBE_CENTER);
+}
+
+function slerpUnitVectors(a, b, t) {
+  const dot = clamp(a.dot(b), -1, 1);
+  const omega = Math.acos(dot);
+  if (omega < 1e-6) {
+    return a.clone().lerp(b, t).normalize();
+  }
+
+  const sinOmega = Math.sin(omega);
+  return a.clone().multiplyScalar(Math.sin((1 - t) * omega) / sinOmega)
+    .add(b.clone().multiplyScalar(Math.sin(t * omega) / sinOmega))
+    .normalize();
+}
+
+function buildRouteFrame(routeGeo) {
+  const originUnit = geoToUnitVector(routeGeo.origin.lon_deg, routeGeo.origin.lat_deg);
+  const destinationUnit = geoToUnitVector(routeGeo.destination.lon_deg, routeGeo.destination.lat_deg);
+  const routeAxis = originUnit.clone().cross(destinationUnit);
+  if (routeAxis.lengthSq() < 1e-8) routeAxis.set(0, 1, 0);
+  routeAxis.normalize();
+  const midpointUnit = slerpUnitVectors(originUnit, destinationUnit, 0.5);
+
+  return {
+    originUnit,
+    destinationUnit,
+    routeAxis,
+    midpointUnit,
+    midpoint: midpointUnit.clone().multiplyScalar(GLOBE_RADIUS),
+  };
+}
+
+function routeUnitAt(routeFrame, progress) {
+  return slerpUnitVectors(
+    routeFrame.originUnit,
+    routeFrame.destinationUnit,
+    clamp(progress, 0, 1),
+  );
+}
+
+function routePointAt(routeFrame, progress, radius = GLOBE_ROUTE_RADIUS) {
+  return routeUnitAt(routeFrame, progress).multiplyScalar(radius);
+}
+
+function routeTangentAt(routeFrame, unit) {
+  return routeFrame.routeAxis.clone().cross(unit).normalize();
+}
+
+function buildRouteArcPoints(routeFrame, start, end, radius = GLOBE_ROUTE_RADIUS) {
+  const from = clamp(start, 0, 1);
+  const to = clamp(end, 0, 1);
+  const span = Math.abs(to - from);
+  const steps = Math.max(1, Math.ceil(GLOBE_ROUTE_SEGMENTS * span));
+  const points = [];
+
+  for (let i = 0; i <= steps; i += 1) {
+    const t = from + (to - from) * (i / steps);
+    points.push(routePointAt(routeFrame, t, radius));
+  }
+
+  return points;
+}
+
+function orientObjectOnGlobe(object, unit, forward) {
+  const up = unit.clone().normalize();
+  const zAxis = forward.clone().projectOnPlane(up).normalize();
+  const xAxis = up.clone().cross(zAxis).normalize();
+  const matrix = new THREE.Matrix4().makeBasis(xAxis, up, zAxis);
+  object.quaternion.setFromRotationMatrix(matrix);
+}
+
+function placeShipOnRoute(shipGroup, routeFrame, progress) {
+  const unit = routeUnitAt(routeFrame, progress);
+  const position = unit.clone().multiplyScalar(GLOBE_SHIP_RADIUS);
+  const tangent = routeTangentAt(routeFrame, unit);
+  shipGroup.position.copy(position);
+  orientObjectOnGlobe(shipGroup, unit, tangent);
+}
+
+function placeLocalGridOnRoute(gridGroup, routeFrame, progress) {
+  const unit = routeUnitAt(routeFrame, progress);
+  const tangent = routeTangentAt(routeFrame, unit);
+  gridGroup.position.copy(unit).multiplyScalar(GLOBE_RADIUS + LOCAL_GRID_SURFACE_OFFSET);
+  orientObjectOnGlobe(gridGroup, unit, tangent);
+}
+
+function shipCameraPositionFor(routeFrame, progress, target) {
+  const up = routeUnitAt(routeFrame, progress);
+  const forward = routeTangentAt(routeFrame, up);
+  const right = up.clone().cross(forward).normalize();
+
+  return target.clone()
+    .addScaledVector(right, SHIP_CAMERA_LOCAL_OFFSET.x)
+    .addScaledVector(up, SHIP_CAMERA_LOCAL_OFFSET.y)
+    .addScaledVector(forward, SHIP_CAMERA_LOCAL_OFFSET.z);
 }
 
 function projectWorldToScreen(point, camera, element) {
@@ -392,7 +530,8 @@ function enforceHorizontalLabelRun(label, elementWidth) {
   const horizontalSide = chooseHorizontalLabelSide(label, elementWidth);
 
   if (horizontalSide === 'right') {
-    const x = clamp(label.anchorX + ZONE_LABEL_MIN_HORIZONTAL_RUN_PX, margin, maxX);
+    const minRunX = label.anchorX + ZONE_LABEL_MIN_HORIZONTAL_RUN_PX;
+    const x = clamp(Math.max(label.x, minRunX), margin, maxX);
     return {
       ...label,
       x,
@@ -401,7 +540,8 @@ function enforceHorizontalLabelRun(label, elementWidth) {
     };
   }
 
-  const x = clamp(label.anchorX - ZONE_LABEL_MIN_HORIZONTAL_RUN_PX - label.width, margin, maxX);
+  const maxRunX = label.anchorX - ZONE_LABEL_MIN_HORIZONTAL_RUN_PX - label.width;
+  const x = clamp(Math.min(label.x, maxRunX), margin, maxX);
   return {
     ...label,
     x,
@@ -566,50 +706,6 @@ function getRouteGeo(simResult) {
   return DEFAULT_ROUTE_GEO;
 }
 
-function geoToLocalNm(point, origin, refLatRad) {
-  const nmPerDegLon = 60 * Math.cos(refLatRad);
-  return {
-    east: (point.lon_deg - origin.lon_deg) * nmPerDegLon,
-    north: (point.lat_deg - origin.lat_deg) * 60,
-  };
-}
-
-function createGeoProjector(origin, destination) {
-  const refLatRad = THREE.MathUtils.degToRad((origin.lat_deg + destination.lat_deg) * 0.5);
-  const destinationLocal = geoToLocalNm(destination, origin, refLatRad);
-  const geoLength = Math.hypot(destinationLocal.east, destinationLocal.north);
-  const worldVector = BERMUDA.clone().sub(NORFOLK);
-  const worldLength = Math.hypot(worldVector.x, worldVector.z);
-
-  if (geoLength <= 0.001 || worldLength <= 0.001) {
-    return () => NORFOLK.clone();
-  }
-
-  const geoDir = new THREE.Vector2(
-    destinationLocal.east / geoLength,
-    destinationLocal.north / geoLength,
-  );
-  const geoPerp = new THREE.Vector2(-geoDir.y, geoDir.x);
-  const worldDir = new THREE.Vector2(worldVector.x / worldLength, worldVector.z / worldLength);
-  const worldPerp = new THREE.Vector2(-worldDir.y, worldDir.x);
-  const scale = worldLength / geoLength;
-
-  return (lonLat) => {
-    const local = geoToLocalNm(
-      { lon_deg: lonLat[0], lat_deg: lonLat[1] },
-      origin,
-      refLatRad,
-    );
-    const along = local.east * geoDir.x + local.north * geoDir.y;
-    const across = local.east * geoPerp.x + local.north * geoPerp.y;
-    return new THREE.Vector3(
-      NORFOLK.x + (worldDir.x * along + worldPerp.x * across) * scale,
-      LAND_Y,
-      NORFOLK.z + (worldDir.y * along + worldPerp.y * across) * scale,
-    );
-  };
-}
-
 function geoJsonPolygons(geoJson) {
   const polygons = [];
 
@@ -635,28 +731,139 @@ function geoJsonPolygons(geoJson) {
   return polygons;
 }
 
-function ringToShapePoints(ring, projectGeoPoint) {
+function ringToShapePoints(ring) {
   return ring
     .filter((coord) => Number.isFinite(coord?.[0]) && Number.isFinite(coord?.[1]))
-    .map(projectGeoPoint)
-    .map((point) => new THREE.Vector2(point.x, -point.z));
+    .map((coord) => new THREE.Vector2(coord[0], coord[1]));
 }
 
-function ringToLinePoints(ring, projectGeoPoint) {
+function ringToLinePoints(ring) {
   return ring
     .filter((coord) => Number.isFinite(coord?.[0]) && Number.isFinite(coord?.[1]))
-    .map(projectGeoPoint)
-    .map((point) => new THREE.Vector3(point.x, LAND_Y + 0.004, point.z));
+    .map((coord) => globePoint(coord[0], coord[1], GLOBE_COAST_RADIUS));
 }
 
-function createLandLayer(geoJson, projectGeoPoint) {
+function angularDistanceDeg(a, b) {
+  return THREE.MathUtils.radToDeg(Math.acos(clamp(a.dot(b), -1, 1)));
+}
+
+function getTriangleSubdivisions(a, b, c) {
+  const maxAngle = Math.max(
+    angularDistanceDeg(a, b),
+    angularDistanceDeg(b, c),
+    angularDistanceDeg(c, a),
+  );
+
+  return clamp(
+    Math.ceil(maxAngle / LAND_TRIANGLE_MAX_ANGLE_DEG),
+    1,
+    LAND_TRIANGLE_MAX_SUBDIVISIONS,
+  );
+}
+
+function interpolateSphericalTriangle(a, b, c, i, j, subdivisions) {
+  const bWeight = i / subdivisions;
+  const cWeight = j / subdivisions;
+  const aWeight = 1 - bWeight - cWeight;
+  return a.clone().multiplyScalar(aWeight)
+    .addScaledVector(b, bWeight)
+    .addScaledVector(c, cWeight)
+    .normalize();
+}
+
+function pushSphericalVertex(positions, normals, unit, radius) {
+  positions.push(unit.x * radius, unit.y * radius, unit.z * radius);
+  normals.push(unit.x, unit.y, unit.z);
+}
+
+function pushSphericalTriangle(positions, normals, a, b, c, radius) {
+  const subdivisions = getTriangleSubdivisions(a, b, c);
+
+  for (let i = 0; i < subdivisions; i += 1) {
+    for (let j = 0; j < subdivisions - i; j += 1) {
+      pushSphericalVertex(
+        positions,
+        normals,
+        interpolateSphericalTriangle(a, b, c, i, j, subdivisions),
+        radius,
+      );
+      pushSphericalVertex(
+        positions,
+        normals,
+        interpolateSphericalTriangle(a, b, c, i + 1, j, subdivisions),
+        radius,
+      );
+      pushSphericalVertex(
+        positions,
+        normals,
+        interpolateSphericalTriangle(a, b, c, i, j + 1, subdivisions),
+        radius,
+      );
+
+      if (j < subdivisions - i - 1) {
+        pushSphericalVertex(
+          positions,
+          normals,
+          interpolateSphericalTriangle(a, b, c, i + 1, j, subdivisions),
+          radius,
+        );
+        pushSphericalVertex(
+          positions,
+          normals,
+          interpolateSphericalTriangle(a, b, c, i + 1, j + 1, subdivisions),
+          radius,
+        );
+        pushSphericalVertex(
+          positions,
+          normals,
+          interpolateSphericalTriangle(a, b, c, i, j + 1, subdivisions),
+          radius,
+        );
+      }
+    }
+  }
+}
+
+function sphereShapeGeometry(planarGeometry, radius) {
+  const sourcePosition = planarGeometry.getAttribute('position');
+  const sourceIndex = planarGeometry.index;
+  const positions = [];
+  const normals = [];
+  const getUnitAt = (vertexIndex) => (
+    geoToUnitVector(sourcePosition.getX(vertexIndex), sourcePosition.getY(vertexIndex))
+  );
+  const getVertexIndex = (index) => (sourceIndex ? sourceIndex.getX(index) : index);
+  const triangleCount = sourceIndex ? sourceIndex.count : sourcePosition.count;
+
+  for (let i = 0; i < triangleCount; i += 3) {
+    pushSphericalTriangle(
+      positions,
+      normals,
+      getUnitAt(getVertexIndex(i)),
+      getUnitAt(getVertexIndex(i + 1)),
+      getUnitAt(getVertexIndex(i + 2)),
+      radius,
+    );
+  }
+
+  planarGeometry.dispose();
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function createLandLayer(geoJson) {
   const group = new THREE.Group();
   group.name = 'land-layer';
 
   const fillMaterial = new THREE.MeshBasicMaterial({
     color: 0xaeb2b8,
     transparent: true,
-    opacity: 0.34,
+    opacity: 0.46,
+    depthTest: true,
     depthWrite: false,
     side: THREE.DoubleSide,
     toneMapped: false,
@@ -664,7 +871,8 @@ function createLandLayer(geoJson, projectGeoPoint) {
   const coastMaterial = new THREE.LineBasicMaterial({
     color: 0x59616a,
     transparent: true,
-    opacity: 0.26,
+    opacity: 0.32,
+    depthTest: true,
     depthWrite: false,
     toneMapped: false,
   });
@@ -673,27 +881,25 @@ function createLandLayer(geoJson, projectGeoPoint) {
   let coastlineCount = 0;
 
   geoJsonPolygons(geoJson).forEach((polygon) => {
-    const outer = ringToShapePoints(polygon.rings[0] || [], projectGeoPoint);
+    const outer = ringToShapePoints(polygon.rings[0] || []);
     if (outer.length < 3) return;
 
     const shape = new THREE.Shape(outer);
     polygon.rings.slice(1).forEach((holeRing) => {
-      const hole = ringToShapePoints(holeRing, projectGeoPoint);
+      const hole = ringToShapePoints(holeRing);
       if (hole.length >= 3) {
         shape.holes.push(new THREE.Path(hole));
       }
     });
 
-    const geometry = new THREE.ShapeGeometry(shape);
+    const geometry = sphereShapeGeometry(new THREE.ShapeGeometry(shape), GLOBE_LAND_RADIUS);
     const mesh = new THREE.Mesh(geometry, fillMaterial);
     mesh.name = `${polygon.name} fill`;
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.y = LAND_Y;
-    mesh.renderOrder = 0;
+    mesh.renderOrder = -20;
     group.add(mesh);
     meshCount += 1;
 
-    const linePoints = ringToLinePoints(polygon.rings[0] || [], projectGeoPoint);
+    const linePoints = ringToLinePoints(polygon.rings[0] || []);
     if (linePoints.length < 2) return;
     linePoints.push(linePoints[0].clone());
     const line = new THREE.Line(
@@ -702,7 +908,7 @@ function createLandLayer(geoJson, projectGeoPoint) {
     );
     line.name = `${polygon.name} coastline`;
     line.frustumCulled = false;
-    line.renderOrder = 1;
+    line.renderOrder = -19;
     group.add(line);
     coastlineCount += 1;
   });
@@ -717,14 +923,18 @@ function createLandLayer(geoJson, projectGeoPoint) {
 }
 
 function disposeObject3D(object) {
+  const geometries = new Set();
+  const materials = new Set();
   object.traverse((child) => {
-    if (child.geometry) child.geometry.dispose();
+    if (child.geometry) geometries.add(child.geometry);
     if (Array.isArray(child.material)) {
-      child.material.forEach((material) => material.dispose());
+      child.material.forEach((material) => materials.add(material));
     } else if (child.material) {
-      child.material.dispose();
+      materials.add(child.material);
     }
   });
+  geometries.forEach((geometry) => geometry.dispose());
+  materials.forEach((material) => material.dispose());
 }
 
 function createShipShadowTexture() {
@@ -757,43 +967,266 @@ function createShipShadowTexture() {
   return texture;
 }
 
-function createGridMesh(size, divisions, lineWidth, color, opacity, options = {}) {
-  const { includeXLines = true, includeZLines = true } = options;
+function createGlobeBase() {
+  const globe = new THREE.Mesh(
+    new THREE.SphereGeometry(GLOBE_RADIUS, 96, 48),
+    new THREE.MeshBasicMaterial({
+      color: 0xbfc3c9,
+      depthWrite: true,
+      toneMapped: false,
+    }),
+  );
+  globe.name = 'globe-ocean';
+  globe.renderOrder = -40;
+  return globe;
+}
+
+function createGlobeLinePoints({ latDeg = null, lonDeg = null, radius = GLOBE_GRID_RADIUS }) {
+  const points = [];
+  for (let i = 0; i <= GLOBE_GRID_SEGMENTS; i += 1) {
+    const t = i / GLOBE_GRID_SEGMENTS;
+    const lon = lonDeg ?? -180 + t * 360;
+    const lat = latDeg ?? -85 + t * 170;
+    points.push(globePoint(lon, lat, radius));
+  }
+  return points;
+}
+
+function createGlobeGrid(color, opacity, radius, options = {}) {
+  const {
+    latStep = 15,
+    lonStep = 15,
+    includeLatitudes = true,
+    includeLongitudes = true,
+  } = options;
   const group = new THREE.Group();
-  const material = new THREE.MeshBasicMaterial({
+  const material = new THREE.LineBasicMaterial({
     color,
     transparent: true,
     opacity,
+    depthTest: true,
     depthWrite: false,
     toneMapped: false,
   });
-  const step = size / divisions;
-  const half = size / 2;
-  const xLineGeo = new THREE.PlaneGeometry(size, lineWidth);
-  const zLineGeo = new THREE.PlaneGeometry(lineWidth, size);
+  material.userData.baseOpacity = opacity;
 
-  for (let i = 0; i <= divisions; i += 1) {
-    const p = -half + i * step;
-
-    if (includeXLines) {
-      const xLine = new THREE.Mesh(xLineGeo, material);
-      xLine.rotation.x = -Math.PI / 2;
-      xLine.position.z = p;
-      group.add(xLine);
+  if (includeLatitudes) {
+    for (let lat = -75; lat <= 75; lat += latStep) {
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(createGlobeLinePoints({ latDeg: lat, radius })),
+        material,
+      );
+      line.frustumCulled = false;
+      group.add(line);
     }
+  }
 
-    if (includeZLines) {
-      const zLine = new THREE.Mesh(zLineGeo, material);
-      zLine.rotation.x = -Math.PI / 2;
-      zLine.position.x = p;
-      group.add(zLine);
+  if (includeLongitudes) {
+    for (let lon = -180; lon < 180; lon += lonStep) {
+      const line = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(createGlobeLinePoints({ lonDeg: lon, radius })),
+        material,
+      );
+      line.frustumCulled = false;
+      group.add(line);
     }
   }
 
   return group;
 }
 
-export default function HullDiagram({ simResult, progress: tickProgress = null, activeTick = null, gridRotationDeg = DEFAULT_GRID_ROTATION_DEG }) {
+function createGlobeGridLevel({ name, latStep, lonStep, lineOpacity, shadowOpacity }) {
+  const group = new THREE.Group();
+  group.name = name;
+
+  group.add(createGlobeGrid(
+    0x000000,
+    shadowOpacity,
+    GLOBE_GRID_SHADOW_RADIUS,
+    { latStep, lonStep },
+  ));
+  group.add(createGlobeGrid(
+    0x000000,
+    lineOpacity,
+    GLOBE_GRID_RADIUS,
+    { latStep, lonStep },
+  ));
+
+  return group;
+}
+
+function pushCurvedLocalGridVertex(positions, normals, x, z) {
+  const surfaceRadius = GLOBE_RADIUS + LOCAL_GRID_SURFACE_OFFSET;
+  const y = Math.sqrt(Math.max(surfaceRadius * surfaceRadius - x * x - z * z, 0)) - surfaceRadius;
+  const normalY = y + surfaceRadius;
+  const normalLength = Math.hypot(x, normalY, z) || 1;
+  positions.push(x, y, z);
+  normals.push(x / normalLength, normalY / normalLength, z / normalLength);
+}
+
+function pushCurvedLocalGridQuad(positions, normals, a, b, c, d) {
+  pushCurvedLocalGridVertex(positions, normals, a.x, a.z);
+  pushCurvedLocalGridVertex(positions, normals, b.x, b.z);
+  pushCurvedLocalGridVertex(positions, normals, c.x, c.z);
+  pushCurvedLocalGridVertex(positions, normals, c.x, c.z);
+  pushCurvedLocalGridVertex(positions, normals, b.x, b.z);
+  pushCurvedLocalGridVertex(positions, normals, d.x, d.z);
+}
+
+function createLocalGridMesh(size, divisions, lineWidth, color, opacity, options = {}) {
+  const { includeXLines = true, includeZLines = true, renderOrder = 0 } = options;
+  const positions = [];
+  const normals = [];
+  const material = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity,
+    depthTest: true,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    toneMapped: false,
+  });
+  material.userData.baseOpacity = opacity;
+
+  const step = size / divisions;
+  const half = size / 2;
+
+  for (let i = 0; i <= divisions; i += 1) {
+    const p = -half + i * step;
+
+    if (includeXLines) {
+      for (let segment = 0; segment < LOCAL_GRID_CURVE_SEGMENTS; segment += 1) {
+        const x0 = -half + (size * segment) / LOCAL_GRID_CURVE_SEGMENTS;
+        const x1 = -half + (size * (segment + 1)) / LOCAL_GRID_CURVE_SEGMENTS;
+        pushCurvedLocalGridQuad(
+          positions,
+          normals,
+          { x: x0, z: p - lineWidth / 2 },
+          { x: x1, z: p - lineWidth / 2 },
+          { x: x0, z: p + lineWidth / 2 },
+          { x: x1, z: p + lineWidth / 2 },
+        );
+      }
+    }
+
+    if (includeZLines) {
+      for (let segment = 0; segment < LOCAL_GRID_CURVE_SEGMENTS; segment += 1) {
+        const z0 = -half + (size * segment) / LOCAL_GRID_CURVE_SEGMENTS;
+        const z1 = -half + (size * (segment + 1)) / LOCAL_GRID_CURVE_SEGMENTS;
+        pushCurvedLocalGridQuad(
+          positions,
+          normals,
+          { x: p - lineWidth / 2, z: z0 },
+          { x: p + lineWidth / 2, z: z0 },
+          { x: p - lineWidth / 2, z: z1 },
+          { x: p + lineWidth / 2, z: z1 },
+        );
+      }
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.computeBoundingSphere();
+
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.frustumCulled = false;
+  mesh.renderOrder = renderOrder;
+  return mesh;
+}
+
+function createLocalGrid() {
+  const root = new THREE.Group();
+  root.name = 'ship-local-grid';
+  const gridSurface = new THREE.Group();
+  gridSurface.rotation.y = THREE.MathUtils.degToRad(LOCAL_GRID_ROTATION_DEG);
+  root.add(gridSurface);
+
+  // Matches the committed flat-grid shadow layout, mapped onto the curved ship-local patch.
+  const horizontalGridShadow = createLocalGridMesh(
+    LOCAL_GRID_SIZE,
+    LOCAL_GRID_DIVISIONS,
+    LOCAL_GRID_SHADOW_LINE_WIDTH,
+    0x000000,
+    LOCAL_GRID_SHADOW_OPACITY,
+    { includeZLines: false, renderOrder: -3 },
+  );
+  horizontalGridShadow.position.set(0, LOCAL_GRID_SHADOW_Y, LOCAL_GRID_SHADOW_OFFSET);
+  gridSurface.add(horizontalGridShadow);
+
+  const verticalGridShadow = createLocalGridMesh(
+    LOCAL_GRID_SIZE,
+    LOCAL_GRID_DIVISIONS,
+    LOCAL_GRID_LINE_WIDTH,
+    0x000000,
+    LOCAL_GRID_SHADOW_OPACITY,
+    { includeXLines: false, renderOrder: -3 },
+  );
+  verticalGridShadow.position.set(LOCAL_GRID_SHADOW_OFFSET, LOCAL_GRID_SHADOW_Y, 0);
+  gridSurface.add(verticalGridShadow);
+
+  const grid = createLocalGridMesh(
+    LOCAL_GRID_SIZE,
+    LOCAL_GRID_DIVISIONS,
+    LOCAL_GRID_LINE_WIDTH,
+    0x000000,
+    LOCAL_GRID_LINE_OPACITY,
+    { renderOrder: -2 },
+  );
+  grid.position.set(0, LOCAL_GRID_LINE_Y, 0);
+  gridSurface.add(grid);
+
+  return root;
+}
+
+function collectOpacityMaterials(object) {
+  const materials = [];
+  object.traverse((child) => {
+    if (!child.material) return;
+    const childMaterials = Array.isArray(child.material) ? child.material : [child.material];
+    childMaterials.forEach((material) => {
+      if (materials.includes(material)) return;
+      if (!Number.isFinite(material.userData.baseOpacity)) {
+        material.userData.baseOpacity = material.opacity;
+      }
+      materials.push(material);
+    });
+  });
+  object.userData.opacityMaterials = materials;
+  return materials;
+}
+
+function setOpacityScale(object, opacityScale) {
+  const materials = object.userData.opacityMaterials || collectOpacityMaterials(object);
+  object.visible = opacityScale > 0.01;
+  materials.forEach((material) => {
+    material.opacity = material.userData.baseOpacity * opacityScale;
+  });
+}
+
+function getGridOpacityScales(distance) {
+  return {
+    coarse: smoothstep(260, 520, distance),
+    medium: rangeFade(distance, 100, 155, 310, 500),
+    fine: rangeFade(distance, 58, 82, 135, 215),
+    local: 1 - smoothstep(50, 82, distance),
+  };
+}
+
+function updateGridDetail({ cam, controls, globeGridLevels, localGridGroup }) {
+  if (!cam || !controls || !globeGridLevels || !localGridGroup) return;
+
+  const distance = cam.position.distanceTo(controls.target);
+  const opacityScales = getGridOpacityScales(distance);
+
+  globeGridLevels.forEach((level) => {
+    setOpacityScale(level.group, opacityScales[level.key] ?? 0);
+  });
+  setOpacityScale(localGridGroup, opacityScales.local);
+}
+
+export default function HullDiagram({ simResult, progress: tickProgress = null, activeTick = null }) {
   const mountRef = useRef(null);
   const stateRef = useRef({});
   const [zoneOverlay, setZoneOverlay] = useState(emptyZoneOverlay());
@@ -805,6 +1238,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     routeGeo.destination.lat_deg,
     routeGeo.destination.lon_deg,
   ].join(',');
+  const routeFrame = buildRouteFrame(routeGeo);
   const progress = Number.isFinite(tickProgress)
     ? Math.max(0, Math.min(tickProgress, 1))
     : Math.min((simResult?.result?.distance_completed_pct ?? 0) / 100, 1);
@@ -853,6 +1287,8 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#C3C4CA');
+    const globe = createGlobeBase();
+    scene.add(globe);
     let disposed = false;
     fetch(LAND_GEOJSON_URL)
       .then((response) => {
@@ -863,10 +1299,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       })
       .then((geoJson) => {
         if (disposed) return;
-        const landLayer = createLandLayer(
-          geoJson,
-          createGeoProjector(routeGeo.origin, routeGeo.destination),
-        );
+        const landLayer = createLandLayer(geoJson);
         scene.add(landLayer);
         stateRef.current.landLayer = landLayer;
         window.__seaforgeLandLayerStats = landLayer.userData.stats;
@@ -875,11 +1308,10 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
         console.warn(error);
       });
 
-    // Camera — positioned perpendicular-right of the route, orbiting around the ship.
-    const cameraOffset = new THREE.Vector3(55, 65, 43);
-    const shipFocus = NORFOLK.clone();
-    const cam = new THREE.PerspectiveCamera(32, el.clientWidth / el.clientHeight, 0.1, 200000);
-    cam.position.copy(shipFocus).add(cameraOffset);
+    const shipFocus = routePointAt(routeFrame, progress, GLOBE_SHIP_RADIUS);
+    const cam = new THREE.PerspectiveCamera(32, el.clientWidth / el.clientHeight, CAMERA_NEAR, CAMERA_FAR);
+    cam.up.copy(routeUnitAt(routeFrame, progress));
+    cam.position.copy(shipCameraPositionFor(routeFrame, progress, shipFocus));
     cam.lookAt(shipFocus);
 
     const controls = new OrbitControls(cam, renderer.domElement);
@@ -888,8 +1320,8 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     controls.dampingFactor = 0.08;
     controls.enablePan = false;
     controls.minDistance = CAMERA_MIN_DISTANCE;
-    controls.maxDistance = Infinity;
-    controls.maxPolarAngle = Math.PI * 0.48;
+    controls.maxDistance = CAMERA_MAX_DISTANCE;
+    controls.maxPolarAngle = Math.PI;
     controls.rotateSpeed = 0.65;
     controls.zoomSpeed = 0.85;
     controls.panSpeed = 0.75;
@@ -904,9 +1336,9 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     scene.add(new THREE.AmbientLight('#ffffff', 0.95));
     scene.add(new THREE.HemisphereLight('#f5f8fb', '#b8c0c8', 0.42));
     const sun = new THREE.DirectionalLight('#ffffff', 2.8);
-    sun.position.copy(ROUTE_MIDPOINT).add(ROUTE_RIGHT.clone().multiplyScalar(30));
-    sun.position.y = 72;
-    sun.target.position.copy(ROUTE_MIDPOINT);
+    sun.position.copy(routeFrame.midpointUnit).multiplyScalar(GLOBE_RADIUS * 2.2);
+    sun.position.y += GLOBE_RADIUS * 0.9;
+    sun.target.position.copy(GLOBE_CENTER);
     scene.add(sun.target);
     sun.castShadow = true;
     sun.shadow.mapSize.set(4096, 4096);
@@ -919,56 +1351,25 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     fill.position.set(-30, 20, -30);
     scene.add(fill);
 
-    // Grid
     const gridGroup = new THREE.Group();
-    gridGroup.position.set(24, 0, -31);
-    gridGroup.rotation.y = THREE.MathUtils.degToRad(gridRotationDeg);
     scene.add(gridGroup);
 
-    const gridShadowOffset = ROUTE_RIGHT.clone().multiplyScalar(-0.6);
-    const horizontalGridShadow = createGridMesh(
-      GRID_SIZE,
-      GRID_DIVISIONS,
-      GRID_SHADOW_LINE_WIDTH,
-      0x000000,
-      GRID_SHADOW_OPACITY,
-      { includeZLines: false },
-    );
-    horizontalGridShadow.position.set(gridShadowOffset.x, 0.008, gridShadowOffset.z);
-    gridGroup.add(horizontalGridShadow);
+    const globeGridLevels = GLOBE_GRID_LEVELS.map((level) => {
+      const group = createGlobeGridLevel(level);
+      collectOpacityMaterials(group);
+      gridGroup.add(group);
+      return { key: level.key, group };
+    });
 
-    const verticalGridShadow = createGridMesh(
-      GRID_SIZE,
-      GRID_DIVISIONS,
-      GRID_LINE_WIDTH,
-      0x000000,
-      GRID_SHADOW_OPACITY,
-      { includeXLines: false },
-    );
-    verticalGridShadow.position.set(0, 0.008, 0);
-    gridGroup.add(verticalGridShadow);
-
-    const grid = createGridMesh(GRID_SIZE, GRID_DIVISIONS, GRID_LINE_WIDTH, 0x000000, GRID_LINE_OPACITY);
-    grid.position.set(0, 0.01, 0);
-    gridGroup.add(grid);
-
-    // Shadow ground
-    const ground = new THREE.Mesh(
-      new THREE.PlaneGeometry(200, 200),
-      new THREE.ShadowMaterial({ color: 0x26313c, opacity: 0.08 }),
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.01;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    const localGridGroup = createLocalGrid();
+    collectOpacityMaterials(localGridGroup);
+    placeLocalGridOnRoute(localGridGroup, routeFrame, progress);
+    scene.add(localGridGroup);
+    updateGridDetail({ cam, controls, globeGridLevels, localGridGroup });
 
     // Route line: traversed portion is black; remaining route is yellow.
-    const routeStart = NORFOLK.clone();
-    routeStart.y = ROUTE_LINE_Y;
-    const routeEnd = BERMUDA.clone();
-    routeEnd.y = ROUTE_LINE_Y;
     const remainingRouteLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([routeStart.clone(), routeEnd.clone()]),
+      new THREE.BufferGeometry().setFromPoints(buildRouteArcPoints(routeFrame, 0, 1)),
       new THREE.LineBasicMaterial({
         color: ROUTE_REMAINING_COLOR,
         opacity: ROUTE_LINE_OPACITY,
@@ -979,7 +1380,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     remainingRouteLine.frustumCulled = false;
     scene.add(remainingRouteLine);
     const traversedRouteLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints([routeStart.clone(), routeStart.clone()]),
+      new THREE.BufferGeometry().setFromPoints(buildRouteArcPoints(routeFrame, 0, 0)),
       new THREE.LineBasicMaterial({
         color: ROUTE_TRAVERSED_COLOR,
         opacity: ROUTE_LINE_OPACITY,
@@ -994,16 +1395,15 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     // Waypoint dots
     const dotGeo = new THREE.SphereGeometry(0.4, 12, 12);
     const dotA = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_TRAVERSED_COLOR, opacity: 0.4, transparent: true }));
-    dotA.position.copy(NORFOLK);
+    dotA.position.copy(routePointAt(routeFrame, 0, GLOBE_ROUTE_RADIUS + 0.25));
     scene.add(dotA);
     const dotB = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_REMAINING_COLOR, opacity: 0.4, transparent: true }));
-    dotB.position.copy(BERMUDA);
+    dotB.position.copy(routePointAt(routeFrame, 1, GLOBE_ROUTE_RADIUS + 0.25));
     scene.add(dotB);
 
     // Ship group (placeholder until STL loads)
     const shipGroup = new THREE.Group();
-    shipGroup.position.copy(NORFOLK);
-    shipGroup.rotation.y = HEADING;
+    placeShipOnRoute(shipGroup, routeFrame, progress);
     scene.add(shipGroup);
 
     const raycaster = new THREE.Raycaster();
@@ -1090,7 +1490,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       }),
     );
     shipShadow.rotation.x = -Math.PI / 2;
-    shipShadow.position.set(-0.85, 0.018, -0.2);
+    shipShadow.position.set(0.85, SHIP_SHADOW_Y, 0.2);
     shipShadow.scale.set(3.2, 8.4, 1);
     shipShadow.renderOrder = 1;
     shipGroup.add(shipShadow);
@@ -1110,8 +1510,8 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       // Center X and Y; leave Z min at 0 so keel sits on ground after rotation
       geo.translate(-center.x, -center.y, -box.min.z);
 
-      // Scale: X is the longest axis (ship length ≈ 7779 mm) → 6 world units
-      const scale = 6 / size.x;
+      // Scale: X is the longest axis (ship length ≈ 7779 mm)
+      const scale = SHIP_MODEL_LENGTH / size.x;
 
       const mat = new THREE.MeshStandardMaterial({
         color: '#6f7d89',
@@ -1125,9 +1525,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       mesh.castShadow = true;
       mesh.receiveShadow = true;
 
-      // Align STL axes to the ship group:
-      // STL +X is the bow, STL +Z is up. The group uses +Z as forward so
-      // HEADING can rotate the vessel down the route.
+      // Align STL axes to the ship group: local +Z follows the route tangent.
       mesh.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
 
       shipGroup.add(mesh);
@@ -1137,7 +1535,18 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
 
     stateRef.current = {
       ...stateRef.current,
-      renderer, scene, cam, controls, shipGroup, shipFocus, gridGroup, traversedRouteLine, remainingRouteLine,
+      renderer,
+      scene,
+      cam,
+      controls,
+      shipGroup,
+      shipFocus,
+      gridGroup,
+      globeGridLevels,
+      localGridGroup,
+      traversedRouteLine,
+      remainingRouteLine,
+      routeFrame,
     };
 
     // Resize
@@ -1153,6 +1562,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     const loop = () => {
       frameId = requestAnimationFrame(loop);
       controls.update();
+      updateGridDetail({ cam, controls, globeGridLevels, localGridGroup });
       if (isHoveringShip) updateZoneOverlay();
       renderer.render(scene, cam);
     };
@@ -1168,51 +1578,52 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
       renderer.domElement.removeEventListener('pointerleave', onPointerLeave);
       renderer.domElement.removeEventListener('contextmenu', blockContextMenu);
       controls.dispose();
-      if (stateRef.current.landLayer) {
-        disposeObject3D(stateRef.current.landLayer);
-        stateRef.current.landLayer = null;
-      }
+      disposeObject3D(scene);
+      stateRef.current.landLayer = null;
       renderer.dispose();
       if (el.contains(renderer.domElement)) el.removeChild(renderer.domElement);
     };
   }, [routeGeoKey]);
 
-  useEffect(() => {
-    const { gridGroup } = stateRef.current;
-    if (!gridGroup) return;
-    gridGroup.rotation.y = THREE.MathUtils.degToRad(gridRotationDeg);
-  }, [gridRotationDeg]);
-
   // Update ship position on progress change
   useEffect(() => {
-    const { shipGroup, controls, cam, shipFocus, traversedRouteLine, remainingRouteLine } = stateRef.current;
-    if (!shipGroup) return;
+    const {
+      shipGroup,
+      controls,
+      cam,
+      shipFocus,
+      globeGridLevels,
+      localGridGroup,
+      traversedRouteLine,
+      remainingRouteLine,
+      routeFrame: currentRouteFrame,
+    } = stateRef.current;
+    if (!shipGroup || !currentRouteFrame) return;
 
     const routeProgress = Math.max(0, Math.min(progress, 1));
-    const pos = NORFOLK.clone().lerp(BERMUDA, routeProgress);
-    shipGroup.position.set(pos.x, 0, pos.z);
-    const routePos = pos.clone();
-    routePos.y = ROUTE_LINE_Y;
-    const routeStart = NORFOLK.clone();
-    routeStart.y = ROUTE_LINE_Y;
-    const routeEnd = BERMUDA.clone();
-    routeEnd.y = ROUTE_LINE_Y;
+    placeShipOnRoute(shipGroup, currentRouteFrame, routeProgress);
+    if (localGridGroup) {
+      placeLocalGridOnRoute(localGridGroup, currentRouteFrame, routeProgress);
+    }
+    const nextShipFocus = routePointAt(currentRouteFrame, routeProgress, GLOBE_SHIP_RADIUS);
+
     if (traversedRouteLine && remainingRouteLine) {
-      traversedRouteLine.geometry.setFromPoints([routeStart, routePos]);
-      remainingRouteLine.geometry.setFromPoints([routePos, routeEnd]);
+      traversedRouteLine.geometry.setFromPoints(buildRouteArcPoints(currentRouteFrame, 0, routeProgress));
+      remainingRouteLine.geometry.setFromPoints(buildRouteArcPoints(currentRouteFrame, routeProgress, 1));
       traversedRouteLine.visible = routeProgress > 0.001;
       remainingRouteLine.visible = routeProgress < 0.999;
       traversedRouteLine.geometry.computeBoundingSphere();
       remainingRouteLine.geometry.computeBoundingSphere();
     }
     if (controls && cam && shipFocus) {
-      const delta = pos.clone().sub(shipFocus);
+      const delta = nextShipFocus.clone().sub(shipFocus);
       cam.position.add(delta);
-      controls.target.copy(pos);
-      shipFocus.copy(pos);
+      controls.target.copy(nextShipFocus);
+      shipFocus.copy(nextShipFocus);
       controls.update();
+      updateGridDetail({ cam, controls, globeGridLevels, localGridGroup });
     }
-  }, [progress]);
+  }, [progress, routeGeoKey]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden' }}>

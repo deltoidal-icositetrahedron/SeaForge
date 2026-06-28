@@ -408,6 +408,34 @@ class StabilityConfig(_ConfigBase):
         description="Risk score above which a high-capsize-risk warning is raised.",
     )
 
+    # -- Misc empirical shaping constants -------------------------------
+    roll_period_gm_floor_m: float = Field(
+        0.05,
+        gt=0.0,
+        description=(
+            "GM floor (m) used only when estimating roll period for low/negative "
+            "GM, so the T_roll = C*B/sqrt(GM) estimate stays finite."
+        ),
+    )
+    speed_following_seas_weight: float = Field(
+        0.6,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Fraction of the speed-in-seaway factor attributed to following/"
+            "quartering seas (broaching/surf-riding); the remainder applies in "
+            "all headings. Dimensionless 0-1."
+        ),
+    )
+    current_misalignment_scale_m_s: float = Field(
+        1.0,
+        gt=0.0,
+        description=(
+            "Saturation scale (m/s) for current speed in the wave/current "
+            "misalignment factor: stronger crossing currents -> more confused sea."
+        ),
+    )
+
     # -- Capsize probability (per-timestep hazard) ----------------------
     capsize_risk_exponent: float = Field(
         6.0,

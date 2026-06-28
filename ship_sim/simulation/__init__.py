@@ -18,6 +18,7 @@ from .corrosion import (
     update_component_corrosion,
 )
 from .engine import ShipSimulationEngine
+from .monte_carlo import MonteCarloResult, PerturbationSpec, run_monte_carlo
 from .seakeeping import WaveEncounterEstimate, estimate_wave_encounter
 from .stability import (
     StabilityEstimate,
@@ -55,4 +56,8 @@ __all__ = [
     "interpolate_heading",
     # engine
     "ShipSimulationEngine",
+    # monte carlo
+    "run_monte_carlo",
+    "MonteCarloResult",
+    "PerturbationSpec",
 ]

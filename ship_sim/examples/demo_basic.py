@@ -183,6 +183,8 @@ def main(argv: Optional[list[str]] = None) -> None:
                         help="Save result summaries only (omit per-step timeline).")
     parser.add_argument("--dt-hours", type=float, default=6.0,
                         help="Timestep in hours for the built-in demo (default 6).")
+    parser.add_argument("--report", action="store_true",
+                        help="Also print the full Markdown corrosion/stability/overall reports.")
     args = parser.parse_args(argv)
 
     if args.scenario:
@@ -195,6 +197,17 @@ def main(argv: Optional[list[str]] = None) -> None:
 
     result = engine.run()
     print_summary(name, trajectory, result, dt_s)
+
+    if args.report:
+        from ship_sim.reporting.reports import (
+            generate_corrosion_report,
+            generate_overall_risk_report,
+            generate_stability_report,
+        )
+        print("\n" + "=" * 74 + "\nREPORTS\n" + "=" * 74)
+        print("\n" + generate_corrosion_report(result))
+        print("\n" + generate_stability_report(result))
+        print("\n" + generate_overall_risk_report(result))
 
     out = Path(args.out) if args.out else Path("examples/result_basic.json")
     save_result(result, out, include_timeline=not args.no_timeline)

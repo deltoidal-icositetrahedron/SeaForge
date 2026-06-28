@@ -47,37 +47,13 @@ import math
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional
 
+from .._math import clamp01, logistic, saturating
 from ..config import SimulationConfig
 from ..models.ship import Ship
 from ..models.waves import WaveCondition
 from ..models.weather import WeatherCondition
 from ..units import GRAVITY
 from .seakeeping import estimate_wave_encounter
-
-_EPS = 1.0e-9
-
-
-# ---------------------------------------------------------------------------
-# Small bounded-function helpers
-# ---------------------------------------------------------------------------
-
-def _logistic(x: float) -> float:
-    """Numerically stable logistic 1/(1+exp(-x)) in (0, 1)."""
-    if x >= 0.0:
-        z = math.exp(-x)
-        return 1.0 / (1.0 + z)
-    z = math.exp(x)
-    return z / (1.0 + z)
-
-
-def _clamp01(x: float) -> float:
-    return 0.0 if x < 0.0 else 1.0 if x > 1.0 else x
-
-
-def _saturating(value: float, scale: float) -> float:
-    """Saturating ratio value/(value+scale) in [0, 1) for value, scale >= 0."""
-    value = max(0.0, value)
-    return value / (value + scale) if (value + scale) > 0 else 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +113,7 @@ def estimate_structural_weakening(
         weighted_loss += weight * loss
         total_weight += weight
 
-    weakening = _clamp01(weighted_loss / total_weight) if total_weight > 0 else 0.0
+    weakening = clamp01(weighted_loss / total_weight) if total_weight > 0 else 0.0
 
     # Most critical = largest importance-weighted loss contributions.
     ranked = sorted(contributions.items(), key=lambda kv: kv[1], reverse=True)
@@ -252,7 +228,8 @@ def _roll_natural_period(ship: Ship, gm: float, config: SimulationConfig) -> flo
     """Roll natural period (s): use the ship's value, else C*B/sqrt(GM)."""
     if ship.roll_natural_period_s is not None:
         return ship.roll_natural_period_s
-    gm_eff = max(gm, 0.05)  # floor so the estimate stays finite for low/neg GM
+    # Floor GM so T_roll = C*B/sqrt(GM) stays finite for low/negative GM.
+    gm_eff = max(gm, config.stability.roll_period_gm_floor_m)
     return config.stability.roll_period_coefficient * ship.beam_m / math.sqrt(gm_eff)
 
 
@@ -286,7 +263,7 @@ def estimate_stability_risk(
     wind_moment = estimate_wind_heeling_moment(ship, weather, heading_degrees, config)
 
     # --- GM factor (low/negative GM -> high risk) ----------------------
-    gm_factor = _logistic(-(gm - cfg.gm_reference_m) / cfg.gm_scale_m)
+    gm_factor = logistic(-(gm - cfg.gm_reference_m) / cfg.gm_scale_m)
 
     # --- wind heeling vs restoring -------------------------------------
     if restoring_proxy <= 0.0:
@@ -294,23 +271,23 @@ def estimate_stability_risk(
         wind_factor = 1.0  # no positive restoring capacity -> maximal hazard
     else:
         wind_ratio = wind_moment / restoring_proxy
-        wind_factor = _logistic((wind_ratio - cfg.wind_ratio_threshold) / cfg.wind_ratio_width)
+        wind_factor = logistic((wind_ratio - cfg.wind_ratio_threshold) / cfg.wind_ratio_width)
 
     # --- wave encounter, steepness, resonance --------------------------
     encounter = estimate_wave_encounter(speed_m_s, heading_degrees, wave)
     beam = ship.beam_m
     freeboard_proxy = cfg.freeboard_fraction_of_beam * beam
 
-    height_beam_term = _saturating(
+    height_beam_term = saturating(
         wave.significant_wave_height_m / beam if beam > 0 else 0.0,
         cfg.wave_height_beam_scale,
     )
-    height_freeboard_term = _saturating(
+    height_freeboard_term = saturating(
         wave.significant_wave_height_m / freeboard_proxy if freeboard_proxy > 0 else 0.0,
         cfg.wave_height_freeboard_scale,
     )
-    steepness_term = _clamp01(encounter.wave_steepness / cfg.breaking_steepness)
-    wave_risk_factor = _clamp01(
+    steepness_term = clamp01(encounter.wave_steepness / cfg.breaking_steepness)
+    wave_risk_factor = clamp01(
         cfg.wave_risk_height_coefficient * (height_beam_term + height_freeboard_term)
         + cfg.wave_risk_steepness_coefficient * steepness_term
     )
@@ -331,10 +308,11 @@ def estimate_stability_risk(
 
     # --- speed in seaway (broaching / surf-riding in following seas) ----
     froude = speed_m_s / math.sqrt(GRAVITY * ship.length_m) if ship.length_m > 0 else 0.0
-    speed_term = _clamp01(froude / cfg.froude_danger)
-    following_weight = _clamp01(math.cos(mu_rad))  # 1 following, 0 head
-    speed_in_sea_state_factor = _clamp01(
-        speed_term * height_beam_term * (0.4 + 0.6 * following_weight)
+    speed_term = clamp01(froude / cfg.froude_danger)
+    following_weight = clamp01(math.cos(mu_rad))  # 1 following, 0 head
+    fw = cfg.speed_following_seas_weight  # share weighted toward following seas
+    speed_in_sea_state_factor = clamp01(
+        speed_term * height_beam_term * ((1.0 - fw) + fw * following_weight)
     )
 
     # --- structural weakening ------------------------------------------
@@ -344,16 +322,16 @@ def estimate_stability_risk(
     structural_factor = weakening.weakening_factor_0_1
 
     # --- storm and top-heaviness (CG) ----------------------------------
-    storm_factor = _clamp01(weather.storm_intensity_0_1)
+    storm_factor = clamp01(weather.storm_intensity_0_1)
     depth_proxy = ship.draft_m + freeboard_proxy
     kg_ratio = ship.center_of_gravity_height_m / depth_proxy if depth_proxy > 0 else 0.0
-    cg_factor = _logistic((kg_ratio - cfg.cg_reference_ratio) / cfg.cg_scale_ratio)
+    cg_factor = logistic((kg_ratio - cfg.cg_reference_ratio) / cfg.cg_scale_ratio)
 
     # --- wave/current misalignment (confused sea) ----------------------
     misalign_rad = math.radians(
         (wave.mean_wave_direction_deg - wave.current_direction_deg) % 360.0
     )
-    current_strength = _saturating(wave.current_speed_m_s, 1.0)
+    current_strength = saturating(wave.current_speed_m_s, cfg.current_misalignment_scale_m_s)
     misalignment_factor = abs(math.sin(misalign_rad)) * current_strength
 
     # --- combine into a bounded risk score -----------------------------
@@ -369,11 +347,11 @@ def estimate_stability_risk(
         "misalignment": (cfg.risk_weight_misalignment, misalignment_factor),
     }
     hazard = sum(w * f for w, f in contributions.values())
-    risk_score = _clamp01(1.0 - math.exp(-hazard))
+    risk_score = clamp01(1.0 - math.exp(-hazard))
 
     # --- per-timestep capsize probability (Poisson hazard) -------------
     hazard_rate = (risk_score ** cfg.capsize_risk_exponent) / cfg.capsize_time_at_max_risk_s
-    capsize_prob = _clamp01(1.0 - math.exp(-hazard_rate * dt_s))
+    capsize_prob = clamp01(1.0 - math.exp(-hazard_rate * dt_s))
 
     # --- warnings ------------------------------------------------------
     warnings: List[str] = []

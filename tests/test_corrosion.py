@@ -6,7 +6,6 @@ limits) rather than exact magnitudes, plus unit-conversion consistency.
 
 from __future__ import annotations
 
-import math
 
 import pytest
 

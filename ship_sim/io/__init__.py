@@ -7,6 +7,7 @@ from .scenario_loader import (
     build_providers,
     load_config,
     load_scenario,
+    loaded_from_scenario,
     read_scenario,
     read_scenario_dict,
 )
@@ -14,6 +15,7 @@ from .scenario_writer import save_config, save_result, save_scenario
 
 __all__ = [
     "LoadedScenario",
+    "loaded_from_scenario",
     "load_scenario",
     "read_scenario",
     "read_scenario_dict",

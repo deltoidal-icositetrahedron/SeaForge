@@ -15,7 +15,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7"]
+dev = ["pytest>=7", "matplotlib>=3.5"]
+viz = ["matplotlib>=3.5"]
+# streamlit pinned < 1.40: streamlit-drawable-canvas's frontend bundle does not
+# render on newer Streamlit (its component protocol changed). The image_to_url
+# compatibility shim in streamlit_app.py covers newer Streamlit if you override.
+gui = ["streamlit>=1.30,<1.40", "matplotlib>=3.5", "pandas>=1.5", "streamlit-drawable-canvas>=0.9", "pillow>=9"]
 accel = ["numba>=0.58"]
 
 [tool.setuptools.packages.find]
@@ -24,3 +29,7 @@ include = ["ship_sim*"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+ignore_missing_imports = true

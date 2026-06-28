@@ -37,10 +37,11 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Any, List, Optional, Protocol, Sequence, Tuple, runtime_checkable
+from typing import Any, Optional, Protocol, Sequence, Tuple, runtime_checkable
 
 import numpy as np
 
+from .._math import clamp
 from ..models.environment import RegionEnvironment
 from ..models.results import GeoPosition
 from ..models.waves import WaveCondition
@@ -114,9 +115,9 @@ class Segment:
     def _distance(self, position: GeoPosition, time_s: float) -> float:
         """A simple match-distance used for nearest fallback (lower = closer)."""
         dist = 0.0
-        if self.start_time_s is not None or self.end_time_s is not None:
-            start = self.start_time_s if self.start_time_s is not None else self.end_time_s
-            end = self.end_time_s if self.end_time_s is not None else self.start_time_s
+        start = self.start_time_s if self.start_time_s is not None else self.end_time_s
+        end = self.end_time_s if self.end_time_s is not None else self.start_time_s
+        if start is not None and end is not None:
             center = 0.5 * (start + end)
             # Scale time by a day so it is comparable to degrees of position.
             dist += abs(time_s - center) / 86400.0
@@ -245,10 +246,6 @@ _CHANNELS = {
 }
 
 
-def _clamp(x: float, lo: float, hi: float) -> float:
-    return lo if x < lo else hi if x > hi else x
-
-
 def _field(seed: int, channel: str, time_s: float, position: GeoPosition) -> float:
     """Deterministic smooth pseudo-field in [0, 1].
 
@@ -293,7 +290,7 @@ def generate_weather(
     wind_field = _field(seed, "wind", time_s, position)
 
     # Storm dominates wind; squaring sharpens the storm contribution.
-    wind_speed = _clamp(
+    wind_speed = clamp(
         2.0 + ranges.wind_base_m_s * wind_field + ranges.wind_storm_m_s * storm ** 1.5,
         0.0,
         ranges.wind_max_m_s,
@@ -303,7 +300,7 @@ def generate_weather(
     base_air = ranges.equator_air_temp_c - ranges.air_temp_lat_lapse * abs(
         position.latitude_deg
     )
-    air_temp = _clamp(
+    air_temp = clamp(
         base_air
         + ranges.air_temp_seasonal_amp_c * _seasonal(seed, time_s, position)
         + 4.0 * (_field(seed, "air_temp", time_s, position) - 0.5),
@@ -311,7 +308,7 @@ def generate_weather(
         ranges.air_temp_max_c,
     )
 
-    humidity = _clamp(
+    humidity = clamp(
         0.6 + 0.3 * storm + 0.1 * (_field(seed, "humidity", time_s, position) - 0.5),
         0.0,
         1.0,
@@ -320,7 +317,7 @@ def generate_weather(
         0.0,
         30.0 * (storm - 0.2) * _field(seed, "precip", time_s, position),
     )
-    pressure = _clamp(
+    pressure = clamp(
         101325.0 - 4500.0 * storm + 800.0 * (_field(seed, "pressure", time_s, position) - 0.5),
         90000.0,
         108000.0,
@@ -356,10 +353,10 @@ def generate_waves(
     swell = ranges.swell_base_m + ranges.swell_amp_m * _field(
         seed, "swell", time_s, position
     )
-    hs = _clamp(wind_sea + swell, 0.0, ranges.wave_height_max_m)
+    hs = clamp(wind_sea + swell, 0.0, ranges.wave_height_max_m)
 
     # Peak period grows with wind; kept consistent so steepness stays sub-breaking.
-    peak_period = _clamp(
+    peak_period = clamp(
         3.0 + 0.55 * u + 2.0 * _field(seed, "period", time_s, position),
         3.0,
         20.0,
@@ -399,7 +396,7 @@ def generate_environment(
     base_water = ranges.equator_water_temp_c - ranges.water_temp_lat_lapse * abs(
         position.latitude_deg
     )
-    water_temp = _clamp(
+    water_temp = clamp(
         base_water
         + ranges.water_temp_seasonal_amp_c * _seasonal(seed, time_s, position)
         + 2.0 * (_field(seed, "water_temp", time_s, position) - 0.5),
@@ -407,20 +404,20 @@ def generate_environment(
         ranges.water_temp_max_c,
     )
 
-    salinity = _clamp(
+    salinity = clamp(
         ranges.salinity_mean_ppt
         + ranges.salinity_span_ppt * (2.0 * _field(seed, "salinity", time_s, position) - 1.0),
         ranges.salinity_min_ppt,
         ranges.salinity_max_ppt,
     )
-    ph = _clamp(
+    ph = clamp(
         ranges.ph_mean + ranges.ph_span * (2.0 * _field(seed, "ph", time_s, position) - 1.0),
         ranges.ph_min,
         ranges.ph_max,
     )
 
     # Cooler water holds more dissolved oxygen.
-    oxygen = _clamp(
+    oxygen = clamp(
         ranges.do_intercept_mg_l
         - ranges.do_temp_slope_mg_l_per_c * water_temp
         + ranges.do_noise_mg_l * (2.0 * _field(seed, "oxygen", time_s, position) - 1.0),
@@ -436,8 +433,8 @@ def generate_environment(
         water_temperature_c=float(water_temp),
         pH=float(ph),
         dissolved_oxygen_mg_l=float(oxygen),
-        pollution_factor_0_1=float(_clamp(pollution, 0.0, 1.0)),
-        biofouling_factor_0_1=float(_clamp(biofouling, 0.0, 1.0)),
+        pollution_factor_0_1=float(clamp(pollution, 0.0, 1.0)),
+        biofouling_factor_0_1=float(clamp(biofouling, 0.0, 1.0)),
     )
 
 

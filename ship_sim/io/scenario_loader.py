@@ -14,13 +14,14 @@ from __future__ import annotations
 import dataclasses
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional, Sequence, Union
 
 from pydantic import ValidationError
 
 from ..config import SimulationConfig
 from ..generation.procedural import (
     DEFAULT_RANGES,
+    EnvironmentProvider,
     ProceduralEnvironmentProvider,
     ProceduralRanges,
     ProceduralWaveProvider,
@@ -29,6 +30,8 @@ from ..generation.procedural import (
     SegmentedEnvironmentProvider,
     SegmentedWaveProvider,
     SegmentedWeatherProvider,
+    WaveProvider,
+    WeatherProvider,
 )
 from ..models.scenario import Scenario, _SegmentSpec
 
@@ -102,10 +105,11 @@ def _resolve_ranges(overrides: Optional[dict]) -> ProceduralRanges:
     return dataclasses.replace(DEFAULT_RANGES, **overrides)
 
 
-def _to_runtime_segments(specs: List[_SegmentSpec]) -> List[Segment]:
+def _to_runtime_segments(specs: Sequence[_SegmentSpec]) -> List[Segment]:
+    # All concrete segment subclasses (Weather/Wave/Environment) define `condition`.
     return [
         Segment(
-            value=spec.condition,
+            value=spec.condition,  # type: ignore[attr-defined]
             start_time_s=spec.resolved_start_s,
             end_time_s=spec.resolved_end_s,
             lat_bounds=spec.lat_bounds,
@@ -124,6 +128,10 @@ def build_providers(scenario: Scenario):
     ranges = _resolve_ranges(scenario.procedural.ranges)
     seed = scenario.procedural.seed
     fallback = scenario.simulation.fallback_nearest
+
+    env_provider: EnvironmentProvider
+    weather_provider: WeatherProvider
+    wave_provider: WaveProvider
 
     if scenario.environment_segments:
         env_provider = SegmentedEnvironmentProvider(
@@ -152,13 +160,12 @@ def build_providers(scenario: Scenario):
     return env_provider, weather_provider, wave_provider
 
 
-def load_scenario(path: PathLike) -> LoadedScenario:
-    """Load a scenario JSON and assemble the objects the engine needs.
+def loaded_from_scenario(scenario: Scenario) -> LoadedScenario:
+    """Assemble engine-ready objects from an in-memory (validated) Scenario.
 
-    Returns a :class:`LoadedScenario`; call ``.build_engine()`` to get a ready
-    :class:`ShipSimulationEngine`.
+    This is the shared assembly step used by both file loading and any caller
+    that already holds a :class:`Scenario` (e.g. the GUI editing inputs live).
     """
-    scenario = read_scenario(path)
     env_provider, weather_provider, wave_provider = build_providers(scenario)
     return LoadedScenario(
         name=scenario.name,
@@ -175,6 +182,15 @@ def load_scenario(path: PathLike) -> LoadedScenario:
     )
 
 
+def load_scenario(path: PathLike) -> LoadedScenario:
+    """Load a scenario JSON and assemble the objects the engine needs.
+
+    Returns a :class:`LoadedScenario`; call ``.build_engine()`` to get a ready
+    :class:`ShipSimulationEngine`.
+    """
+    return loaded_from_scenario(read_scenario(path))
+
+
 def load_config(path: PathLike) -> SimulationConfig:
     """Load and validate a standalone :class:`SimulationConfig` from JSON."""
     text = Path(path).read_text(encoding="utf-8")
@@ -186,6 +202,7 @@ def load_config(path: PathLike) -> SimulationConfig:
 
 __all__ = [
     "LoadedScenario",
+    "loaded_from_scenario",
     "read_scenario",
     "read_scenario_dict",
     "build_providers",

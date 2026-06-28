@@ -12,7 +12,7 @@ effective thicknesses are in meters (SI), matching the field names.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, ConfigDict, Field
 

@@ -28,11 +28,7 @@ import math
 from typing import Any, Dict, List, Tuple
 
 from ..config import SimulationConfig
-from ..models.results import (
-    GeoPosition,
-    SimulationResult,
-    SimulationState,
-)
+from ..models.results import SimulationResult, SimulationState
 from ..models.ship import Ship
 from ..models.trajectory import Trajectory
 from ..units import m_per_s_to_m_per_year, seconds_to_hours
@@ -329,11 +325,12 @@ class ShipSimulationEngine:
             k: (factor_sums[k] / factor_count if factor_count else 1.0)
             for k in _CORROSION_FACTOR_KEYS
         }
-        dominant_factors = sorted(
-            ({"factor": k, "mean_value": v} for k, v in mean_factors.items()),
-            key=lambda d: abs(d["mean_value"] - 1.0),
-            reverse=True,
-        )
+        dominant_factors = [
+            {"factor": k, "mean_value": v}
+            for k, v in sorted(
+                mean_factors.items(), key=lambda kv: abs(kv[1] - 1.0), reverse=True
+            )
+        ]
 
         final_corrosion_summary: Dict[str, Any] = {
             "by_component": by_component,

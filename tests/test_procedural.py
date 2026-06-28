@@ -60,9 +60,6 @@ def test_generated_environment_in_plausible_ranges():
 
 def test_storm_increases_wind_on_average():
     """Higher storm intensity should track higher wind speed across times."""
-    pairs = [
-        (lambda w: w.storm_intensity_0_1, lambda w: w.wind_speed_m_s)
-    ]
     samples = [generate_weather(TROPICAL, float(t), SEED) for t in range(0, 30 * 86400, 6000)]
     storms = [w.storm_intensity_0_1 for w in samples]
     winds = [w.wind_speed_m_s for w in samples]

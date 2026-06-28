@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import HullDiagram from './components/HullDiagram.jsx';
 import { MISSIONS } from './missions.js';
 
@@ -54,6 +54,7 @@ export default function App() {
   const [stepSpeed, setStepSpeed] = useState(1);
   const [selectedMission, setSelectedMission] = useState(null);
   const [simulations, setSimulations] = useState([]);
+  const [selectedCampaignId, setSelectedCampaignId] = useState(null);
   const [selectedSimulationId, setSelectedSimulationId] = useState(null);
   const [runningGemini, setRunningGemini] = useState(false);
   const [geminiDotCount, setGeminiDotCount] = useState(0);
@@ -81,9 +82,33 @@ export default function App() {
       .catch(() => setSimulations([]));
   }, []);
 
+  const campaigns = useMemo(() => {
+    const byId = new Map();
+    simulations.forEach((sim) => {
+      if (!sim.run_id) return;
+      const existing = byId.get(sim.run_id);
+      byId.set(sim.run_id, {
+        id: sim.run_id,
+        created_at: existing?.created_at ?? sim.created_at,
+        count: (existing?.count ?? 0) + 1,
+      });
+    });
+    return [...byId.values()].sort((a, b) => b.id.localeCompare(a.id));
+  }, [simulations]);
+
   useEffect(() => {
     refreshSimulations();
   }, [refreshSimulations]);
+
+  useEffect(() => {
+    if (campaigns.length === 0) {
+      if (selectedCampaignId !== null) setSelectedCampaignId(null);
+      return;
+    }
+    if (!selectedCampaignId || !campaigns.some((campaign) => campaign.id === selectedCampaignId)) {
+      setSelectedCampaignId(campaigns[0].id);
+    }
+  }, [campaigns, selectedCampaignId]);
 
   useEffect(() => {
     if (!runningGemini) return undefined;
@@ -146,7 +171,6 @@ export default function App() {
     setGeminiDotCount(0);
     setLoading(true);
     setError(null);
-    setSimulations([]);
     setSelectedSimulationId(null);
     fetch('/api/gemini/run', {
       method: 'POST',
@@ -158,6 +182,9 @@ export default function App() {
         return r.json();
       })
       .then(manifest => {
+        if (manifest?.run_id) {
+          setSelectedCampaignId(manifest.run_id);
+        }
         refreshSimulations();
         const bestSurvivor = manifest.best_survivor;
         const last = Array.isArray(manifest.iterations) ? manifest.iterations.at(-1) : null;
@@ -174,6 +201,17 @@ export default function App() {
       })
       .finally(() => setRunningGemini(false));
   }, [loadSavedSimulation, refreshSimulations, selectedMission]);
+
+  const selectCampaign = useCallback((campaignId) => {
+    setSelectedCampaignId(campaignId);
+    setSelectedSimulationId(null);
+    setSimResult(null);
+    const campaignSim = simulations.find((sim) => sim.run_id === campaignId && sim.params?.id);
+    const matchingMission = MISSIONS.find((mission) => mission.id === campaignSim?.params?.id);
+    if (matchingMission) {
+      setSelectedMission(matchingMission);
+    }
+  }, [simulations]);
 
   useEffect(() => {
     heldDirectionRef.current = 0;
@@ -220,14 +258,25 @@ export default function App() {
   const activeTick = tickCount > 0 ? ticks[activeTickIndex] : null;
   const activeRouteSegment = simResult?.voyage?.route_segments?.[activeTick?.segment_index ?? 0] ?? null;
   const activeConditions = activeRouteSegment?.conditions ?? null;
-  const env = selectedMission?.environmental_profile ?? null;
   const config = simResult?.configuration ?? null;
   const displayedZones = config?.zones ?? [];
   const failureDetail = formatFailureDetail(simResult?.failure);
   const selectedSimulation = simulations.find((sim) => sim.id === selectedSimulationId) ?? null;
+  const visibleSimulations = selectedCampaignId
+    ? simulations.filter((sim) => sim.run_id === selectedCampaignId)
+    : simulations;
+  const selectedCampaign = campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
+  const campaignMissionId = visibleSimulations.find((sim) => sim.params?.id)?.params?.id ?? null;
+  const campaignMission = MISSIONS.find((mission) => mission.id === campaignMissionId) ?? null;
+  const missionBrief = selectedMission ?? campaignMission;
+  const env = missionBrief?.environmental_profile ?? null;
+  const campaignSuccessCount = visibleSimulations.filter((sim) => sim.status === 'survived').length;
+  const campaignFailureCount = visibleSimulations.filter((sim) => sim.status === 'failed').length;
+  const latestCampaignSimulation = [...visibleSimulations]
+    .sort((a, b) => b.iteration - a.iteration)[0] ?? null;
   const bestSimulation = (() => {
     const costOf = (sim) => Number(sim?.result?.total_config_cost_usd);
-    const survivors = simulations
+    const survivors = visibleSimulations
       .filter((sim) => sim.status === 'survived')
       .sort((a, b) => {
         const costDelta = (Number.isFinite(costOf(a)) ? costOf(a) : Infinity)
@@ -236,7 +285,7 @@ export default function App() {
         return (b.eval?.score_pct ?? 0) - (a.eval?.score_pct ?? 0);
       });
     if (survivors.length > 0) return survivors[0];
-    return [...simulations].sort((a, b) => (b.eval?.score_pct ?? 0) - (a.eval?.score_pct ?? 0))[0] ?? null;
+    return [...visibleSimulations].sort((a, b) => (b.eval?.score_pct ?? 0) - (a.eval?.score_pct ?? 0))[0] ?? null;
   })();
   const bestSimulationLabel = bestSimulation
     ? `${String(bestSimulation.iteration).padStart(2, '0')} (${Number.isFinite(bestSimulation.eval?.score_pct) ? `${bestSimulation.eval.score_pct}%` : '—'} / ${Number.isFinite(bestSimulation.result?.total_config_cost_usd) ? `$${bestSimulation.result.total_config_cost_usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—'})`
@@ -445,7 +494,7 @@ export default function App() {
         loading={loading}
         progress={tickProgress}
         activeTick={activeTick}
-        routeGeo={selectedMission ? { origin: selectedMission.origin, waypoints: selectedMission.waypoints ?? [], destination: selectedMission.destination } : null}
+        routeGeo={missionBrief ? { origin: missionBrief.origin, waypoints: missionBrief.waypoints ?? [], destination: missionBrief.destination } : null}
       />
 
       {/* Left panel — hamburger cell that expands on hover */}
@@ -498,9 +547,9 @@ export default function App() {
           }}
         >
           <div className="no-scrollbar" style={{ minWidth: 0, overflowY: 'auto' }}>
-            {/* Mission brief section */}
+            {/* Missions section */}
             <div style={{ flexShrink: 0 }}>
-              <div style={panelHeaderStyle}>Mission Brief</div>
+              <div style={panelHeaderStyle}>Missions</div>
               {MISSIONS.map((m) => {
                 const isSelected = selectedMission?.id === m.id;
                 return (
@@ -535,14 +584,12 @@ export default function App() {
             </div>
 
             <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
-              <div style={panelSectionTitle}>Mission</div>
-              {selectedMission || selectedSimulation ? (
+              <div style={panelSectionTitle}>Mission Brief</div>
+              {missionBrief || selectedSimulation ? (
                 <>
-                  {renderPanelRow('Mission', selectedMission?.name ?? selectedSimulation?.id, { wrap: true })}
-                  {selectedMission ? renderPanelRow('Physics', selectedMission.primary_stressor?.replaceAll('_', ' '), { wrap: true }) : null}
-                  {selectedMission ? renderPanelRow('Failure', (selectedMission.failure_modes_under_test ?? []).join(', ') || '—', { wrap: true }) : null}
-                  {bestSimulationLabel ? renderPanelRow('Best', bestSimulationLabel, { wrap: true }) : null}
-                  {renderPanelRow('Leg', activeRouteSegment?.label ?? '—', { wrap: true })}
+                  {renderPanelRow('Mission', missionBrief?.name ?? selectedSimulation?.id, { wrap: true })}
+                  {missionBrief ? renderPanelRow('Physics', missionBrief.primary_stressor?.replaceAll('_', ' '), { wrap: true }) : null}
+                  {missionBrief ? renderPanelRow('Failure', (missionBrief.failure_modes_under_test ?? []).join(', ') || '—', { wrap: true }) : null}
                   {renderPanelRow('Waves', activeConditions
                     ? `${fmtNumber(activeConditions.hs_m)}m Hs / ${fmtNumber(activeConditions.tp_s)}s Tp`
                     : fmtRange(env?.wave_height_m, 'm'))}
@@ -565,7 +612,79 @@ export default function App() {
                 </>
               ) : (
                 <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
-                  Select a mission brief.
+                  Select a mission.
+                </div>
+              )}
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+              <div style={panelSectionTitle}>Campaign Selector</div>
+              <div className="no-scrollbar" style={{ maxHeight: 116, overflowY: 'auto' }}>
+                {campaigns.length === 0 ? (
+                  <div style={{
+                    padding: '7px 14px',
+                    fontFamily: "'Courier New', monospace",
+                    fontSize: 10,
+                    color: 'rgba(0,0,0,0.42)',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    No campaigns.
+                  </div>
+                ) : campaigns.map((campaign) => {
+                  const isSelected = selectedCampaignId === campaign.id;
+                  return (
+                    <div
+                      key={campaign.id}
+                      onClick={() => selectCampaign(campaign.id)}
+                      style={{
+                        padding: '6px 14px',
+                        fontFamily: "'Courier New', monospace",
+                        fontSize: 10,
+                        cursor: 'pointer',
+                        color: isSelected ? 'rgba(0,0,0,0.82)' : 'rgba(0,0,0,0.55)',
+                        background: isSelected ? 'rgba(0,0,0,0.06)' : 'transparent',
+                        borderBottom: '1px solid rgba(0,0,0,0.05)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        display: 'grid',
+                        gridTemplateColumns: '1fr auto',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}
+                    >
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {campaign.id}
+                      </span>
+                      <span style={{
+                        color: isSelected ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.42)',
+                        fontWeight: 700,
+                        minWidth: 22,
+                        textAlign: 'right',
+                      }}>
+                        {campaign.count}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
+              <div style={panelSectionTitle}>Campaign Details</div>
+              {selectedCampaign ? (
+                <>
+                  {renderPanelRow('Campaign', selectedCampaign.id, { wrap: true })}
+                  {renderPanelRow('Mission', campaignMission?.name ?? missionBrief?.name ?? '—', { wrap: true })}
+                  {renderPanelRow('Runs', String(selectedCampaign.count))}
+                  {renderPanelRow('Success', String(campaignSuccessCount))}
+                  {renderPanelRow('Failed', String(campaignFailureCount))}
+                  {bestSimulationLabel ? renderPanelRow('Best', bestSimulationLabel, { wrap: true }) : null}
+                  {latestCampaignSimulation ? renderPanelRow('Latest', `${String(latestCampaignSimulation.iteration).padStart(2, '0')} ${displayStatus(latestCampaignSimulation.status)}`, { wrap: true }) : null}
+                  {renderPanelRow('Leg', activeRouteSegment?.label ?? '—', { wrap: true })}
+                </>
+              ) : (
+                <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
+                  Select a campaign.
                 </div>
               )}
             </div>
@@ -603,7 +722,7 @@ export default function App() {
                 ) : 'Run Gemini'}
               </button>
               <div className="no-scrollbar" style={{ maxHeight: 170, overflowY: 'auto' }}>
-                {simulations.length === 0 ? (
+                {visibleSimulations.length === 0 ? (
                   <div style={{
                     padding: '7px 14px',
                     fontFamily: "'Courier New', monospace",
@@ -613,7 +732,7 @@ export default function App() {
                   }}>
                     No saved simulations.
                   </div>
-                ) : simulations.map((sim) => {
+                ) : visibleSimulations.map((sim) => {
                   const isSelected = selectedSimulationId === sim.id;
                   const failure = sim.failure?.mode ?? displayStatus(sim.status);
                   const evalScore = Number.isFinite(sim.eval?.score_pct) ? `${sim.eval.score_pct}%` : '—';

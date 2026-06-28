@@ -40,6 +40,7 @@ const GLOBE_GRID_LEVELS = [
   { key: 'coarse', name: 'globe-grid-coarse', latStep: 30, lonStep: 30, lineOpacity: 0.07, shadowOpacity: 0.014 },
   { key: 'medium', name: 'globe-grid-medium', latStep: 15, lonStep: 15, lineOpacity: GRID_LINE_OPACITY, shadowOpacity: GRID_SHADOW_OPACITY },
   { key: 'fine', name: 'globe-grid-fine', latStep: 5, lonStep: 5, lineOpacity: 0.055, shadowOpacity: 0.01 },
+  { key: 'near', name: 'globe-grid-near', latStep: 2.5, lonStep: 2.5, lineOpacity: 0.045, shadowOpacity: 0.008 },
 ];
 const ROUTE_TRAVERSED_COLOR = 0x000000;
 const ROUTE_REMAINING_COLOR = 0x0000FF;
@@ -1522,7 +1523,8 @@ function getGridOpacityScales(distance) {
     coarse: smoothstep(260, 520, distance),
     medium: rangeFade(distance, 100, 155, 310, 500),
     fine: rangeFade(distance, 58, 82, 135, 215),
-    local: 1 - smoothstep(50, 82, distance),
+    near: 1 - smoothstep(50, 82, distance),
+    local: 0,
   };
 }
 

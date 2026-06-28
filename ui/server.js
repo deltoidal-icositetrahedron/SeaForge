@@ -365,11 +365,9 @@ app.post('/api/gemini/run', async (req, res) => {
     }
 
     stopActiveGeminiRun();
-    clearSimulationRuns();
 
     const runnerArgs = [
       GEMINI_RUNNER,
-      '--clear-simulations',
       `--mission-id=${brief.id}`,
       `--max-iterations=${maxIterations}`,
       `--run-id=${runId}`,

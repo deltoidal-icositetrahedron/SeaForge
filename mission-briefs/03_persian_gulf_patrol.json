@@ -22,22 +22,23 @@
     { "name": "Gulf of Oman approach",            "lat_deg": 23.9,  "lon_deg": 58.2  }
   ],
 
-  "distance_nm": 620,
-  "expected_duration_days": 3,
+  "distance_nm": 720,
+  "expected_duration_days": 5,
 
   "primary_stressor": "corrosion_crack_cascade",
   "failure_modes_under_test": ["sink"],
+  "objective": "Complete a hot hypersaline patrol that tests whether the hull, welds, and seals can survive accelerated corrosion, pitting, and corrosion-fatigue before breach.",
 
   "environmental_profile": {
-    "wave_height_m": { "avg": 1.1, "max": 2.8 },
-    "wave_period_s": { "avg": 6, "max": 9 },
+    "wave_height_m": { "avg": 1.7, "max": 4.2 },
+    "wave_period_s": { "avg": 5.2, "max": 7.5 },
     "slamming_probability": "low",
-    "water_temp_c": { "avg": 32, "max": 36 },
-    "salinity_ppt": 42,
+    "water_temp_c": { "avg": 35, "max": 41 },
+    "salinity_ppt": 48,
     "ice_accretion_risk": "none",
-    "ph": 7.9,
-    "notes": "Highest salinity open-water body on earth. Thermal cycling between night and day accelerates seal degradation."
+    "ph": 7.55,
+    "notes": "Extreme hypersaline hot-water patrol. High conductivity, low pH, and thermal cycling accelerate pitting corrosion, seal degradation, and corrosion-fatigue crack growth."
   },
 
-  "rationale": "The Persian Gulf is calm but chemically brutal. Salinity of 42 ppt combined with 32°C water temperatures creates an aggressive electrochemical corrosion environment. The kill chain is slow: high salinity -> accelerated corrosion -> pitting -> fatigue crack initiation -> hull breach."
+  "rationale": "The Persian Gulf is calm compared with storm missions, but this patrol is chemically brutal. Salinity of 48 ppt combined with 35°C average water, 41°C hot-water peaks, and depressed pH creates an aggressive electrochemical corrosion environment. The kill chain is slow but severe: high salinity -> accelerated corrosion -> pitting -> corrosion-fatigue crack initiation -> hull breach -> sink."
 }

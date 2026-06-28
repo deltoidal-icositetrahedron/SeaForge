@@ -27,6 +27,7 @@
 
   "primary_stressor": "capsize_stability",
   "failure_modes_under_test": ["capsize", "breaks_in_half"],
+  "objective": "Round Cape Horn through confused Southern Ocean seas to test stability margin, beam-sea capsize resistance, and structural survival under extreme cross-swell loading.",
 
   "environmental_profile": {
     "wave_height_m": { "avg": 6.2, "max": 18.0 },

@@ -226,7 +226,7 @@ function simulationEntries() {
       const result = safeReadJson(path.join(iterationDir, 'result.json'));
       const assessment = safeReadJson(path.join(iterationDir, 'assessment.json'));
       const params = safeReadJson(path.join(iterationDir, 'params.json'));
-      if (!result) continue;
+      if (!result || !assessment) continue;
 
       entries.push({
         id: `${runId}/${name}`,
@@ -236,16 +236,14 @@ function simulationEntries() {
         failure: result.failure ?? null,
         result: result.result ?? null,
         eval: evaluateSimulation(result),
-        assessment: assessment
-          ? {
-            assessment: assessment.assessment,
-            failed_part: assessment.failed_part ?? null,
-            failed_metric: assessment.failed_metric ?? null,
-            root_cause: assessment.root_cause ?? null,
-            model_used: assessment.model_used ?? null,
-            changes: assessment.changes ?? [],
-          }
-          : null,
+        assessment: {
+          assessment: assessment.assessment,
+          failed_part: assessment.failed_part ?? null,
+          failed_metric: assessment.failed_metric ?? null,
+          root_cause: assessment.root_cause ?? null,
+          model_used: assessment.model_used ?? null,
+          changes: assessment.changes ?? [],
+        },
         params,
         created_at: manifest?.started_at ?? runId,
       });
@@ -346,6 +344,17 @@ app.get('/api/gemini/status', (_req, res) => {
   res.json(activeGeminiStatus());
 });
 
+// POST /api/gemini/stop — stop the active Gemini campaign, if one is running
+app.post('/api/gemini/stop', (_req, res) => {
+  const status = activeGeminiStatus();
+  const stopped = stopActiveGeminiRun();
+  if (stopped) activeGeminiRun = null;
+  res.json({
+    stopped,
+    run_id: status.run_id,
+  });
+});
+
 // GET /api/simulation?id=<run-id/iteration-XX> — load a saved simulation result
 app.get('/api/simulation', (req, res) => {
   const id = String(req.query.id ?? '');
@@ -358,14 +367,18 @@ app.get('/api/simulation', (req, res) => {
   const assessmentFile = path.join(SIMULATIONS_DIR, id, 'assessment.json');
   const paramsFile = path.join(iterationDir, 'params.json');
   const result = safeReadJson(resultFile);
+  const assessment = safeReadJson(path.join(iterationDir, 'assessment.json')) ?? safeReadJson(assessmentFile);
   if (!result) {
     return res.status(404).json({ error: 'simulation result not found' });
+  }
+  if (!assessment) {
+    return res.status(404).json({ error: 'simulation is still running analysis' });
   }
 
   res.json({
     id,
     result,
-    assessment: safeReadJson(path.join(iterationDir, 'assessment.json')) ?? safeReadJson(assessmentFile),
+    assessment,
     params: safeReadJson(paramsFile),
   });
 });

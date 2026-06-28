@@ -1,1 +1,1 @@
-export const MAX_ITERATIONS = 200;
+export const MAX_ITERATIONS = 50;

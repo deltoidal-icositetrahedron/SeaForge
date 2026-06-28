@@ -25,6 +25,7 @@
 
   "primary_stressor": "ice_accretion_cold_embrittlement",
   "failure_modes_under_test": ["capsize", "breaks_in_half"],
+  "objective": "Cross the Bering Sea in icing conditions to test whether the vessel can tolerate spray-ice weight, GM loss, and cold-driven weld brittleness.",
 
   "environmental_profile": {
     "wave_height_m": { "avg": 4.5, "max": 12.0 },

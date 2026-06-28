@@ -7,14 +7,12 @@ const GLOBE_CENTER = new THREE.Vector3(0, 0, 0);
 const GLOBE_RADIUS = 160;
 const GLOBE_LAND_RADIUS = GLOBE_RADIUS + 0.1;
 const GLOBE_COAST_RADIUS = GLOBE_RADIUS + 0.22;
-const GLOBE_GRID_RADIUS = GLOBE_RADIUS + 0.38;
-const GLOBE_GRID_SHADOW_RADIUS = GLOBE_RADIUS + 0.28;
-const GLOBE_ROUTE_RADIUS = GLOBE_RADIUS + 0.75;
-const GLOBE_SHIP_RADIUS = GLOBE_RADIUS + 1.05;
+const GLOBE_GRID_RADIUS = GLOBE_RADIUS + 0.08;
+const GLOBE_GRID_SHADOW_RADIUS = GLOBE_RADIUS + 0.045;
+const GLOBE_ROUTE_RADIUS = GLOBE_RADIUS + 0.11;
+const GLOBE_SHIP_RADIUS = GLOBE_RADIUS + 0.12;
 const GLOBE_ROUTE_SEGMENTS = 96;
 const GLOBE_GRID_SEGMENTS = 144;
-const LAND_TRIANGLE_MAX_ANGLE_DEG = 4.5;
-const LAND_TRIANGLE_MAX_SUBDIVISIONS = 8;
 const SHIP_MODEL_LENGTH = 4.2;
 const GRID_LINE_OPACITY = 0.105;
 const GRID_SHADOW_OPACITY = 0.025;
@@ -25,11 +23,18 @@ const LOCAL_GRID_SHADOW_LINE_WIDTH = 0.13;
 const LOCAL_GRID_LINE_OPACITY = 0.095;
 const LOCAL_GRID_SHADOW_OPACITY = 0.015;
 const LOCAL_GRID_SHADOW_OFFSET = -0.6;
-const LOCAL_GRID_SURFACE_OFFSET = 0.82;
+const LOCAL_GRID_SURFACE_OFFSET = 0.08;
 const LOCAL_GRID_SHADOW_Y = 0.008;
 const LOCAL_GRID_LINE_Y = 0.01;
-const LOCAL_GRID_ROTATION_DEG = 105;
+const LOCAL_GRID_ROTATION_DEG = 108;
 const LOCAL_GRID_CURVE_SEGMENTS = 96;
+const SHIP_SHADOW_OPACITY = 0.12;
+const SHIP_SHADOW_HEIGHT_SCALE = 0.02;
+const SHIP_SHADOW_OFFSET_DISTANCE = 0.3;
+const SHIP_SHADOW_DIRECTION_DEG = 300;
+const SHIP_SHADOW_DIRECTION_RAD = THREE.MathUtils.degToRad(SHIP_SHADOW_DIRECTION_DEG);
+const SHIP_SHADOW_OFFSET_X = Math.sin(SHIP_SHADOW_DIRECTION_RAD) * SHIP_SHADOW_OFFSET_DISTANCE;
+const SHIP_SHADOW_OFFSET_Z = Math.cos(SHIP_SHADOW_DIRECTION_RAD) * SHIP_SHADOW_OFFSET_DISTANCE;
 const GLOBE_GRID_LEVELS = [
   { key: 'coarse', name: 'globe-grid-coarse', latStep: 30, lonStep: 30, lineOpacity: 0.07, shadowOpacity: 0.014 },
   { key: 'medium', name: 'globe-grid-medium', latStep: 15, lonStep: 15, lineOpacity: GRID_LINE_OPACITY, shadowOpacity: GRID_SHADOW_OPACITY },
@@ -37,9 +42,14 @@ const GLOBE_GRID_LEVELS = [
 ];
 const ROUTE_TRAVERSED_COLOR = 0x000000;
 const ROUTE_REMAINING_COLOR = 0x0000FF;
-const ROUTE_LINE_OPACITY = 0.68;
-const SHIP_SHADOW_Y = 0.022;
-const LAND_GEOJSON_URL = '/ne_110m_admin_0_countries.geojson';
+const ROUTE_LINE_OPACITY = 0.4;
+const ROUTE_LINE_WIDTH = 0.11;
+const ROUTE_LINE_CAP_SEGMENTS = 10;
+const SHIP_SHADOW_Y = 0.012;
+const LAND_GEOJSON_URL = '/ne_50m_admin_0_countries.geojson';
+const LAND_TEXTURE_WIDTH = 4096;
+const LAND_TEXTURE_HEIGHT = 2048;
+const COASTLINE_MAX_SEGMENT_DEG = 0.35;
 const ZONE_LABEL_WIDTH = 166;
 const ZONE_LABEL_HEIGHT = 52;
 const ZONE_LABEL_GAP = 8;
@@ -48,6 +58,7 @@ const ZONE_LABEL_BEND_PX = 44;
 const ZONE_LABEL_MIN_BEND_PX = 18;
 const ZONE_LABEL_MIN_HORIZONTAL_RUN_PX = 58;
 const ZONE_LABEL_MIN_DIAGONAL_Y_PX = 6;
+const ZONE_LEADER_COMPONENT_OVERLAP_PX = 7;
 const ZONE_LABEL_VIEWPORT_MARGIN = 12;
 const ZONE_LABEL_BORDER_COLOR = 'rgba(0,0,0,0.13)';
 const ZONE_OVERLAY_ANIMATION_MS = 140;
@@ -70,15 +81,15 @@ const SHIP_SCREEN_BOUNDS_POINTS = [
 ];
 
 const ZONE_ANCHORS = {
-  Keel: { anchor: [0, 0.10, 0], fallbackSide: 'bottom' },
-  'Bilge Strake': { anchor: [-0.86, 0.34, -0.05], fallbackSide: 'bottom' },
-  'Bottom Plating': { anchor: [0.05, 0.13, -0.72], fallbackSide: 'left' },
-  'Side Plating': { anchor: [0.88, 0.42, 0.04], fallbackSide: 'top' },
-  'Bow Flare': { anchor: [0.20, 0.58, 2.18], fallbackSide: 'right' },
-  'Stern Plate': { anchor: [-0.10, 0.42, -2.34], fallbackSide: 'left' },
-  'Transom Frame': { anchor: [-0.32, 0.60, -2.55], fallbackSide: 'left' },
-  'Weather Deck': { anchor: [0, 0.86, 0.36], fallbackSide: 'top' },
-  'Bulkhead Frame': { anchor: [0.36, 0.68, -1.10], fallbackSide: 'top' },
+  Keel: { anchor: [0, 0.02, -0.05], fallbackSide: 'bottom' },
+  'Bilge Strake': { anchor: [-0.58, 0.22, -0.05], fallbackSide: 'bottom' },
+  'Bottom Plating': { anchor: [0.04, 0.08, -0.58], fallbackSide: 'left' },
+  'Side Plating': { anchor: [0.62, 0.34, 0.05], fallbackSide: 'top' },
+  'Bow Flare': { anchor: [0.64, -0.12, 1.72], fallbackSide: 'right' },
+  'Stern Plate': { anchor: [-0.08, 0.34, -1.86], fallbackSide: 'left' },
+  'Transom Frame': { anchor: [-0.32, 0.42, -2.02], fallbackSide: 'left' },
+  'Weather Deck': { anchor: [0.08, 0.88, 0.30], fallbackSide: 'top' },
+  'Bulkhead Frame': { anchor: [0.28, 0.72, -0.86], fallbackSide: 'top' },
 };
 
 const DEFAULT_ROUTE_GEO = {
@@ -175,6 +186,89 @@ function buildRouteArcPoints(routeFrame, start, end, radius = GLOBE_ROUTE_RADIUS
   return points;
 }
 
+function createRouteRibbonGeometry(points, width = ROUTE_LINE_WIDTH) {
+  const positions = [];
+  const normals = [];
+  const indices = [];
+  const halfWidth = width / 2;
+
+  points.forEach((point, index) => {
+    const previous = points[Math.max(0, index - 1)];
+    const next = points[Math.min(points.length - 1, index + 1)];
+    const tangent = next.clone().sub(previous).normalize();
+    const normal = point.clone().normalize();
+    const side = normal.clone().cross(tangent).normalize();
+
+    const left = point.clone().addScaledVector(side, -halfWidth);
+    const right = point.clone().addScaledVector(side, halfWidth);
+    positions.push(left.x, left.y, left.z, right.x, right.y, right.z);
+    normals.push(normal.x, normal.y, normal.z, normal.x, normal.y, normal.z);
+  });
+
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const a = i * 2;
+    const b = a + 1;
+    const c = a + 2;
+    const d = a + 3;
+    indices.push(a, c, b, b, c, d);
+  }
+
+  const addCap = (pointIndex, directionSign) => {
+    const point = points[pointIndex];
+    const previous = points[Math.max(0, pointIndex - 1)];
+    const next = points[Math.min(points.length - 1, pointIndex + 1)];
+    const tangent = next.clone().sub(previous).normalize().multiplyScalar(directionSign);
+    const normal = point.clone().normalize();
+    const side = normal.clone().cross(tangent).normalize();
+    const centerIndex = positions.length / 3;
+
+    positions.push(point.x, point.y, point.z);
+    normals.push(normal.x, normal.y, normal.z);
+
+    for (let i = 0; i <= ROUTE_LINE_CAP_SEGMENTS; i += 1) {
+      const theta = (i / ROUTE_LINE_CAP_SEGMENTS) * Math.PI;
+      const offset = side.clone()
+        .multiplyScalar(-Math.cos(theta) * halfWidth)
+        .addScaledVector(tangent, Math.sin(theta) * halfWidth);
+      const capPoint = point.clone().add(offset);
+      positions.push(capPoint.x, capPoint.y, capPoint.z);
+      normals.push(normal.x, normal.y, normal.z);
+    }
+
+    for (let i = 0; i < ROUTE_LINE_CAP_SEGMENTS; i += 1) {
+      indices.push(centerIndex, centerIndex + i + 1, centerIndex + i + 2);
+    }
+  };
+
+  addCap(0, -1);
+  addCap(points.length - 1, 1);
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setIndex(indices);
+  geometry.computeBoundingSphere();
+  return geometry;
+}
+
+function createRouteRibbon(points, color) {
+  const mesh = new THREE.Mesh(
+    createRouteRibbonGeometry(points),
+    new THREE.MeshBasicMaterial({
+      color,
+      opacity: ROUTE_LINE_OPACITY,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    }),
+  );
+  mesh.frustumCulled = false;
+  mesh.renderOrder = -1;
+  return mesh;
+}
+
 function orientObjectOnGlobe(object, unit, forward) {
   const up = unit.clone().normalize();
   const zAxis = forward.clone().projectOnPlane(up).normalize();
@@ -216,6 +310,23 @@ function projectWorldToScreen(point, camera, element) {
     y: (-projected.y * 0.5 + 0.5) * element.clientHeight,
     visible: projected.z >= -1 && projected.z <= 1,
   };
+}
+
+function projectShipSurfaceToScreen(screenPoint, anchorLocal, shipGroup, camera, element, targets, raycaster) {
+  if (!targets?.length) return screenPoint;
+
+  const pointer = new THREE.Vector2(
+    (screenPoint.x / element.clientWidth) * 2 - 1,
+    -((screenPoint.y / element.clientHeight) * 2 - 1),
+  );
+  raycaster.setFromCamera(pointer, camera);
+  const hits = raycaster.intersectObjects(targets, true);
+  const hit = hits.reduce((best, candidate) => {
+    const localPoint = shipGroup.worldToLocal(candidate.point.clone());
+    const distanceSq = localPoint.distanceToSquared(anchorLocal);
+    return !best || distanceSq < best.distanceSq ? { candidate, distanceSq } : best;
+  }, null)?.candidate;
+  return hit ? projectWorldToScreen(hit.point, camera, element) : screenPoint;
 }
 
 function getProjectedShipBounds(shipGroup, camera, element) {
@@ -556,6 +667,10 @@ function addLeaderGeometry(labels, elementWidth) {
     const lineStartX = positionedLabel.lineStartX;
     const lineStartY = labelLineEntryY(positionedLabel);
     const dx = lineStartX - label.anchorX;
+    const dy = lineStartY - label.anchorY;
+    const leaderLength = Math.hypot(dx, dy) || 1;
+    const anchorLineX = label.anchorX - (dx / leaderLength) * ZONE_LEADER_COMPONENT_OVERLAP_PX;
+    const anchorLineY = label.anchorY - (dy / leaderLength) * ZONE_LEADER_COMPONENT_OVERLAP_PX;
     const bendX = label.anchorX + dx * 0.58;
 
     return {
@@ -565,7 +680,7 @@ function addLeaderGeometry(labels, elementWidth) {
       bendX,
       bendY: lineStartY,
       leaderPoints: [
-        [label.anchorX, label.anchorY],
+        [anchorLineX, anchorLineY],
         [bendX, lineStartY],
         [lineStartX, lineStartY],
       ],
@@ -573,7 +688,7 @@ function addLeaderGeometry(labels, elementWidth) {
   });
 }
 
-function buildZoneOverlay(tick, shipGroup, camera, element) {
+function buildZoneOverlay(tick, shipGroup, camera, element, shipHitTargets = []) {
   const zones = Array.isArray(tick?.zones) ? tick.zones : [];
   if (!zones.length || !shipGroup || !camera || !element) {
     return emptyZoneOverlay();
@@ -581,6 +696,7 @@ function buildZoneOverlay(tick, shipGroup, camera, element) {
 
   shipGroup.updateWorldMatrix(true, false);
   camera.updateMatrixWorld();
+  const anchorRaycaster = new THREE.Raycaster();
 
   const shipBounds = getProjectedShipBounds(shipGroup, camera, element);
   if (!shipBounds) {
@@ -624,8 +740,17 @@ function buildZoneOverlay(tick, shipGroup, camera, element) {
     const name = zone.zone || `Zone ${index + 1}`;
     const { stats, statsKey } = getZoneStats(zone);
     const anchorConfig = getZoneAnchor(name, index, zones.length);
-    const anchor = shipGroup.localToWorld(new THREE.Vector3(...anchorConfig.anchor));
-    const anchorScreen = projectWorldToScreen(anchor, camera, element);
+    const anchorLocal = new THREE.Vector3(...anchorConfig.anchor);
+    const anchor = shipGroup.localToWorld(anchorLocal.clone());
+    const anchorScreen = projectShipSurfaceToScreen(
+      projectWorldToScreen(anchor, camera, element),
+      anchorLocal,
+      shipGroup,
+      camera,
+      element,
+      shipHitTargets,
+      anchorRaycaster,
+    );
     if (!anchorScreen.visible) return;
 
     const side = chooseLabelSide(anchorScreen, shipBounds, anchorConfig, spaces, labelWidth);
@@ -731,143 +856,168 @@ function geoJsonPolygons(geoJson) {
   return polygons;
 }
 
-function ringToShapePoints(ring) {
-  return ring
-    .filter((coord) => Number.isFinite(coord?.[0]) && Number.isFinite(coord?.[1]))
-    .map((coord) => new THREE.Vector2(coord[0], coord[1]));
+function validGeoCoord(coord) {
+  return Number.isFinite(coord?.[0]) && Number.isFinite(coord?.[1]);
+}
+
+function pushResampledGlobeSegment(points, fromCoord, toCoord, radius) {
+  const fromUnit = geoToUnitVector(fromCoord[0], fromCoord[1]);
+  const toUnit = geoToUnitVector(toCoord[0], toCoord[1]);
+  const angleDeg = THREE.MathUtils.radToDeg(fromUnit.angleTo(toUnit));
+  const steps = Math.max(1, Math.ceil(angleDeg / COASTLINE_MAX_SEGMENT_DEG));
+
+  for (let i = 1; i <= steps; i += 1) {
+    points.push(slerpUnitVectors(fromUnit, toUnit, i / steps).multiplyScalar(radius));
+  }
 }
 
 function ringToLinePoints(ring) {
-  return ring
-    .filter((coord) => Number.isFinite(coord?.[0]) && Number.isFinite(coord?.[1]))
-    .map((coord) => globePoint(coord[0], coord[1], GLOBE_COAST_RADIUS));
-}
+  const coords = ring.filter(validGeoCoord);
+  if (coords.length < 2) return [];
 
-function angularDistanceDeg(a, b) {
-  return THREE.MathUtils.radToDeg(Math.acos(clamp(a.dot(b), -1, 1)));
-}
-
-function getTriangleSubdivisions(a, b, c) {
-  const maxAngle = Math.max(
-    angularDistanceDeg(a, b),
-    angularDistanceDeg(b, c),
-    angularDistanceDeg(c, a),
-  );
-
-  return clamp(
-    Math.ceil(maxAngle / LAND_TRIANGLE_MAX_ANGLE_DEG),
-    1,
-    LAND_TRIANGLE_MAX_SUBDIVISIONS,
-  );
-}
-
-function interpolateSphericalTriangle(a, b, c, i, j, subdivisions) {
-  const bWeight = i / subdivisions;
-  const cWeight = j / subdivisions;
-  const aWeight = 1 - bWeight - cWeight;
-  return a.clone().multiplyScalar(aWeight)
-    .addScaledVector(b, bWeight)
-    .addScaledVector(c, cWeight)
-    .normalize();
-}
-
-function pushSphericalVertex(positions, normals, unit, radius) {
-  positions.push(unit.x * radius, unit.y * radius, unit.z * radius);
-  normals.push(unit.x, unit.y, unit.z);
-}
-
-function pushSphericalTriangle(positions, normals, a, b, c, radius) {
-  const subdivisions = getTriangleSubdivisions(a, b, c);
-
-  for (let i = 0; i < subdivisions; i += 1) {
-    for (let j = 0; j < subdivisions - i; j += 1) {
-      pushSphericalVertex(
-        positions,
-        normals,
-        interpolateSphericalTriangle(a, b, c, i, j, subdivisions),
-        radius,
-      );
-      pushSphericalVertex(
-        positions,
-        normals,
-        interpolateSphericalTriangle(a, b, c, i + 1, j, subdivisions),
-        radius,
-      );
-      pushSphericalVertex(
-        positions,
-        normals,
-        interpolateSphericalTriangle(a, b, c, i, j + 1, subdivisions),
-        radius,
-      );
-
-      if (j < subdivisions - i - 1) {
-        pushSphericalVertex(
-          positions,
-          normals,
-          interpolateSphericalTriangle(a, b, c, i + 1, j, subdivisions),
-          radius,
-        );
-        pushSphericalVertex(
-          positions,
-          normals,
-          interpolateSphericalTriangle(a, b, c, i + 1, j + 1, subdivisions),
-          radius,
-        );
-        pushSphericalVertex(
-          positions,
-          normals,
-          interpolateSphericalTriangle(a, b, c, i, j + 1, subdivisions),
-          radius,
-        );
-      }
-    }
+  const points = [globePoint(coords[0][0], coords[0][1], GLOBE_COAST_RADIUS)];
+  for (let i = 1; i < coords.length; i += 1) {
+    pushResampledGlobeSegment(points, coords[i - 1], coords[i], GLOBE_COAST_RADIUS);
   }
+
+  const first = coords[0];
+  const last = coords[coords.length - 1];
+  if (first[0] !== last[0] || first[1] !== last[1]) {
+    pushResampledGlobeSegment(points, last, first, GLOBE_COAST_RADIUS);
+  }
+
+  return points;
 }
 
-function sphereShapeGeometry(planarGeometry, radius) {
-  const sourcePosition = planarGeometry.getAttribute('position');
-  const sourceIndex = planarGeometry.index;
+function createTexturedGlobeGeometry(radius, lonSegments = 256, latSegments = 128) {
   const positions = [];
   const normals = [];
-  const getUnitAt = (vertexIndex) => (
-    geoToUnitVector(sourcePosition.getX(vertexIndex), sourcePosition.getY(vertexIndex))
-  );
-  const getVertexIndex = (index) => (sourceIndex ? sourceIndex.getX(index) : index);
-  const triangleCount = sourceIndex ? sourceIndex.count : sourcePosition.count;
+  const uvs = [];
+  const indices = [];
 
-  for (let i = 0; i < triangleCount; i += 3) {
-    pushSphericalTriangle(
-      positions,
-      normals,
-      getUnitAt(getVertexIndex(i)),
-      getUnitAt(getVertexIndex(i + 1)),
-      getUnitAt(getVertexIndex(i + 2)),
-      radius,
-    );
+  for (let latIndex = 0; latIndex <= latSegments; latIndex += 1) {
+    const lat = 90 - (latIndex / latSegments) * 180;
+
+    for (let lonIndex = 0; lonIndex <= lonSegments; lonIndex += 1) {
+      const lon = -180 + (lonIndex / lonSegments) * 360;
+      const unit = geoToUnitVector(lon, lat);
+      positions.push(unit.x * radius, unit.y * radius, unit.z * radius);
+      normals.push(unit.x, unit.y, unit.z);
+      uvs.push(lonIndex / lonSegments, 1 - latIndex / latSegments);
+    }
   }
 
-  planarGeometry.dispose();
+  for (let latIndex = 0; latIndex < latSegments; latIndex += 1) {
+    for (let lonIndex = 0; lonIndex < lonSegments; lonIndex += 1) {
+      const a = latIndex * (lonSegments + 1) + lonIndex;
+      const b = a + lonSegments + 1;
+      indices.push(a, b, a + 1, a + 1, b, b + 1);
+    }
+  }
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
   geometry.computeBoundingSphere();
   return geometry;
+}
+
+function lonToTextureX(lon, offset = 0) {
+  return ((lon + 180) / 360) * LAND_TEXTURE_WIDTH + offset;
+}
+
+function latToTextureY(lat) {
+  return ((90 - lat) / 180) * LAND_TEXTURE_HEIGHT;
+}
+
+function drawGeoJsonRing(ctx, ring, xOffset) {
+  let started = false;
+  let previousLon = null;
+  let wrapOffset = xOffset;
+
+  ring.forEach((coord) => {
+    const rawLon = coord?.[0];
+    const lat = coord?.[1];
+    if (!Number.isFinite(rawLon) || !Number.isFinite(lat)) return;
+
+    let lon = rawLon;
+    if (previousLon !== null) {
+      while (lon - previousLon > 180) {
+        lon -= 360;
+        wrapOffset += LAND_TEXTURE_WIDTH;
+      }
+      while (lon - previousLon < -180) {
+        lon += 360;
+        wrapOffset -= LAND_TEXTURE_WIDTH;
+      }
+    }
+
+    const x = lonToTextureX(lon, wrapOffset);
+    const y = latToTextureY(lat);
+    if (!started) {
+      ctx.moveTo(x, y);
+      started = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+    previousLon = lon;
+  });
+
+  if (started) ctx.closePath();
+}
+
+function createLandTexture(geoJson) {
+  const canvas = document.createElement('canvas');
+  canvas.width = LAND_TEXTURE_WIDTH;
+  canvas.height = LAND_TEXTURE_HEIGHT;
+  const ctx = canvas.getContext('2d');
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#aeb2b8';
+
+  geoJsonPolygons(geoJson).forEach((polygon) => {
+    [-LAND_TEXTURE_WIDTH, 0, LAND_TEXTURE_WIDTH].forEach((xOffset) => {
+      ctx.beginPath();
+      polygon.rings.forEach((ring) => drawGeoJsonRing(ctx, ring, xOffset));
+      ctx.fill('evenodd');
+    });
+  });
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function createLandLayer(geoJson) {
   const group = new THREE.Group();
   group.name = 'land-layer';
 
-  const fillMaterial = new THREE.MeshBasicMaterial({
-    color: 0xaeb2b8,
-    transparent: true,
-    opacity: 0.46,
-    depthTest: true,
-    depthWrite: false,
-    side: THREE.DoubleSide,
-    toneMapped: false,
-  });
+  const landTexture = createLandTexture(geoJson);
+  const landFill = new THREE.Mesh(
+    createTexturedGlobeGeometry(GLOBE_LAND_RADIUS),
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      map: landTexture,
+      opacity: 0.46,
+      alphaTest: 0.01,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false,
+    }),
+  );
+  landFill.name = 'land-fill-texture';
+  landFill.renderOrder = -20;
+  group.add(landFill);
+
   const coastMaterial = new THREE.LineBasicMaterial({
     color: 0x59616a,
     transparent: true,
@@ -877,34 +1027,26 @@ function createLandLayer(geoJson) {
     toneMapped: false,
   });
 
-  let meshCount = 0;
+  const antimeridianCoastMaterial = new THREE.LineBasicMaterial({
+    color: 0x59616a,
+    transparent: true,
+    opacity: 0.16,
+    depthTest: true,
+    depthWrite: false,
+    toneMapped: false,
+  });
+
   let coastlineCount = 0;
 
   geoJsonPolygons(geoJson).forEach((polygon) => {
-    const outer = ringToShapePoints(polygon.rings[0] || []);
-    if (outer.length < 3) return;
-
-    const shape = new THREE.Shape(outer);
-    polygon.rings.slice(1).forEach((holeRing) => {
-      const hole = ringToShapePoints(holeRing);
-      if (hole.length >= 3) {
-        shape.holes.push(new THREE.Path(hole));
-      }
-    });
-
-    const geometry = sphereShapeGeometry(new THREE.ShapeGeometry(shape), GLOBE_LAND_RADIUS);
-    const mesh = new THREE.Mesh(geometry, fillMaterial);
-    mesh.name = `${polygon.name} fill`;
-    mesh.renderOrder = -20;
-    group.add(mesh);
-    meshCount += 1;
-
     const linePoints = ringToLinePoints(polygon.rings[0] || []);
     if (linePoints.length < 2) return;
-    linePoints.push(linePoints[0].clone());
     const line = new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(linePoints),
-      coastMaterial,
+      polygon.rings[0].some((coord, index, ring) => {
+        if (index === 0) return false;
+        return Math.abs(coord[0] - ring[index - 1][0]) > 180;
+      }) ? antimeridianCoastMaterial : coastMaterial,
     );
     line.name = `${polygon.name} coastline`;
     line.frustumCulled = false;
@@ -915,7 +1057,7 @@ function createLandLayer(geoJson) {
 
   group.userData.stats = {
     features: geoJson?.features?.length || 0,
-    meshes: meshCount,
+    meshes: 1,
     coastlines: coastlineCount,
   };
 
@@ -934,37 +1076,10 @@ function disposeObject3D(object) {
     }
   });
   geometries.forEach((geometry) => geometry.dispose());
-  materials.forEach((material) => material.dispose());
-}
-
-function createShipShadowTexture() {
-  const size = 512;
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext('2d');
-
-  const gradient = ctx.createRadialGradient(
-    size * 0.5,
-    size * 0.5,
-    size * 0.08,
-    size * 0.5,
-    size * 0.5,
-    size * 0.48,
-  );
-  gradient.addColorStop(0, 'rgba(30, 38, 46, 0.52)');
-  gradient.addColorStop(0.38, 'rgba(30, 38, 46, 0.30)');
-  gradient.addColorStop(0.72, 'rgba(30, 38, 46, 0.10)');
-  gradient.addColorStop(1, 'rgba(30, 38, 46, 0)');
-
-  ctx.fillStyle = gradient;
-  ctx.beginPath();
-  ctx.ellipse(size * 0.5, size * 0.5, size * 0.44, size * 0.30, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  return texture;
+  materials.forEach((material) => {
+    if (material.map) material.map.dispose();
+    material.dispose();
+  });
 }
 
 function createGlobeBase() {
@@ -1154,17 +1269,6 @@ function createLocalGrid() {
   );
   horizontalGridShadow.position.set(0, LOCAL_GRID_SHADOW_Y, LOCAL_GRID_SHADOW_OFFSET);
   gridSurface.add(horizontalGridShadow);
-
-  const verticalGridShadow = createLocalGridMesh(
-    LOCAL_GRID_SIZE,
-    LOCAL_GRID_DIVISIONS,
-    LOCAL_GRID_LINE_WIDTH,
-    0x000000,
-    LOCAL_GRID_SHADOW_OPACITY,
-    { includeXLines: false, renderOrder: -3 },
-  );
-  verticalGridShadow.position.set(LOCAL_GRID_SHADOW_OFFSET, LOCAL_GRID_SHADOW_Y, 0);
-  gridSurface.add(verticalGridShadow);
 
   const grid = createLocalGridMesh(
     LOCAL_GRID_SIZE,
@@ -1367,38 +1471,27 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     scene.add(localGridGroup);
     updateGridDetail({ cam, controls, globeGridLevels, localGridGroup });
 
-    // Route line: traversed portion is black; remaining route is yellow.
-    const remainingRouteLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(buildRouteArcPoints(routeFrame, 0, 1)),
-      new THREE.LineBasicMaterial({
-        color: ROUTE_REMAINING_COLOR,
-        opacity: ROUTE_LINE_OPACITY,
-        transparent: true,
-        linewidth: 1,
-      }),
+    // Route line: traversed portion is black; remaining route is blue.
+    const remainingRouteLine = createRouteRibbon(
+      buildRouteArcPoints(routeFrame, Math.min(progress, 0.999), 1),
+      ROUTE_REMAINING_COLOR,
     );
-    remainingRouteLine.frustumCulled = false;
+    remainingRouteLine.visible = progress < 0.999;
     scene.add(remainingRouteLine);
-    const traversedRouteLine = new THREE.Line(
-      new THREE.BufferGeometry().setFromPoints(buildRouteArcPoints(routeFrame, 0, 0)),
-      new THREE.LineBasicMaterial({
-        color: ROUTE_TRAVERSED_COLOR,
-        opacity: ROUTE_LINE_OPACITY,
-        transparent: true,
-        linewidth: 1,
-      }),
+    const traversedRouteLine = createRouteRibbon(
+      buildRouteArcPoints(routeFrame, 0, Math.max(progress, 0.001)),
+      ROUTE_TRAVERSED_COLOR,
     );
-    traversedRouteLine.frustumCulled = false;
-    traversedRouteLine.visible = false;
+    traversedRouteLine.visible = progress > 0.001;
     scene.add(traversedRouteLine);
 
     // Waypoint dots
     const dotGeo = new THREE.SphereGeometry(0.4, 12, 12);
     const dotA = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_TRAVERSED_COLOR, opacity: 0.4, transparent: true }));
-    dotA.position.copy(routePointAt(routeFrame, 0, GLOBE_ROUTE_RADIUS + 0.25));
+    dotA.position.copy(routePointAt(routeFrame, 0, GLOBE_ROUTE_RADIUS));
     scene.add(dotA);
     const dotB = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: ROUTE_REMAINING_COLOR, opacity: 0.4, transparent: true }));
-    dotB.position.copy(routePointAt(routeFrame, 1, GLOBE_ROUTE_RADIUS + 0.25));
+    dotB.position.copy(routePointAt(routeFrame, 1, GLOBE_ROUTE_RADIUS));
     scene.add(dotB);
 
     // Ship group (placeholder until STL loads)
@@ -1430,6 +1523,7 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
         shipGroup,
         cam,
         el,
+        stateRef.current.shipHitTargets,
       );
       syncZoneOverlay(overlay);
     };
@@ -1479,22 +1573,6 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     renderer.domElement.addEventListener('pointerleave', onPointerLeave);
     renderer.domElement.addEventListener('contextmenu', blockContextMenu);
 
-    const shipShadow = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1),
-      new THREE.MeshBasicMaterial({
-        map: createShipShadowTexture(),
-        transparent: true,
-        opacity: 0.48,
-        depthWrite: false,
-        toneMapped: false,
-      }),
-    );
-    shipShadow.rotation.x = -Math.PI / 2;
-    shipShadow.position.set(0.85, SHIP_SHADOW_Y, 0.2);
-    shipShadow.scale.set(3.2, 8.4, 1);
-    shipShadow.renderOrder = 1;
-    shipGroup.add(shipShadow);
-
     // Load STL model
     const loader = new STLLoader();
     loader.load('/CorsairModelv2.stl', (geo) => {
@@ -1527,6 +1605,24 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
 
       // Align STL axes to the ship group: local +Z follows the route tangent.
       mesh.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
+
+      const shadowMesh = new THREE.Mesh(
+        geo,
+        new THREE.MeshBasicMaterial({
+          color: 0x000000,
+          transparent: true,
+          opacity: SHIP_SHADOW_OPACITY,
+          depthTest: true,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+        }),
+      );
+      shadowMesh.scale.set(scale, scale, scale * SHIP_SHADOW_HEIGHT_SCALE);
+      shadowMesh.rotation.copy(mesh.rotation);
+      shadowMesh.position.set(SHIP_SHADOW_OFFSET_X, SHIP_SHADOW_Y, SHIP_SHADOW_OFFSET_Z);
+      shadowMesh.renderOrder = 0;
+      shipGroup.add(shadowMesh);
 
       shipGroup.add(mesh);
       stateRef.current.shipMesh = mesh;
@@ -1608,8 +1704,16 @@ export default function HullDiagram({ simResult, progress: tickProgress = null, 
     const nextShipFocus = routePointAt(currentRouteFrame, routeProgress, GLOBE_SHIP_RADIUS);
 
     if (traversedRouteLine && remainingRouteLine) {
-      traversedRouteLine.geometry.setFromPoints(buildRouteArcPoints(currentRouteFrame, 0, routeProgress));
-      remainingRouteLine.geometry.setFromPoints(buildRouteArcPoints(currentRouteFrame, routeProgress, 1));
+      const nextTraversedGeometry = createRouteRibbonGeometry(
+        buildRouteArcPoints(currentRouteFrame, 0, Math.max(routeProgress, 0.001)),
+      );
+      const nextRemainingGeometry = createRouteRibbonGeometry(
+        buildRouteArcPoints(currentRouteFrame, Math.min(routeProgress, 0.999), 1),
+      );
+      traversedRouteLine.geometry.dispose();
+      traversedRouteLine.geometry = nextTraversedGeometry;
+      remainingRouteLine.geometry.dispose();
+      remainingRouteLine.geometry = nextRemainingGeometry;
       traversedRouteLine.visible = routeProgress > 0.001;
       remainingRouteLine.visible = routeProgress < 0.999;
       traversedRouteLine.geometry.computeBoundingSphere();

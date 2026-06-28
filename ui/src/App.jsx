@@ -19,6 +19,13 @@ function fmtRange(range, unit = '', digits = 1) {
   return parts.length ? parts.join(' / ') : '—';
 }
 
+function missionFactor(value) {
+  if (value === null || value === undefined || value === '' || value === '—') return 'none';
+  if (typeof value === 'number' && value === 0) return 'none';
+  if (typeof value === 'string' && /^0(?:\.0+)?(?:\s*(?:%|m\/s|ppt|°C))?$/i.test(value.trim())) return 'none';
+  return value;
+}
+
 function formatFailureDetail(failure) {
   const detail = failure?.detail;
   if (!detail) return failure?.mode ?? '—';
@@ -45,6 +52,7 @@ export default function App() {
   const [simulations, setSimulations] = useState([]);
   const [selectedSimulationId, setSelectedSimulationId] = useState(null);
   const [runningGemini, setRunningGemini] = useState(false);
+  const [geminiDotCount, setGeminiDotCount] = useState(0);
   const [panelOpen, setPanelOpen] = useState(false);
   const tickPositionRef = useRef(0);
   const stepSpeedRef = useRef(1);
@@ -79,6 +87,17 @@ export default function App() {
     const id = window.setInterval(refreshSimulations, 1500);
     return () => window.clearInterval(id);
   }, [refreshSimulations, runningGemini]);
+
+  useEffect(() => {
+    if (!runningGemini) {
+      setGeminiDotCount(0);
+      return undefined;
+    }
+    const id = window.setInterval(() => {
+      setGeminiDotCount((count) => (count + 1) % 4);
+    }, 300);
+    return () => window.clearInterval(id);
+  }, [runningGemini]);
 
   useEffect(() => {
     if (!selectedMission) {
@@ -120,6 +139,7 @@ export default function App() {
       return;
     }
     setRunningGemini(true);
+    setGeminiDotCount(0);
     setLoading(true);
     setError(null);
     setSimulations([]);
@@ -215,7 +235,7 @@ export default function App() {
     return [...simulations].sort((a, b) => (b.eval?.score_pct ?? 0) - (a.eval?.score_pct ?? 0))[0] ?? null;
   })();
   const bestSimulationLabel = bestSimulation
-    ? `${String(bestSimulation.iteration).padStart(2, '0')} ${bestSimulation.status}${Number.isFinite(bestSimulation.eval?.score_pct) ? ` / ${bestSimulation.eval.score_pct}%` : ''}`
+    ? `${String(bestSimulation.iteration).padStart(2, '0')} (${Number.isFinite(bestSimulation.eval?.score_pct) ? `${bestSimulation.eval.score_pct}%` : '—'} / ${Number.isFinite(bestSimulation.result?.total_config_cost_usd) ? `$${bestSimulation.result.total_config_cost_usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}` : '—'})`
     : null;
   const tickProgress = (() => {
     if (playbackTickCount <= 0 || totalDistanceNm <= 0) {
@@ -511,7 +531,7 @@ export default function App() {
             </div>
 
             <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>
-              <div style={panelSectionTitle}>Mission Environment</div>
+              <div style={panelSectionTitle}>Mission</div>
               {selectedMission || selectedSimulation ? (
                 <>
                   {renderPanelRow('Mission', selectedMission?.name ?? selectedSimulation?.id, { wrap: true })}
@@ -524,22 +544,22 @@ export default function App() {
                   {renderPanelRow('Waves', activeConditions
                     ? `${fmtNumber(activeConditions.hs_m)}m Hs / ${fmtNumber(activeConditions.tp_s)}s Tp`
                     : fmtRange(env?.wave_height_m, 'm'))}
-                  {renderPanelRow('Wind', activeConditions
+                  {renderPanelRow('Wind', missionFactor(activeConditions
                     ? `${fmtNumber(activeConditions.wind_speed_ms)} m/s`
-                    : '—')}
-                  {renderPanelRow('Slamming', activeConditions
+                    : '—'))}
+                  {renderPanelRow('Slamming', missionFactor(activeConditions
                     ? `${fmtNumber((activeConditions.slam_probability ?? 0) * 100, 0)}%`
-                    : (env?.slamming_probability ?? '—'))}
-                  {renderPanelRow('Water', activeConditions
+                    : (env?.slamming_probability ?? '—')))}
+                  {renderPanelRow('Water', missionFactor(activeConditions
                     ? `${fmtNumber(activeConditions.water_temp_c)}°C`
-                    : fmtRange(env?.water_temp_c, '°C'))}
-                  {renderPanelRow('Ice', env?.ice_accretion_risk ?? '—')}
-                  {renderPanelRow('Salinity', activeConditions
+                    : fmtRange(env?.water_temp_c, '°C')))}
+                  {renderPanelRow('Ice', missionFactor(env?.ice_accretion_risk ?? '—'))}
+                  {renderPanelRow('Salinity', missionFactor(activeConditions
                     ? `${fmtNumber(activeConditions.salinity_ppt)} ppt`
-                    : `${fmtNumber(env?.salinity_ppt)} ppt`)}
-                  {renderPanelRow('pH', activeConditions
+                    : `${fmtNumber(env?.salinity_ppt)} ppt`))}
+                  {renderPanelRow('pH', missionFactor(activeConditions
                     ? fmtNumber(activeConditions.ph, 2)
-                    : fmtNumber(env?.ph, 2))}
+                    : fmtNumber(env?.ph, 2)))}
                 </>
               ) : (
                 <div style={{ ...panelRow, display: 'block', color: 'rgba(0,0,0,0.42)' }}>
@@ -571,7 +591,14 @@ export default function App() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                {runningGemini ? 'Running Gemini...' : 'Run Gemini'}
+                {runningGemini ? (
+                  <>
+                    Running Gemini
+                    <span style={{ display: 'inline-block', width: '3ch', textAlign: 'left' }}>
+                      {'.'.repeat(geminiDotCount)}
+                    </span>
+                  </>
+                ) : 'Run Gemini'}
               </button>
               <div className="no-scrollbar" style={{ maxHeight: 170, overflowY: 'auto', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
                 {simulations.length === 0 ? (
@@ -634,7 +661,7 @@ export default function App() {
               ? `$${simResult.result.total_config_cost_usd.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
               : '—')}
 
-            <div style={{ ...panelSectionTitle, ...panelSectionDivider, marginTop: 8 }}>Summary</div>
+            <div style={{ ...panelSectionTitle, ...panelSectionDivider, marginTop: 8 }}>Analysis</div>
             {selectedSimulation || simResult?.failure ? (
               <>
                 {selectedSimulation ? renderPanelRow('Status', selectedSimulation.status) : null}

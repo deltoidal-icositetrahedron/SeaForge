@@ -12,7 +12,6 @@ const DEFAULT_INPUT = path.join(ROOT, 'examples', 'simulation_params.json');
 const DEFAULT_BINARY = path.join(ROOT, 'target', 'release', 'seaforge_v2');
 const SIM_DIR = path.join(ROOT, 'simulations');
 const MISSION_BRIEFS_DIR = path.join(ROOT, 'mission-briefs');
-const ALLOWED_PARAMETERS_FILE = path.join(ROOT, 'docs', 'allowed_parameters.json');
 const HULL_ZONE_KEYS = [
   'Keel',
   'BilgeStrake',
@@ -74,14 +73,6 @@ function argValue(name, fallback = null) {
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
-}
-
-function readJsonOrNull(file) {
-  try {
-    return readJson(file);
-  } catch (_) {
-    return null;
-  }
 }
 
 function writeJson(file, value) {
@@ -378,6 +369,38 @@ function resultCostUsd(result) {
   return Number.isFinite(value) ? value : Infinity;
 }
 
+function compactAllowedParameters() {
+  return {
+    zone_names: HULL_ZONE_KEYS,
+    materials: MATERIALS,
+    weld_quality: WELD_QUALITIES,
+    seal_quality: SEAL_QUALITIES,
+    thickness_m: { min: 0.003, max: 0.020 },
+    propulsion: {
+      max_power_kw: { min: 1 },
+      fuel_capacity_kg: { min: 1, cost_usd_per_kg: 1.15 },
+      sfc_g_per_kwh: { min: 1 },
+      propulsive_efficiency: { min: 0.1, max: 1.0 },
+      hull_drag_coeff: { min: 0.001 },
+    },
+  };
+}
+
+function missionContext(document, mode) {
+  if (mode !== 'brief') return null;
+  return {
+    id: document.id,
+    name: document.name,
+    distance_nm: document.distance_nm,
+    origin: document.origin?.name,
+    waypoints: Array.isArray(document.waypoints) ? document.waypoints.map((point) => point.name) : [],
+    destination: document.destination?.name,
+    primary_stressor: document.primary_stressor,
+    failure_modes_under_test: document.failure_modes_under_test ?? [],
+    environmental_profile: document.environmental_profile,
+  };
+}
+
 function nextDocumentFromAssessment(assessment, currentDocument, mode, result = null) {
   if (mode === 'brief') {
     const nextBrief = assessment.brief && typeof assessment.brief === 'object'
@@ -393,7 +416,7 @@ function nextDocumentFromAssessment(assessment, currentDocument, mode, result = 
       nextBrief.propulsion = assessment.propulsion;
     }
     if (!Array.isArray(nextBrief.zones)) {
-      throw new Error('Gemini assessment did not include brief.zones or zones for the repaired material configuration');
+      throw new Error('Gemini assessment did not include zones for the repaired material configuration');
     }
     const completeZones = completeZonesFromResult(result, nextBrief.zones);
     const propulsion = normalizePropulsion(nextBrief.propulsion, effectivePropulsionFromResult(result, currentDocument));
@@ -426,7 +449,7 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
   const failureAnalysis = failureAnalysisFromResult(result);
   const currentZones = completeZonesFromResult(result, document.zones ?? []);
   const currentPropulsion = effectivePropulsionFromResult(result, document);
-  const allowedParameters = readJsonOrNull(ALLOWED_PARAMETERS_FILE);
+  const allowedParameters = compactAllowedParameters();
   const survived = result?.status === 'survived';
   const prompt = [
     'You are controlling a Rust naval simulation engine.',
@@ -437,11 +460,11 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
       ? 'Return ONLY a JSON object with this exact shape:'
       : 'Return ONLY a JSON object with this exact shape:',
     isBriefMode
-      ? '{ "assessment": "exact diagnosis: failed part, failure cause, physical reason", "failed_part": "component name", "failed_metric": "fatigue|corrosion|crack|fuel|stability|seal|temperature", "root_cause": "specific physical cause", "changes": ["configuration change"], "zones": [ ...complete 9-zone material config... ], "propulsion": { "max_power_kw": number, "fuel_capacity_kg": number, "sfc_g_per_kwh": number, "propulsive_efficiency": number, "hull_drag_coeff": number }, "brief": { ...complete next mission brief JSON with zones and propulsion... } }'
+      ? '{ "assessment": "exact diagnosis: failed part, failure cause, physical reason", "failed_part": "component name", "failed_metric": "fatigue|corrosion|crack|fuel|stability|seal|temperature", "root_cause": "specific physical cause", "changes": ["configuration change"], "zones": [ ...complete 9-zone material config... ], "propulsion": { "max_power_kw": number, "fuel_capacity_kg": number, "sfc_g_per_kwh": number, "propulsive_efficiency": number, "hull_drag_coeff": number } }'
       : '{ "assessment": "short diagnosis", "changes": ["short change"], "params": { ...complete next simulate-params JSON... } }',
     'Rules:',
     isBriefMode
-      ? '- Keep the same mission brief schema as the input brief.'
+      ? '- Do not return route, mission, or environmental fields. The runner preserves those. Return only diagnosis, changes, zones, and propulsion.'
       : '- Keep the same JSON schema as the input params.',
     isBriefMode
       ? '- Preserve id, name, origin, waypoints, destination, distance_nm, primary_stressor, failure_modes_under_test, and environmental_profile exactly.'
@@ -481,9 +504,17 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
     'ALLOWED_PARAMETERS_JSON:',
     JSON.stringify(allowedParameters, null, 2),
     '',
-    isBriefMode ? 'CURRENT_MISSION_BRIEF_JSON:' : 'CURRENT_PARAMS_JSON:',
-    JSON.stringify(document, null, 2),
-    '',
+    ...(isBriefMode
+      ? [
+        'MISSION_CONTEXT_JSON:',
+        JSON.stringify(missionContext(document, mode), null, 2),
+        '',
+      ]
+      : [
+        'CURRENT_PARAMS_JSON:',
+        JSON.stringify(document, null, 2),
+        '',
+      ]),
     'CURRENT_COMPLETE_MATERIAL_ZONES_JSON:',
     JSON.stringify(currentZones, null, 2),
     '',
@@ -506,6 +537,7 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
       generationConfig: {
         responseMimeType: 'application/json',
         temperature: 0.2,
+        maxOutputTokens: 4096,
       },
     }),
   });
@@ -557,7 +589,7 @@ async function main() {
   }
 
   const modelCandidates = (process.env.GEMINI_MODEL
-    || 'gemini-3.5-flash,gemini-3.5-pro,gemini-2.5-pro,gemini-2.5-flash,gemini-1.5-pro,gemini-1.5-flash')
+    || 'gemini-3.5-flash,gemini-2.5-flash,gemini-1.5-flash')
     .split(',')
     .map((model) => model.trim())
     .filter(Boolean);

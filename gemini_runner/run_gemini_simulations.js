@@ -550,10 +550,51 @@ function localRepairAssessment(document, result) {
   };
 }
 
-function emergencySurvivalEscalation(document, result) {
+function plateauCount(history, completion) {
+  if (!Array.isArray(history) || !Number.isFinite(completion)) return 0;
+  return history.slice(-6).filter((entry) => {
+    const pct = Number(entry.failure?.completion_pct ?? entry.result?.distance_completed_pct ?? NaN);
+    return Number.isFinite(pct) && Math.abs(pct - completion) < 0.75;
+  }).length;
+}
+
+function survivalEscalationPlan(history, completion) {
+  const plateau = plateauCount(history, completion);
+  if (!Number.isFinite(completion) || plateau < 4) return null;
+
+  if (plateau >= 8) {
+    return { stage: 5, plateau, failed_thickness_m: 0.045, coupled_thickness_m: 0.032, multiplier: 1.18 };
+  }
+  if (plateau >= 7) {
+    return { stage: 4, plateau, failed_thickness_m: 0.036, coupled_thickness_m: 0.026, multiplier: 1.16 };
+  }
+  if (plateau >= 6) {
+    return { stage: 3, plateau, failed_thickness_m: 0.028, coupled_thickness_m: 0.020, multiplier: 1.14 };
+  }
+  if (plateau >= 5) {
+    return { stage: 2, plateau, failed_thickness_m: 0.022, coupled_thickness_m: 0.016, multiplier: 1.12 };
+  }
+  return { stage: 1, plateau, failed_thickness_m: 0.016, coupled_thickness_m: 0.012, multiplier: 1.1 };
+}
+
+function highRiskZonesFromResult(result) {
+  const finalTick = Array.isArray(result?.ticks) ? result.ticks.at(-1) : null;
+  const zones = Array.isArray(finalTick?.zones) ? finalTick.zones : [];
+  return zones
+    .filter((zone) => (
+      Number(zone.fatigue_consumed ?? 0) >= 0.55
+      || Number(zone.crack_half_length_mm ?? 0) >= 3
+      || Number(zone.peak_stress_mpa ?? 0) >= 500
+    ))
+    .map((zone) => normalizeZoneKey(zone.zone))
+    .filter(Boolean);
+}
+
+function emergencySurvivalEscalation(document, result, history = []) {
   if (!document?.zones || result?.status === 'survived') return null;
   const completion = Number(result?.failure?.completion_pct ?? result?.result?.distance_completed_pct ?? 0);
-  if (!Number.isFinite(completion) || completion >= 50) return null;
+  const plan = survivalEscalationPlan(history, completion);
+  if (!plan) return null;
 
   const analysis = failureAnalysisFromResult(result);
   const failedKey = normalizeZoneKey(analysis.failed_part);
@@ -565,18 +606,29 @@ function emergencySurvivalEscalation(document, result) {
     BottomPlating: ['BottomPlating', 'Keel', 'BilgeStrake'],
     WeatherDeck: ['WeatherDeck', 'BowFlare', 'BulkheadFrame'],
     SidePlating: ['SidePlating', 'BowFlare', 'BilgeStrake'],
+    SternPlate: ['SternPlate', 'TransomFrame', 'BottomPlating'],
+    TransomFrame: ['TransomFrame', 'SternPlate', 'BulkheadFrame'],
+    BulkheadFrame: ['BulkheadFrame', 'WeatherDeck', 'TransomFrame'],
   };
-  const targets = new Set(coupledByFailure[failedKey] ?? [failedKey]);
+  const targets = new Set([failedKey]);
+  if (plan.stage >= 3) {
+    for (const zone of coupledByFailure[failedKey] ?? []) targets.add(zone);
+  }
+  if (plan.stage >= 4) {
+    for (const zone of highRiskZonesFromResult(result)) targets.add(zone);
+  }
   const next = cloneJson(document);
   next.zones = completeZonesFromResult(result, document.zones).map((zone) => {
     if (!targets.has(zone.zone)) return zone;
+    const isFailedZone = zone.zone === failedKey;
+    const baseTargetThickness = isFailedZone ? plan.failed_thickness_m : plan.coupled_thickness_m;
     return {
       ...zone,
       material: analysis.failed_metric === 'crack'
         ? strongerRepairMaterial(zone.material, 'crack')
         : strongerRepairMaterial(zone.material, 'fatigue'),
       thickness_m: roundNumber(clampNumber(
-        Math.max(zone.thickness_m * 2.2, zone.zone === failedKey ? 0.08 : 0.05),
+        Math.max(zone.thickness_m * plan.multiplier, baseTargetThickness),
         MIN_THICKNESS_M,
         MAX_THICKNESS_M,
       )),
@@ -588,6 +640,22 @@ function emergencySurvivalEscalation(document, result) {
     document: next,
     targets: [...targets],
     completion,
+    plateau: plan.plateau,
+    stage: plan.stage,
+    failed_thickness_m: plan.failed_thickness_m,
+    coupled_thickness_m: plan.coupled_thickness_m,
+  };
+}
+
+function applyEmergencyAssessment(assessment, emergency) {
+  return {
+    ...assessment,
+    search_strategy: 'emergency-survival-escalation',
+    exploration_targets: emergency.targets,
+    changes: [
+      ...(Array.isArray(assessment.changes) ? assessment.changes : []),
+      `Stage ${emergency.stage} gradual survival escalation after ${emergency.completion.toFixed(1)}% completion with ${emergency.plateau} recent plateau runs: reinforce ${emergency.targets.join(', ')} toward ${(emergency.failed_thickness_m * 1000).toFixed(0)}mm failed-zone / ${(emergency.coupled_thickness_m * 1000).toFixed(0)}mm coupled-zone targets.`,
+    ],
   };
 }
 
@@ -899,7 +967,7 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
     succeeded && isBriefMode
       ? '- Because the current run reached SUCCESS, search for the cheapest viable parameter configuration: reduce thickness, downgrade weld_quality, downgrade seal_quality, reduce fuel_capacity_kg, reduce max_power_kw, or choose cheaper materials where the latest margins suggest headroom.'
       : isBriefMode
-        ? '- Make targeted material configuration changes to the failed component and directly coupled components. Keep unrelated zones unchanged unless the failure analysis justifies changing them.'
+        ? '- Make targeted material configuration changes to the failed component first. Only change directly coupled components after the same completion plateau repeats across several runs.'
         : '- Prefer targeted changes: material, thickness_m, weld_quality, seal_quality, propulsion fuel/drag, or route/conditions only when justified.',
     succeeded
       ? '- Do not stop just because this run reached SUCCESS. Return a new cheaper or meaningfully different candidate unless every allowed cheaper or higher-potential branch is clearly unsafe or impossible.'
@@ -916,11 +984,12 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
     isBriefMode
       ? '- If the current result reached SUCCESS, keep mission route/environment unchanged but make the configuration cheaper for the next trial.'
       : '- If the current result reached SUCCESS, keep route/conditions unchanged but make parameters cheaper for the next trial.',
-    `- Avoid unrealistic values: thickness_m should usually stay between ${MIN_THICKNESS_M.toFixed(3)} and ${MAX_THICKNESS_M.toFixed(3)}. Under repeated early failures, survival takes priority: use up to ${(MAX_THICKNESS_M * 1000).toFixed(0)} mm on the failed zone and directly coupled zones before optimizing cost.`,
+    `- Avoid unrealistic values: thickness_m should usually stay between ${MIN_THICKNESS_M.toFixed(3)} and ${MAX_THICKNESS_M.toFixed(3)}. Under repeated early failures, survival still needs staged learning: increase failed and directly coupled zones in bounded increments, not straight to maximum thickness.`,
     '- For fatigue failures, prioritize weld_quality, thickness_m, and stronger material in the failed zone only; do not upgrade unrelated zones.',
     '- For corrosion/crack failures, prioritize corrosion-resistant/cold-capable material, thickness_m, weld_quality, and seal_quality in the failed zone only.',
     '- Increased fuel_capacity_kg increases total configuration cost through fuel capacity cost.',
     '- Objective order: survive the full voyage first, then minimize total_config_cost_usd as much as possible.',
+    '- If no survivor exists yet and the run is stuck at the same completion percentage, escalate gradually over multiple trials: failed zone first, coupled zones later, high-risk neighboring zones only after deeper repeated plateaus. Cost optimization starts only after SUCCESS.',
     '- Explore multiple combinations over iterations. Each response should be the single next best candidate to test.',
     '- If RECENT_SEARCH_HISTORY_JSON shows stagnation, try a different design family instead of tiny edits: weld-quality-first, material-substitution-first, lightweight-composite, fuel/drag tradeoff, or targeted reinforcement only on failing zones.',
     '- Compare against BEST_SURVIVOR_JSON. If the latest run is worse than the best survivor, branch from the best survivor unless the latest branch has obvious potential.',
@@ -1169,6 +1238,25 @@ async function main() {
 
     if (i < maxIterations) {
       try {
+        const preGeminiEmergency = !manifest.best_survivor && mode === 'brief' && result.status !== 'survived'
+          ? emergencySurvivalEscalation(document, result, manifest.iterations)
+          : null;
+        if (preGeminiEmergency) {
+          document = preGeminiEmergency.document;
+          visitedCandidates.add(candidateSignature(document, mode));
+          iterationStrategy = 'emergency-survival-escalation';
+          assessment = applyEmergencyAssessment({
+            assessment: 'No survivor exists yet. Applying staged survival plateau repair before asking Gemini for cost optimization.',
+            changes: [],
+            zones: document.zones,
+            propulsion: document.propulsion,
+            brief: document,
+            model_used: 'local-survival-first',
+          }, preGeminiEmergency);
+          assessment.repaired_zones = document.zones;
+          throw new Error('__SURVIVAL_FIRST_APPLIED__');
+        }
+
         const bestSurvivorContext = manifest.best_survivor
           ? {
             ...manifest.best_survivor,
@@ -1241,17 +1329,12 @@ async function main() {
         }
 
         if (mode === 'brief' && result.status !== 'survived') {
-          const emergency = emergencySurvivalEscalation(nextDocument, result);
+          const emergency = emergencySurvivalEscalation(nextDocument, result, manifest.iterations);
           if (emergency) {
             nextDocument = emergency.document;
             nextSignature = candidateSignature(nextDocument, mode);
             iterationStrategy = 'emergency-survival-escalation';
-            assessment.search_strategy = iterationStrategy;
-            assessment.exploration_targets = emergency.targets;
-            assessment.changes = [
-              ...(Array.isArray(assessment.changes) ? assessment.changes : []),
-              `Emergency survival escalation after ${emergency.completion.toFixed(1)}% completion: reinforce ${emergency.targets.join(', ')} up to ${(MAX_THICKNESS_M * 1000).toFixed(0)}mm if needed.`,
-            ];
+            assessment = applyEmergencyAssessment(assessment, emergency);
           }
         }
 
@@ -1261,7 +1344,9 @@ async function main() {
           assessment.repaired_zones = document.zones;
         }
       } catch (error) {
-        if (mode === 'brief' && result.status === 'survived') {
+        if (error.message === '__SURVIVAL_FIRST_APPLIED__') {
+          // The deterministic survival-first branch already prepared the next document.
+        } else if (mode === 'brief' && result.status === 'survived') {
           const exploration = mutateExploratoryDocument(document, result, bestSurvivorDocument, mode, i);
           if (exploration) {
             document = exploration.document;

@@ -48,6 +48,8 @@ const MATERIALS = [
 ];
 const WELD_QUALITIES = ['Economy', 'Standard', 'Premium'];
 const SEAL_QUALITIES = ['Economy', 'Marine'];
+const MIN_THICKNESS_M = 0.003;
+const MAX_THICKNESS_M = 0.10;
 const DEFAULT_PROPULSION = {
   max_power_kw: 300.0,
   fuel_capacity_kg: 2000.0,
@@ -137,7 +139,7 @@ function normalizeZoneSpec(zone, fallback = {}) {
     zone: zoneKey,
     material: materialValue(zone?.material, fallback.material),
     thickness_m: Number.isFinite(Number(zone?.thickness_m))
-      ? Math.max(0.003, Math.min(Number(zone.thickness_m), 0.02))
+      ? Math.max(MIN_THICKNESS_M, Math.min(Number(zone.thickness_m), MAX_THICKNESS_M))
       : fallback.thickness_m ?? 0.004,
     weld_quality: coerceEnum(zone?.weld_quality, WELD_QUALITIES, fallback.weld_quality ?? 'Economy'),
     seal_quality: coerceEnum(zone?.seal_quality, SEAL_QUALITIES, fallback.seal_quality ?? 'Economy'),
@@ -365,22 +367,22 @@ function mutateExploratoryDocument(currentDocument, result, bestDocument, mode, 
 
     if (strategy === 'targeted_reinforcement' && isTarget) {
       mutated.material = strongerMaterial(mutated.material);
-      mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.22, 0.003, 0.02));
+      mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.22, MIN_THICKNESS_M, MAX_THICKNESS_M));
       mutated.weld_quality = upgradeWeld(mutated.weld_quality);
     } else if (strategy === 'weld_quality_path') {
       if (isTarget) {
         mutated.weld_quality = upgradeWeld(mutated.weld_quality);
-        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.08, 0.003, 0.02));
+        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.08, MIN_THICKNESS_M, MAX_THICKNESS_M));
       } else if ((index + iteration) % 4 === 0) {
-        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 0.92, 0.003, 0.02));
+        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 0.92, MIN_THICKNESS_M, MAX_THICKNESS_M));
       }
     } else if (strategy === 'material_substitution' && isTarget) {
       mutated.material = mutated.material === 'Eh36' ? 'Aluminum5083' : strongerMaterial(mutated.material);
-      mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.12, 0.003, 0.02));
+      mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.12, MIN_THICKNESS_M, MAX_THICKNESS_M));
     } else if (strategy === 'lightweight_composite_path') {
       if (isTarget) {
         mutated.material = zone.zone === 'Keel' || zone.zone === 'BilgeStrake' ? 'CfrpEpoxy' : 'GrpEGlass';
-        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.18, 0.004, 0.02));
+        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 1.18, 0.004, MAX_THICKNESS_M));
         mutated.weld_quality = upgradeWeld(mutated.weld_quality);
         mutated.seal_quality = 'Marine';
       } else if ((index + iteration) % 3 === 0) {
@@ -389,7 +391,7 @@ function mutateExploratoryDocument(currentDocument, result, bestDocument, mode, 
     } else if (strategy === 'cost_cut_from_best') {
       if (!isTarget && (index + iteration) % 2 === 0) {
         mutated.material = cheaperMaterial(mutated.material);
-        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 0.84, 0.003, 0.02));
+        mutated.thickness_m = roundNumber(clampNumber(mutated.thickness_m * 0.84, MIN_THICKNESS_M, MAX_THICKNESS_M));
         mutated.weld_quality = downgradeWeld(mutated.weld_quality);
       }
     }
@@ -512,7 +514,7 @@ function localRepairAssessment(document, result) {
       return {
         ...zone,
         material: strongerRepairMaterial(zone.material, 'fatigue'),
-        thickness_m: Math.min(Math.max(zone.thickness_m * 1.75, 0.008), 0.02),
+        thickness_m: Math.min(Math.max(zone.thickness_m * 1.75, 0.008), MAX_THICKNESS_M),
         weld_quality: 'Premium',
         seal_quality: zone.seal_quality === 'Economy' ? 'Marine' : zone.seal_quality,
       };
@@ -521,14 +523,14 @@ function localRepairAssessment(document, result) {
       return {
         ...zone,
         material: strongerRepairMaterial(zone.material, analysis.failed_metric),
-        thickness_m: Math.min(Math.max(zone.thickness_m * 1.5, 0.007), 0.02),
+        thickness_m: Math.min(Math.max(zone.thickness_m * 1.5, 0.007), MAX_THICKNESS_M),
         weld_quality: zone.weld_quality === 'Economy' ? 'Standard' : zone.weld_quality,
         seal_quality: 'Marine',
       };
     }
     return {
       ...zone,
-      thickness_m: Math.min(Math.max(zone.thickness_m * 1.25, 0.006), 0.02),
+      thickness_m: Math.min(Math.max(zone.thickness_m * 1.25, 0.006), MAX_THICKNESS_M),
       weld_quality: zone.weld_quality === 'Economy' ? 'Standard' : zone.weld_quality,
       seal_quality: zone.seal_quality === 'Economy' ? 'Marine' : zone.seal_quality,
     };
@@ -545,6 +547,47 @@ function localRepairAssessment(document, result) {
     zones: repairedZones,
     brief: { ...document, zones: repairedZones },
     model_used: 'local-material-repair-fallback',
+  };
+}
+
+function emergencySurvivalEscalation(document, result) {
+  if (!document?.zones || result?.status === 'survived') return null;
+  const completion = Number(result?.failure?.completion_pct ?? result?.result?.distance_completed_pct ?? 0);
+  if (!Number.isFinite(completion) || completion >= 50) return null;
+
+  const analysis = failureAnalysisFromResult(result);
+  const failedKey = normalizeZoneKey(analysis.failed_part);
+  if (!failedKey) return null;
+  const coupledByFailure = {
+    Keel: ['Keel', 'BilgeStrake', 'BottomPlating'],
+    BowFlare: ['BowFlare', 'BottomPlating', 'SidePlating', 'WeatherDeck'],
+    BilgeStrake: ['BilgeStrake', 'Keel', 'BottomPlating', 'SidePlating'],
+    BottomPlating: ['BottomPlating', 'Keel', 'BilgeStrake'],
+    WeatherDeck: ['WeatherDeck', 'BowFlare', 'BulkheadFrame'],
+    SidePlating: ['SidePlating', 'BowFlare', 'BilgeStrake'],
+  };
+  const targets = new Set(coupledByFailure[failedKey] ?? [failedKey]);
+  const next = cloneJson(document);
+  next.zones = completeZonesFromResult(result, document.zones).map((zone) => {
+    if (!targets.has(zone.zone)) return zone;
+    return {
+      ...zone,
+      material: analysis.failed_metric === 'crack'
+        ? strongerRepairMaterial(zone.material, 'crack')
+        : strongerRepairMaterial(zone.material, 'fatigue'),
+      thickness_m: roundNumber(clampNumber(
+        Math.max(zone.thickness_m * 2.2, zone.zone === failedKey ? 0.08 : 0.05),
+        MIN_THICKNESS_M,
+        MAX_THICKNESS_M,
+      )),
+      weld_quality: 'Premium',
+      seal_quality: 'Marine',
+    };
+  });
+  return {
+    document: next,
+    targets: [...targets],
+    completion,
   };
 }
 
@@ -756,7 +799,7 @@ function compactAllowedParameters() {
     materials: MATERIALS,
     weld_quality: WELD_QUALITIES,
     seal_quality: SEAL_QUALITIES,
-    thickness_m: { min: 0.003, max: 0.020 },
+    thickness_m: { min: MIN_THICKNESS_M, max: MAX_THICKNESS_M },
     propulsion: {
       max_power_kw: { min: 1 },
       fuel_capacity_kg: { min: 1, cost_usd_per_kg: 1.15 },
@@ -873,7 +916,7 @@ async function callGemini({ apiKey, model, document, mode, result, iteration, ma
     isBriefMode
       ? '- If the current result reached SUCCESS, keep mission route/environment unchanged but make the configuration cheaper for the next trial.'
       : '- If the current result reached SUCCESS, keep route/conditions unchanged but make parameters cheaper for the next trial.',
-    '- Avoid unrealistic values: thickness_m should usually stay between 0.003 and 0.020.',
+    `- Avoid unrealistic values: thickness_m should usually stay between ${MIN_THICKNESS_M.toFixed(3)} and ${MAX_THICKNESS_M.toFixed(3)}. Under repeated early failures, survival takes priority: use up to ${(MAX_THICKNESS_M * 1000).toFixed(0)} mm on the failed zone and directly coupled zones before optimizing cost.`,
     '- For fatigue failures, prioritize weld_quality, thickness_m, and stronger material in the failed zone only; do not upgrade unrelated zones.',
     '- For corrosion/crack failures, prioritize corrosion-resistant/cold-capable material, thickness_m, weld_quality, and seal_quality in the failed zone only.',
     '- Increased fuel_capacity_kg increases total configuration cost through fuel capacity cost.',
@@ -1194,6 +1237,21 @@ async function main() {
             assessment.search_strategy = iterationStrategy;
             assessment.exploration_targets = exploration.targets;
             assessment.assessment = `${assessment.assessment ?? 'Duplicate candidate avoided.'} Replaced duplicate with ${exploration.strategy}.`;
+          }
+        }
+
+        if (mode === 'brief' && result.status !== 'survived') {
+          const emergency = emergencySurvivalEscalation(nextDocument, result);
+          if (emergency) {
+            nextDocument = emergency.document;
+            nextSignature = candidateSignature(nextDocument, mode);
+            iterationStrategy = 'emergency-survival-escalation';
+            assessment.search_strategy = iterationStrategy;
+            assessment.exploration_targets = emergency.targets;
+            assessment.changes = [
+              ...(Array.isArray(assessment.changes) ? assessment.changes : []),
+              `Emergency survival escalation after ${emergency.completion.toFixed(1)}% completion: reinforce ${emergency.targets.join(', ')} up to ${(MAX_THICKNESS_M * 1000).toFixed(0)}mm if needed.`,
+            ];
           }
         }
 

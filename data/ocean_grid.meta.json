@@ -1,0 +1,67 @@
+{
+  "format": "OCGRID02",
+  "nlat": 180,
+  "nlon": 360,
+  "nvars": 8,
+  "lat0": -89.5,
+  "lon0": -179.5,
+  "dlat": 1.0,
+  "dlon": 1.0,
+  "var_order": [
+    "hs_m",
+    "tp_s",
+    "jonswap_gamma",
+    "water_temp_c",
+    "salinity_ppt",
+    "ph",
+    "wind_speed_ms",
+    "slam_probability"
+  ],
+  "row_major": "index = lat_row * nlon + lon_col; row 0 = -89.5 (south)",
+  "sources": {
+    "water_temp_c": "NOAA OISST v2.1 (ERDDAP), 4-season mean",
+    "others": "physically-grounded zonal climatology (wind belts, fetch/wind sea state, subtropical salinity, CO2 pH)"
+  },
+  "summary": {
+    "hs_m": {
+      "min": 0.4,
+      "max": 11.0,
+      "mean": 3.427611517170682
+    },
+    "tp_s": {
+      "min": 7.622954748000614,
+      "max": 17.0,
+      "mean": 11.35287536996504
+    },
+    "jonswap_gamma": {
+      "min": 2.0588992004347353,
+      "max": 3.399440111985068,
+      "mean": 2.681775134864835
+    },
+    "water_temp_c": {
+      "min": -1.8,
+      "max": 30.345,
+      "mean": 13.33165394197595
+    },
+    "salinity_ppt": {
+      "min": 33.00229914726928,
+      "max": 36.89731905084833,
+      "mean": 34.84653623913185
+    },
+    "ph": {
+      "min": 8.070000761538717,
+      "max": 8.119825469290031,
+      "mean": 8.102666054057764
+    },
+    "wind_speed_ms": {
+      "min": 4.03785362577752,
+      "max": 19.711879293873917,
+      "mean": 10.469684333094248
+    },
+    "slam_probability": {
+      "min": 0.02,
+      "max": 0.4248440522366045,
+      "mean": 0.14774516340796603
+    }
+  }
+}

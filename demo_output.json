@@ -1,0 +1,12 @@
+{
+  "optimizer": {
+    "all_survivors": [],
+    "cheapest_survivor": null,
+    "configs_tested": 180,
+    "failure_summary": {
+      "Fatigue Failure": 180
+    },
+    "survivors_found": 0
+  },
+  "schema_version": "1.0"
+}

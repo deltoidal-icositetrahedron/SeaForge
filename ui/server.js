@@ -97,6 +97,15 @@ function activeGeminiStatus() {
   };
 }
 
+function listMissionBriefs() {
+  if (!fs.existsSync(MISSION_BRIEFS_DIR)) return [];
+  return fs.readdirSync(MISSION_BRIEFS_DIR)
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => safeReadJson(path.join(MISSION_BRIEFS_DIR, file)))
+    .filter((brief) => brief && brief.id && brief.name)
+    .sort((a, b) => String(a.id).localeCompare(String(b.id)));
+}
+
 function missionBriefById(missionId) {
   if (!missionId || !/^[A-Za-z0-9_-]+$/.test(missionId)) return null;
   if (!fs.existsSync(MISSION_BRIEFS_DIR)) return null;
@@ -108,6 +117,122 @@ function missionBriefById(missionId) {
   }
 
   return null;
+}
+
+// Build a validated, simulator-ready mission brief from raw user input.
+// Throws Error(message) on invalid input. Returns { brief, fileName }.
+function buildMissionBrief(input) {
+  const fail = (message) => { throw new Error(message); };
+
+  const finiteNum = (value, label) => {
+    const n = Number(value);
+    if (!Number.isFinite(n)) fail(`${label} must be a number`);
+    return n;
+  };
+  const geo = (point, label) => {
+    if (!point || typeof point !== 'object') fail(`${label} is required`);
+    const lat = finiteNum(point.lat_deg, `${label} latitude`);
+    const lon = finiteNum(point.lon_deg, `${label} longitude`);
+    if (lat < -90 || lat > 90) fail(`${label} latitude must be between -90 and 90`);
+    if (lon < -180 || lon > 180) fail(`${label} longitude must be between -180 and 180`);
+    return { name: String(point.name ?? label).slice(0, 80), lat_deg: lat, lon_deg: lon };
+  };
+
+  const name = String(input?.name ?? '').trim();
+  if (!name) fail('Mission name is required');
+
+  const origin = geo(input?.origin, 'Origin');
+  const destination = geo(input?.destination, 'Destination');
+
+  const waypoints = Array.isArray(input?.waypoints) ? input.waypoints.map((wp, i) => {
+    const point = geo(wp, `Waypoint ${i + 1}`);
+    return { name: point.name === `Waypoint ${i + 1}` ? `Waypoint ${i + 1}` : point.name, lat_deg: point.lat_deg, lon_deg: point.lon_deg };
+  }) : [];
+
+  // Distance: trust the client's computed haversine if sane, else recompute here.
+  const orderedPoints = [origin, ...waypoints, destination];
+  let distance_nm = Number(input?.distance_nm);
+  if (!Number.isFinite(distance_nm) || distance_nm <= 0) {
+    distance_nm = 0;
+    for (let i = 0; i < orderedPoints.length - 1; i += 1) {
+      distance_nm += haversineNm(orderedPoints[i], orderedPoints[i + 1]);
+    }
+  }
+  distance_nm = Math.max(1, Math.round(distance_nm));
+
+  const STRESSORS = [
+    'sustained_structural_fatigue', 'corrosion_crack_cascade', 'capsize_stability',
+    'ice_accretion_cold_embrittlement', 'fuel_exhaustion', 'combined',
+  ];
+  const primary_stressor = STRESSORS.includes(input?.primary_stressor)
+    ? input.primary_stressor
+    : 'sustained_structural_fatigue';
+
+  const env = input?.environmental_profile ?? {};
+  const range = (value, fallback) => {
+    const avg = Number(value?.avg);
+    return {
+      avg: Number.isFinite(avg) ? avg : fallback.avg,
+      max: Number.isFinite(Number(value?.max)) ? Number(value.max) : fallback.max,
+      ...(fallback.min !== undefined
+        ? { min: Number.isFinite(Number(value?.min)) ? Number(value.min) : fallback.min }
+        : {}),
+    };
+  };
+  const SLAMMING = ['low', 'moderate', 'high', 'extreme'];
+  const ICE = ['none', 'low', 'moderate', 'very_high'];
+  const environmental_profile = {
+    wave_height_m: range(env.wave_height_m, { avg: 3.0, max: 7.0 }),
+    wave_period_s: range(env.wave_period_s, { avg: 8.0, max: 14.0 }),
+    slamming_probability: SLAMMING.includes(env.slamming_probability) ? env.slamming_probability : 'moderate',
+    water_temp_c: range(env.water_temp_c, { avg: 12.0, min: 4.0 }),
+    salinity_ppt: Number.isFinite(Number(env.salinity_ppt)) ? Number(env.salinity_ppt) : 35,
+    ice_accretion_risk: ICE.includes(env.ice_accretion_risk) ? env.ice_accretion_risk : 'low',
+  };
+
+  const FAILURE_MODES = ['breaks_in_half', 'sink', 'capsize'];
+  const failure_modes_under_test = Array.isArray(input?.failure_modes_under_test)
+    ? input.failure_modes_under_test.filter((mode) => FAILURE_MODES.includes(mode))
+    : [];
+
+  // Generate a unique, filesystem-safe id that won't clash with the numbered built-ins.
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'mission';
+  const existingIds = new Set(listMissionBriefs().map((brief) => brief.id));
+  let id = `custom_${slug}`;
+  let suffix = 2;
+  while (existingIds.has(id)) {
+    id = `custom_${slug}_${suffix}`;
+    suffix += 1;
+  }
+
+  const brief = {
+    id,
+    name,
+    classification: 'CUSTOM',
+    origin,
+    destination,
+    waypoints,
+    distance_nm,
+    expected_duration_days: Math.max(1, Math.round(distance_nm / 480)),
+    primary_stressor,
+    failure_modes_under_test: failure_modes_under_test.length ? failure_modes_under_test : ['sink'],
+    objective: String(input?.objective ?? '').trim() || `User-defined voyage: ${origin.name} → ${destination.name}.`,
+    environmental_profile,
+    custom: true,
+  };
+
+  return { brief, fileName: `${id}.json` };
+}
+
+function haversineNm(a, b) {
+  const R_NM = 3440.065;
+  const toRad = (deg) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.lat_deg - a.lat_deg);
+  const dLon = toRad(b.lon_deg - a.lon_deg);
+  const lat1 = toRad(a.lat_deg);
+  const lat2 = toRad(b.lat_deg);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 2 * R_NM * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
 function clamp(value, min, max) {
@@ -337,6 +462,29 @@ app.get('/api/result', (req, res) => {
 // GET /api/simulations — list all saved Gemini/Rust simulation iterations
 app.get('/api/simulations', (_req, res) => {
   res.json({ simulations: simulationEntries() });
+});
+
+// GET /api/missions — list all mission briefs on disk (built-in + user-created)
+app.get('/api/missions', (_req, res) => {
+  res.json({ missions: listMissionBriefs() });
+});
+
+// POST /api/missions — create a new user-defined mission brief from waypoints
+app.post('/api/missions', (req, res) => {
+  let built;
+  try {
+    built = buildMissionBrief(req.body ?? {});
+  } catch (e) {
+    return res.status(400).json({ error: e.message });
+  }
+  try {
+    fs.mkdirSync(MISSION_BRIEFS_DIR, { recursive: true });
+    const target = path.join(MISSION_BRIEFS_DIR, built.fileName);
+    fs.writeFileSync(target, `${JSON.stringify(built.brief, null, 2)}\n`);
+    res.json({ mission: built.brief });
+  } catch (e) {
+    res.status(500).json({ error: `Failed to save mission: ${e.message}` });
+  }
 });
 
 // GET /api/gemini/status — report the active Gemini campaign, if any

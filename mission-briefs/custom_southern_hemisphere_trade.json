@@ -1,0 +1,52 @@
+{
+  "id": "custom_southern_hemisphere_trade",
+  "name": "Southern Hemisphere Trade",
+  "classification": "CUSTOM",
+  "origin": {
+    "name": "Origin",
+    "lat_deg": -7.45622594980269,
+    "lon_deg": 67.86692933821229
+  },
+  "destination": {
+    "name": "Destination",
+    "lat_deg": -12.930738555249503,
+    "lon_deg": -150.33362457832183
+  },
+  "waypoints": [
+    {
+      "name": "Waypoint 1",
+      "lat_deg": -43.96959746710344,
+      "lon_deg": 112.59991811410545
+    },
+    {
+      "name": "Waypoint 2",
+      "lat_deg": 4.911241308390228,
+      "lon_deg": 166.85991487455647
+    }
+  ],
+  "distance_nm": 10110,
+  "expected_duration_days": 21,
+  "primary_stressor": "sustained_structural_fatigue",
+  "failure_modes_under_test": [
+    "sink"
+  ],
+  "objective": "User-defined voyage: Origin → Destination.",
+  "environmental_profile": {
+    "wave_height_m": {
+      "avg": 3,
+      "max": 7
+    },
+    "wave_period_s": {
+      "avg": 8,
+      "max": 14
+    },
+    "slamming_probability": "moderate",
+    "water_temp_c": {
+      "avg": 12,
+      "min": 4
+    },
+    "salinity_ppt": 35,
+    "ice_accretion_risk": "low"
+  },
+  "custom": true
+}

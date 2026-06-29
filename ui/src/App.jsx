@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import HullDiagram from './components/HullDiagram.jsx';
+import MissionCreator from './components/MissionCreator.jsx';
 import { MISSIONS } from './missions.js';
 
 const TICK_STEP_MS = 1000;
@@ -77,6 +78,8 @@ export default function App() {
   const [tickPosition, setTickPosition] = useState(0);
   const [stepSpeed, setStepSpeed] = useState(1);
   const [selectedMission, setSelectedMission] = useState(null);
+  const [missions, setMissions] = useState(MISSIONS);
+  const [creatingMission, setCreatingMission] = useState(false);
   const [simulations, setSimulations] = useState([]);
   const [selectedCampaignId, setSelectedCampaignId] = useState(null);
   const [selectedSimulationId, setSelectedSimulationId] = useState(null);
@@ -153,10 +156,24 @@ export default function App() {
     ]);
   }, [campaigns, runningCampaignId, runningCampaignStartedAt]);
 
+  const refreshMissions = useCallback(() => (
+    fetch('/api/missions')
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
+      .then((data) => {
+        if (Array.isArray(data.missions) && data.missions.length) {
+          setMissions(data.missions);
+        }
+        return data.missions;
+      })
+      // Fall back to the statically-bundled briefs if the API server isn't reachable.
+      .catch(() => null)
+  ), []);
+
   useEffect(() => {
     refreshSimulations();
     refreshGeminiStatus();
-  }, [refreshGeminiStatus, refreshSimulations]);
+    refreshMissions();
+  }, [refreshGeminiStatus, refreshSimulations, refreshMissions]);
 
   useEffect(() => {
     if (visibleCampaigns.length === 0) {
@@ -374,7 +391,8 @@ export default function App() {
   })();
   const activeDayLabel = formatElapsedDayLabel(interpolatedElapsedH);
   const activeRouteSegment = simResult?.voyage?.route_segments?.[activeTick?.segment_index ?? 0] ?? null;
-  const activeConditions = activeRouteSegment?.conditions ?? null;
+  // Prefer the per-tick, position-sampled grid conditions; fall back to the leg's conditions.
+  const activeConditions = activeTick?.conditions ?? activeRouteSegment?.conditions ?? null;
   const config = simResult?.configuration ?? null;
   const displayedZones = config?.zones ?? [];
   const failureDetail = formatFailureDetail(simResult?.failure);
@@ -387,7 +405,7 @@ export default function App() {
     ? 'running'
     : 'ended';
   const campaignMissionId = visibleSimulations.find((sim) => sim.params?.id)?.params?.id ?? null;
-  const campaignMission = MISSIONS.find((mission) => mission.id === campaignMissionId) ?? null;
+  const campaignMission = missions.find((mission) => mission.id === campaignMissionId) ?? null;
   const missionBrief = campaignMission ?? selectedMission;
   const env = missionBrief?.environmental_profile ?? null;
   const campaignSuccessCount = visibleSimulations.filter((sim) => sim.status === 'survived').length;
@@ -618,6 +636,22 @@ export default function App() {
         routeGeo={missionBrief ? { origin: missionBrief.origin, waypoints: missionBrief.waypoints ?? [], destination: missionBrief.destination } : null}
       />
 
+      {creatingMission && (
+        <MissionCreator
+          onClose={() => setCreatingMission(false)}
+          onCreated={(mission) => {
+            setCreatingMission(false);
+            if (!mission) return;
+            refreshMissions();
+            setMissions((list) => (
+              list.some((m) => m.id === mission.id) ? list : [...list, mission]
+            ));
+            setSelectedSimulationId(null);
+            setSelectedMission(mission);
+          }}
+        />
+      )}
+
       {/* Left panel — hamburger cell that expands on hover */}
       <div
         style={{
@@ -671,7 +705,7 @@ export default function App() {
             {/* Missions section */}
             <div style={{ flexShrink: 0 }}>
               <div style={panelHeaderStyle}>Missions</div>
-              {MISSIONS.map((m) => {
+              {missions.map((m) => {
                 const isSelected = selectedMission?.id === m.id;
                 return (
                   <div
@@ -696,12 +730,27 @@ export default function App() {
                     }}
                   >
                     <span style={{ color: 'rgba(0,0,0,0.25)', fontSize: 9 }}>
-                      {m.id.split('_')[0]}
+                      {m.custom ? '+' : m.id.split('_')[0]}
                     </span>
                     {m.name}
                   </div>
                 );
               })}
+              <div
+                onClick={() => setCreatingMission(true)}
+                style={{
+                  padding: '7px 14px',
+                  fontFamily: "'Courier New', monospace",
+                  fontSize: 10,
+                  letterSpacing: '0.02em',
+                  whiteSpace: 'nowrap',
+                  cursor: 'pointer',
+                  color: 'rgba(0,0,0,0.5)',
+                  borderBottom: '1px solid rgba(0,0,0,0.06)',
+                }}
+              >
+                + New mission
+              </div>
             </div>
 
             <div style={{ borderTop: '1px solid rgba(0,0,0,0.08)' }}>

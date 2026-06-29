@@ -838,6 +838,7 @@ fn build_output(
                 "gm_m": t.gm_m,
                 "zones": zones,
                 "failure": t.failure,
+                "conditions": t.conditions,
             })
         })
         .collect();

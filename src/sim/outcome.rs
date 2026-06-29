@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+use crate::environment::OceanConditions;
 use crate::vessel::HullZone;
 
 /// Why the voyage ended in failure.
@@ -157,6 +158,9 @@ pub struct SegmentSnapshot {
     pub zones: Vec<ZoneSummary>,
     /// Set only on the tick where failure occurred.
     pub failure: Option<String>,
+    /// Position-sampled ocean conditions in effect at this tick.
+    #[serde(default)]
+    pub conditions: Option<OceanConditions>,
 }
 
 /// What the voyage simulation returns.

@@ -1,6 +1,6 @@
 use crate::{
     cost::total_config_cost_usd,
-    environment::VoyageRoute,
+    environment::{ocean_grid, GeoPoint, OceanConditions, VoyageRoute},
     physics::{
         corrosion::{corrosion_fatigue_multiplier, thickness_loss_m},
         ice::{gm_with_ice, spray_icing_rate_kg_per_h},
@@ -24,6 +24,9 @@ const CORROSION_RATE_MULTIPLIER: f64 = 5.0;
 pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
     let total_distance_nm = route.total_distance_nm();
     let total_cost = total_config_cost_usd(config);
+    // Position-driven ocean field (real gridded data). When absent, fall back to
+    // the mission's premade per-leg conditions.
+    let grid = ocean_grid::global();
 
     let zone_states: Vec<ZoneState> = config
         .zones
@@ -54,15 +57,28 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
             &peak_stress,
             config,
             None,
+            None,
         ));
     }
 
     for (seg_idx, segment) in route.segments.iter().enumerate() {
-        let conditions = &segment.conditions;
+        // Sample conditions at a fraction (0..1) along this great-circle leg.
+        // The grid supplies the environmental state; the encounter angle stays
+        // vessel-relative (from the leg heading vs. swell).
+        let conditions_at = |frac: f64| -> OceanConditions {
+            match grid {
+                Some(g) => {
+                    let p = interp_position(segment.from, segment.to, frac.clamp(0.0, 1.0));
+                    g.sample(p.lat_deg, p.lon_deg, segment.conditions.encounter_angle_deg)
+                }
+                None => segment.conditions.clone(),
+            }
+        };
 
         // ----------------------------------------------------------------
-        // Stability check at segment start (conditions constant per segment)
+        // Stability check at segment start
         // ----------------------------------------------------------------
+        let start_conditions = conditions_at(0.0);
         let current_mass = (config.total_mass_kg()
             - (config.propulsion.fuel_capacity_kg - state.fuel_kg))
             .max(500.0);
@@ -70,18 +86,19 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
         state.gm_m = metacentric_height_m(&config.hull, current_mass, kg);
         let gm_min = gm_minimum(&config.hull);
 
-        if capsize_risk(state.gm_m, &config.hull, conditions.hs_m, conditions.encounter_angle_deg) {
+        if capsize_risk(state.gm_m, &config.hull, start_conditions.hs_m, start_conditions.encounter_angle_deg) {
             // Report the effective dynamic threshold, not just the static floor
-            let beam_component = (conditions.encounter_angle_deg.to_radians().sin()).abs();
-            let gm_effective_min = (gm_min + 0.015 * conditions.hs_m.powi(2) * beam_component)
+            let beam_component = (start_conditions.encounter_angle_deg.to_radians().sin()).abs();
+            let gm_effective_min = (gm_min + 0.015 * start_conditions.hs_m.powi(2) * beam_component)
                 .max(gm_min);
             let mode = FailureMode::Capsize { gm_m: state.gm_m, gm_required_m: gm_effective_min };
-            ticks.push(snapshot_at(&state, seg_idx, &segment.label, state.speed_kts, &peak_stress, config, Some(mode.label())));
+            ticks.push(snapshot_at(&state, seg_idx, &segment.label, state.speed_kts, &peak_stress, config, Some(mode.label()), Some(&start_conditions)));
             return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
         }
 
-        // Speed is constant within a segment (conditions don't change)
-        let speed_ms = equilibrium_speed_ms(config, current_mass, conditions);
+        // Representative speed for the leg, sampled at its midpoint.
+        let repr_conditions = conditions_at(0.5);
+        let speed_ms = equilibrium_speed_ms(config, current_mass, &repr_conditions);
         let speed_kts = speed_ms * 1.944;
         state.speed_kts = speed_kts;
         let seg_duration_h = (segment.distance_nm / speed_kts.max(0.1))
@@ -97,6 +114,12 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
             let exposure_step_h = step_h * SIMULATED_TIME_MULTIPLIER;
             let exposure_step_s = exposure_step_h * 3600.0;
             let step_distance_nm = segment.distance_nm * (step_h / seg_duration_h);
+
+            // Conditions for this step, sampled at the vessel's current position
+            // (midpoint of the step) along the leg.
+            let frac = ((seg_elapsed_h + step_h * 0.5) / seg_duration_h.max(1e-9)).clamp(0.0, 1.0);
+            let conditions_owned = conditions_at(frac);
+            let conditions = &conditions_owned;
 
             let step_mass = (config.total_mass_kg()
                 - (config.propulsion.fuel_capacity_kg - state.fuel_kg))
@@ -119,7 +142,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                     distance_remaining_nm: total_distance_nm
                         - state.distance_nm
                 };
-                ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label())));
+                ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label()), Some(conditions)));
                 return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
             }
             state.fuel_kg -= fuel_burned;
@@ -141,7 +164,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                     let beam_component = (conditions.encounter_angle_deg.to_radians().sin()).abs();
                     let gm_effective_min = (gm_min + 0.015 * conditions.hs_m.powi(2) * beam_component).max(gm_min);
                     let mode = FailureMode::Capsize { gm_m: state.gm_m, gm_required_m: gm_effective_min };
-                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label())));
+                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label()), Some(conditions)));
                     return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
                 }
             }
@@ -160,7 +183,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                         water_temp_c: conditions.water_temp_c,
                         min_rated_temp_c: mat_spec.min_temp_c,
                     };
-                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label())));
+                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label()), Some(conditions)));
                     return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
                 }
 
@@ -186,7 +209,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                         zone,
                         damage_accumulated: zone_state.fatigue_consumed,
                     };
-                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label())));
+                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label()), Some(conditions)));
                     return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
                 }
 
@@ -217,7 +240,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                         zone,
                         damage_accumulated: zone_state.fatigue_consumed,
                     };
-                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label())));
+                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label()), Some(conditions)));
                     return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
                 }
 
@@ -245,12 +268,12 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                         k_applied_mpa_sqrtm: k_applied,
                         k_ic_mpa_sqrtm: mat_spec.k_ic_mpa_sqrtm,
                     };
-                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label())));
+                    ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label()), Some(conditions)));
                     return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
                 }
             }
 
-            ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, None));
+            ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, None, Some(conditions)));
         }
 
         // ----------------------------------------------------------------
@@ -265,7 +288,7 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
                     zone,
                     elapsed_h: state.elapsed_h,
                 };
-                ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label())));
+                ticks.push(snapshot_at(&state, seg_idx, &segment.label, speed_kts, &peak_stress, config, Some(mode.label()), Some(&repr_conditions)));
                 return build_failure(mode, &state, seg_idx, &segment.label, total_distance_nm, total_cost, &peak_stress, config, ticks);
             }
         }
@@ -288,6 +311,45 @@ pub fn run_voyage(config: &VesselConfig, route: &VoyageRoute) -> SimOutcome {
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------
+
+/// Great-circle interpolation between two geographic points (spherical slerp of
+/// the unit position vectors), used to find the vessel's position partway along a leg.
+fn interp_position(from: GeoPoint, to: GeoPoint, frac: f64) -> GeoPoint {
+    let to_unit = |p: GeoPoint| {
+        let lat = p.lat_deg.to_radians();
+        let lon = p.lon_deg.to_radians();
+        let c = lat.cos();
+        [c * lon.sin(), lat.sin(), c * lon.cos()]
+    };
+    let a = to_unit(from);
+    let b = to_unit(to);
+    let dot = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]).clamp(-1.0, 1.0);
+    let omega = dot.acos();
+
+    let v = if omega < 1e-6 {
+        // Endpoints coincide — linear blend is fine.
+        [
+            a[0] + (b[0] - a[0]) * frac,
+            a[1] + (b[1] - a[1]) * frac,
+            a[2] + (b[2] - a[2]) * frac,
+        ]
+    } else {
+        let s = omega.sin();
+        let w0 = ((1.0 - frac) * omega).sin() / s;
+        let w1 = (frac * omega).sin() / s;
+        [
+            a[0] * w0 + b[0] * w1,
+            a[1] * w0 + b[1] * w1,
+            a[2] * w0 + b[2] * w1,
+        ]
+    };
+    let norm = (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]).sqrt().max(1e-12);
+    let (x, y, z) = (v[0] / norm, v[1] / norm, v[2] / norm);
+    GeoPoint {
+        lat_deg: y.clamp(-1.0, 1.0).asin().to_degrees(),
+        lon_deg: x.atan2(z).to_degrees(),
+    }
+}
 
 fn build_failure(
     mode: FailureMode,
@@ -329,6 +391,7 @@ fn snapshot_at(
     peak_stress: &std::collections::HashMap<HullZone, f64>,
     config: &VesselConfig,
     failure: Option<&'static str>,
+    conditions: Option<&OceanConditions>,
 ) -> SegmentSnapshot {
     SegmentSnapshot {
         segment_index: seg_idx,
@@ -340,6 +403,7 @@ fn snapshot_at(
         gm_m: state.gm_m,
         zones: build_zone_summaries(state, peak_stress, config),
         failure: failure.map(|s| s.to_string()),
+        conditions: conditions.cloned(),
     }
 }
 
